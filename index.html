@@ -4,7 +4,65 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Prime — Julio 2026</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js">
+// ── Export helpers ────────────────────────────────────────────────────────
+function exportImg(tabIdx) {
+  // Switch to requested tab then print
+  switchTab(tabIdx);
+  setTimeout(() => window.print(), 300);
+}
+
+function toCSV(headers, rows) {
+  const escape = v => {
+    const s = String(v ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
+  };
+  return [headers, ...rows].map(r => r.map(escape).join(',')).join('\n');
+}
+
+function downloadCSV(filename, csv) {
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportCSV(tabIdx) {
+  const date = new Date().toISOString().slice(0,10);
+  if (tabIdx === 0) {
+    const data = gT1();
+    const csv = toCSV(
+      ['Región','Sub-región','Clave','Tienda','Cuota','Ventas','Alcance%','OH','Resurtido','Faltante','Riesgo','Pzas/Sem'],
+      data.map(r => [r.region,r.sub_region,r.clave,r.tienda,r.cuota,r.ventas,r.alcance,r.oh,r.resurtido,r.faltante,r.riesgo,r.piezas_sem])
+    );
+    downloadCSV(`Cuota_Julio_${date}.csv`, csv);
+  } else if (tabIdx === 1) {
+    const data = gT2();
+    const csv = toCSV(
+      ['Región','Director','Gerente','Clave','Tienda','Alphacomm','Total Acc.','% Alpha','Equipo','AR%'],
+      data.map(r => [r.region,r.director,r.gerente,r.clave,r.tienda,r.alphacomm,r.total_acc,r.pct_alpha,r.equipo,r.ar])
+    );
+    downloadCSV(`AR_Proyeccion_${date}.csv`, csv);
+  } else if (tabIdx === 2) {
+    const data = gT3();
+    const csv = toCSV(
+      ['Región','Clave','Tienda','LG Ventas','LG Cuota','OH LG','LG Alc%','Cases Ventas','Cases Cuota','OH Cases','Cases Alc%'],
+      data.map(r => [r.region,r.clave,r.tienda,r.lg_v||0,Math.round(r.lg_cuota||0),r.oh_lg||0,r.lg_alc||0,r.cases_v||0,Math.round(r.cases_cuota||0),r.oh_cases||0,r.cases_alc||0])
+    );
+    downloadCSV(`Cases_LiquidGlass_${date}.csv`, csv);
+  } else if (tabIdx === 3) {
+    const data = gT4();
+    const csv = toCSV(
+      ['Región','Gerente','Tienda','Cases','Cables','Chargers','Liquid Glass','Screen Prot.','Otros','Total'],
+      data.map(r => [r.region,r.gerente,r.tienda,r.cat_cases||0,r.cat_cables||0,r.cat_chargers||0,r.cat_liquid_glass||0,r['cat_screen_prot']||0,r.cat_otros||0,r.cantidad])
+    );
+    downloadCSV(`Inventario_${date}.csv`, csv);
+  }
+}
+
+</script>
 <style>
 :root{--bg:#0f1117;--bg2:#1a1d2e;--bg3:#252840;--accent:#6c63ff;--accent2:#ff6b6b;--accent3:#4ecdc4;--accent4:#f9ca24;--text:#e8e8f0;--text2:#a0a0b8;--border:#2e3150;--green:#2ecc71;--red:#e74c3c;--yellow:#f39c12;--blue:#3498db;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -58,6 +116,13 @@ input[type=file]{display:none;}
 .prog-bg{background:var(--bg3);border-radius:4px;height:7px;}
 .prog-fill{height:7px;border-radius:4px;}
 @media(max-width:768px){.charts-row{grid-template-columns:1fr;}}
+
+@media print {
+  .tabs, .header, .improw, .filters, .pag, .refresh-btn { display: none !important; }
+  .tab-content { display: block !important; page-break-inside: avoid; }
+  body { background: #fff !important; color: #000 !important; }
+  .card, .cbox, .sec, .kpi, .section { border-color: #ccc !important; background: #fff !important; }
+}
 </style>
 </head>
 <body>
@@ -74,13 +139,9 @@ input[type=file]{display:none;}
 
 <div class="tab-content active" id="tab0">
   <div class="improw">
-    <label class="ibtn" for="imp1img">&#x1F5BC; Importar Imagen</label>
-    <input type="file" id="imp1img" accept="image/*" onchange="prevImg(this,'pv1')">
-    <label class="ibtn" for="imp1xl">&#x1F4CA; Importar Excel</label>
-    <input type="file" id="imp1xl" accept=".xlsx,.xls,.csv">
-    <span>Importa datos externos para comparar</span>
+    <button class="ibtn" onclick="exportImg(0)">&#x1F4F7; Descargar Imagen</button>
+    <button class="ibtn" onclick="exportCSV(0)">&#x1F4CA; Descargar Excel</button>
   </div>
-  <img id="pv1" class="ipreview">
   <div class="kpi-row">
     <div class="kpi" style="--kc:#6c63ff"><div class="lbl">Cuota Total Julio</div><div class="val">27,007</div><div class="sub">piezas accesorios</div></div>
     <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Ventas Julio</div><div class="val">4,793</div><div class="sub">piezas vendidas</div></div>
@@ -108,13 +169,9 @@ input[type=file]{display:none;}
 
 <div class="tab-content" id="tab1">
   <div class="improw">
-    <label class="ibtn" for="imp2img">&#x1F5BC; Importar Imagen</label>
-    <input type="file" id="imp2img" accept="image/*" onchange="prevImg(this,'pv2')">
-    <label class="ibtn" for="imp2xl">&#x1F4CA; Importar Excel</label>
-    <input type="file" id="imp2xl" accept=".xlsx,.xls,.csv">
-    <span>Importa datos de proyección mensual</span>
+    <button class="ibtn" onclick="exportImg(1)">&#x1F4F7; Descargar Imagen</button>
+    <button class="ibtn" onclick="exportCSV(1)">&#x1F4CA; Descargar Excel</button>
   </div>
-  <img id="pv2" class="ipreview">
   <div class="kpi-row">
     <div class="kpi" style="--kc:#6c63ff"><div class="lbl">Alphacomm (Mes)</div><div class="val">4,785</div><div class="sub">piezas accesorios</div></div>
     <div class="kpi" style="--kc:#3498db"><div class="lbl">Venta de Equipos</div><div class="val">10,696</div><div class="sub">piezas vendidas</div></div>
@@ -141,13 +198,9 @@ input[type=file]{display:none;}
 
 <div class="tab-content" id="tab2">
   <div class="improw">
-    <label class="ibtn" for="imp3img">&#x1F5BC; Importar Imagen</label>
-    <input type="file" id="imp3img" accept="image/*" onchange="prevImg(this,'pv3')">
-    <label class="ibtn" for="imp3xl">&#x1F4CA; Importar Excel</label>
-    <input type="file" id="imp3xl" accept=".xlsx,.xls,.csv">
-    <span>Importa cuotas Cases / Liquid Glass</span>
+    <button class="ibtn" onclick="exportImg(2)">&#x1F4F7; Descargar Imagen</button>
+    <button class="ibtn" onclick="exportCSV(2)">&#x1F4CA; Descargar Excel</button>
   </div>
-  <img id="pv3" class="ipreview">
   <div class="kpi-row">
     <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Cuota Liquid Glass</div><div class="val">3,500</div><div class="sub">piezas julio</div></div>
     <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Ventas LG</div><div class="val">153</div><div class="sub">alcance 4.4%</div></div>
@@ -186,13 +239,9 @@ input[type=file]{display:none;}
 
 <div class="tab-content" id="tab3">
   <div class="improw">
-    <label class="ibtn" for="imp4img">&#x1F5BC; Importar Imagen</label>
-    <input type="file" id="imp4img" accept="image/*" onchange="prevImg(this,'pv4')">
-    <label class="ibtn" for="imp4xl">&#x1F4CA; Importar Excel</label>
-    <input type="file" id="imp4xl" accept=".xlsx,.xls,.csv">
-    <span>Importa datos de inventario OH</span>
+    <button class="ibtn" onclick="exportImg(3)">&#x1F4F7; Descargar Imagen</button>
+    <button class="ibtn" onclick="exportCSV(3)">&#x1F4CA; Descargar Excel</button>
   </div>
-  <img id="pv4" class="ipreview">
   <div class="kpi-row">
     <div class="kpi" style="--kc:#6c63ff"><div class="lbl">OH Total</div><div class="val">48,604</div><div class="sub">unidades totales</div></div>
     <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Cases iPhone</div><div class="val">13,402</div><div class="sub">unidades</div></div>
