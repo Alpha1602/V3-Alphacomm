@@ -168,11 +168,18 @@ input[type=file]{display:none;}
       <div><label>Región</label><select id="f3r" onchange="rt3()"><option value="">Todas</option></select></div>
       <div><label>Buscar tienda</label><input type="text" id="f3q" placeholder="Nombre o clave..." oninput="rt3()" style="width:200px"></div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr>
-      <th>Región</th><th>Tienda</th>
-      <th>LG Vtas</th><th>LG Cuota</th><th>LG Alc%</th><th>OH LG</th>
-      <th>Cases Vtas</th><th>Cases Cuota</th><th>Cases Alc%</th><th>OH Cases</th>
-    </tr></thead><tbody id="tb3"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead>
+  <tr>
+    <th rowspan="2" style="vertical-align:middle">Región</th>
+    <th rowspan="2" style="vertical-align:middle;min-width:160px">Tienda</th>
+    <th colspan="4" style="text-align:center;background:rgba(78,205,196,.15);color:#4ecdc4;border-bottom:2px solid #4ecdc4">&#x1F7E2; LIQUID GLASS</th>
+    <th colspan="4" style="text-align:center;background:rgba(255,107,107,.15);color:#ff6b6b;border-bottom:2px solid #ff6b6b">&#x1F534; CASES iPHONE</th>
+  </tr>
+  <tr>
+    <th style="color:#4ecdc4">Ventas</th><th style="color:#4ecdc4">Cuota</th><th style="color:#4ecdc4">OH</th><th style="color:#4ecdc4">Alc%</th>
+    <th style="color:#ff6b6b">Ventas</th><th style="color:#ff6b6b">Cuota</th><th style="color:#ff6b6b">OH</th><th style="color:#ff6b6b">Alc%</th>
+  </tr>
+</thead><tbody id="tb3"></tbody></table></div>
     <div class="pag" id="pg3"></div>
   </div>
 </div>
@@ -321,10 +328,10 @@ rt2();
 const r3=D.lg_region;
 mkChart('c3a','bar',r3.map(r=>r.region),
   [{label:'LG Ventas',data:r3.map(r=>r.lg_v),backgroundColor:'rgba(78,205,196,.9)',borderRadius:4},
-   {label:'LG Cuota',data:r3.map(r=>r.lg_cuota),backgroundColor:'rgba(78,205,196,.2)',borderRadius:4}]);
+   {label:'LG Cuota',data:r3.map(r=>Math.round(r.lg_cuota)),backgroundColor:'rgba(78,205,196,.2)',borderRadius:4}]);
 mkChart('c3b','bar',r3.map(r=>r.region),
   [{label:'Cases Ventas',data:r3.map(r=>r.cases_v),backgroundColor:'rgba(255,107,107,.9)',borderRadius:4},
-   {label:'Cases Cuota',data:r3.map(r=>r.cases_cuota),backgroundColor:'rgba(255,107,107,.2)',borderRadius:4}]);
+   {label:'Cases Cuota',data:r3.map(r=>Math.round(r.cases_cuota)),backgroundColor:'rgba(255,107,107,.2)',borderRadius:4}]);
 mkChart('c3c','bar',r3.map(r=>r.region),
   [{label:'OH Liquid Glass',data:r3.map(r=>r.oh_lg),backgroundColor:CL.map(c=>c+'cc'),borderRadius:4}]);
 mkChart('c3d','bar',r3.map(r=>r.region),
@@ -342,7 +349,7 @@ function rT3p(){
     const lp=Math.min(r.lg_alc||0,100),cp=Math.min(r.cases_alc||0,100);
     const lc=(r.lg_alc||0)>=80?'green':(r.lg_alc||0)>=40?'yellow':'red';
     const cc=(r.cases_alc||0)>=80?'green':(r.cases_alc||0)>=40?'yellow':'red';
-    return `<tr><td>${r.region}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right">${r.lg_v||0}</td><td style="text-align:right;color:#a0a0b8">${r.lg_cuota||0}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${lp}%;background:var(--${lc})"></div></div><span>${r.lg_alc||0}%</span></div></td><td style="text-align:right;color:#4ecdc4"><b>${r.oh_lg||0}</b></td><td style="text-align:right">${r.cases_v||0}</td><td style="text-align:right;color:#a0a0b8">${r.cases_cuota||0}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${cp}%;background:var(--${cc})"></div></div><span>${r.cases_alc||0}%</span></div></td><td style="text-align:right;color:#ff6b6b"><b>${r.oh_cases||0}</b></td></tr>`;
+    return `<tr><td>${r.region}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#4ecdc4">${r.lg_v||0}</td><td style="text-align:right">${Math.round(r.lg_cuota||0)}</td><td style="text-align:right;color:#4ecdc4"><b>${r.oh_lg||0}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${lp}%;background:var(--${lc})"></div></div><span>${r.lg_alc||0}%</span></div></td><td style="text-align:right;color:#ff6b6b">${r.cases_v||0}</td><td style="text-align:right">${Math.round(r.cases_cuota||0)}</td><td style="text-align:right;color:#ff6b6b"><b>${r.oh_cases||0}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${cp}%;background:var(--${cc})"></div></div><span>${r.cases_alc||0}%</span></div></td></tr>`;
   }).join('');
   mkPag('pg3',t3d.length,t3p,n=>{t3p=n;rT3p();});
 }
