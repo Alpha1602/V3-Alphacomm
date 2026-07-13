@@ -4,65 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Prime — Julio 2026</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js">
-// ── Export helpers ────────────────────────────────────────────────────────
-function exportImg(tabIdx) {
-  // Switch to requested tab then print
-  switchTab(tabIdx);
-  setTimeout(() => window.print(), 300);
-}
-
-function toCSV(headers, rows) {
-  const escape = v => {
-    const s = String(v ?? '');
-    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
-  };
-  return [headers, ...rows].map(r => r.map(escape).join(',')).join('\n');
-}
-
-function downloadCSV(filename, csv) {
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-function exportCSV(tabIdx) {
-  const date = new Date().toISOString().slice(0,10);
-  if (tabIdx === 0) {
-    const data = gT1();
-    const csv = toCSV(
-      ['Región','Sub-región','Clave','Tienda','Cuota','Ventas','Alcance%','OH','Resurtido','Faltante','Riesgo','Pzas/Sem'],
-      data.map(r => [r.region,r.sub_region,r.clave,r.tienda,r.cuota,r.ventas,r.alcance,r.oh,r.resurtido,r.faltante,r.riesgo,r.piezas_sem])
-    );
-    downloadCSV(`Cuota_Julio_${date}.csv`, csv);
-  } else if (tabIdx === 1) {
-    const data = gT2();
-    const csv = toCSV(
-      ['Región','Director','Gerente','Clave','Tienda','Alphacomm','Total Acc.','% Alpha','Equipo','AR%'],
-      data.map(r => [r.region,r.director,r.gerente,r.clave,r.tienda,r.alphacomm,r.total_acc,r.pct_alpha,r.equipo,r.ar])
-    );
-    downloadCSV(`AR_Proyeccion_${date}.csv`, csv);
-  } else if (tabIdx === 2) {
-    const data = gT3();
-    const csv = toCSV(
-      ['Región','Clave','Tienda','LG Ventas','LG Cuota','OH LG','LG Alc%','Cases Ventas','Cases Cuota','OH Cases','Cases Alc%'],
-      data.map(r => [r.region,r.clave,r.tienda,r.lg_v||0,Math.round(r.lg_cuota||0),r.oh_lg||0,r.lg_alc||0,r.cases_v||0,Math.round(r.cases_cuota||0),r.oh_cases||0,r.cases_alc||0])
-    );
-    downloadCSV(`Cases_LiquidGlass_${date}.csv`, csv);
-  } else if (tabIdx === 3) {
-    const data = gT4();
-    const csv = toCSV(
-      ['Región','Gerente','Tienda','Cases','Cables','Chargers','Liquid Glass','Screen Prot.','Otros','Total'],
-      data.map(r => [r.region,r.gerente,r.tienda,r.cat_cases||0,r.cat_cables||0,r.cat_chargers||0,r.cat_liquid_glass||0,r['cat_screen_prot']||0,r.cat_otros||0,r.cantidad])
-    );
-    downloadCSV(`Inventario_${date}.csv`, csv);
-  }
-}
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script></script>
 <style>
 :root{--bg:#0f1117;--bg2:#1a1d2e;--bg3:#252840;--accent:#6c63ff;--accent2:#ff6b6b;--accent3:#4ecdc4;--accent4:#f9ca24;--text:#e8e8f0;--text2:#a0a0b8;--border:#2e3150;--green:#2ecc71;--red:#e74c3c;--yellow:#f39c12;--blue:#3498db;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -139,8 +83,11 @@ input[type=file]{display:none;}
 
 <div class="tab-content active" id="tab0">
   <div class="improw">
-    <button class="ibtn" onclick="exportImg(0)">&#x1F4F7; Descargar Imagen</button>
-    <button class="ibtn" onclick="exportCSV(0)">&#x1F4CA; Descargar Excel</button>
+    <label class="ibtn" for="fileIn0" title="Sube el Excel para actualizar los datos">&#x1F4E5; Cargar Excel</label>
+    <input type="file" id="fileIn0" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
+    <button class="ibtn" onclick="exportImg(0)" title="Descarga imagen de esta pestaña">&#x1F4F7; Descargar Imagen</button>
+    <button class="ibtn" onclick="exportCSV(0)" title="Descarga los datos en Excel">&#x1F4CA; Descargar Excel</button>
+    <span id="importStatus0" style="font-size:11px;color:var(--accent3)"></span>
   </div>
   <div class="kpi-row">
     <div class="kpi" style="--kc:#6c63ff"><div class="lbl">Cuota Total Julio</div><div class="val">27,007</div><div class="sub">piezas accesorios</div></div>
@@ -169,8 +116,11 @@ input[type=file]{display:none;}
 
 <div class="tab-content" id="tab1">
   <div class="improw">
-    <button class="ibtn" onclick="exportImg(1)">&#x1F4F7; Descargar Imagen</button>
-    <button class="ibtn" onclick="exportCSV(1)">&#x1F4CA; Descargar Excel</button>
+    <label class="ibtn" for="fileIn1" title="Sube el Excel para actualizar los datos">&#x1F4E5; Cargar Excel</label>
+    <input type="file" id="fileIn1" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
+    <button class="ibtn" onclick="exportImg(1)" title="Descarga imagen de esta pestaña">&#x1F4F7; Descargar Imagen</button>
+    <button class="ibtn" onclick="exportCSV(1)" title="Descarga los datos en Excel">&#x1F4CA; Descargar Excel</button>
+    <span id="importStatus1" style="font-size:11px;color:var(--accent3)"></span>
   </div>
   <div class="kpi-row">
     <div class="kpi" style="--kc:#6c63ff"><div class="lbl">Alphacomm (Mes)</div><div class="val">4,785</div><div class="sub">piezas accesorios</div></div>
@@ -198,8 +148,11 @@ input[type=file]{display:none;}
 
 <div class="tab-content" id="tab2">
   <div class="improw">
-    <button class="ibtn" onclick="exportImg(2)">&#x1F4F7; Descargar Imagen</button>
-    <button class="ibtn" onclick="exportCSV(2)">&#x1F4CA; Descargar Excel</button>
+    <label class="ibtn" for="fileIn2" title="Sube el Excel para actualizar los datos">&#x1F4E5; Cargar Excel</label>
+    <input type="file" id="fileIn2" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
+    <button class="ibtn" onclick="exportImg(2)" title="Descarga imagen de esta pestaña">&#x1F4F7; Descargar Imagen</button>
+    <button class="ibtn" onclick="exportCSV(2)" title="Descarga los datos en Excel">&#x1F4CA; Descargar Excel</button>
+    <span id="importStatus2" style="font-size:11px;color:var(--accent3)"></span>
   </div>
   <div class="kpi-row">
     <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Cuota Liquid Glass</div><div class="val">3,500</div><div class="sub">piezas julio</div></div>
@@ -239,8 +192,11 @@ input[type=file]{display:none;}
 
 <div class="tab-content" id="tab3">
   <div class="improw">
-    <button class="ibtn" onclick="exportImg(3)">&#x1F4F7; Descargar Imagen</button>
-    <button class="ibtn" onclick="exportCSV(3)">&#x1F4CA; Descargar Excel</button>
+    <label class="ibtn" for="fileIn3" title="Sube el Excel para actualizar los datos">&#x1F4E5; Cargar Excel</label>
+    <input type="file" id="fileIn3" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
+    <button class="ibtn" onclick="exportImg(3)" title="Descarga imagen de esta pestaña">&#x1F4F7; Descargar Imagen</button>
+    <button class="ibtn" onclick="exportCSV(3)" title="Descarga los datos en Excel">&#x1F4CA; Descargar Excel</button>
+    <span id="importStatus3" style="font-size:11px;color:var(--accent3)"></span>
   </div>
   <div class="kpi-row">
     <div class="kpi" style="--kc:#6c63ff"><div class="lbl">OH Total</div><div class="val">48,604</div><div class="sub">unidades totales</div></div>
@@ -301,9 +257,11 @@ function barColor(v,hi=80,lo=40){return v>=hi?'rgba(46,204,113,.8)':v>=lo?'rgba(
 // Chart defaults
 const CL=['#6c63ff','#4ecdc4','#ff6b6b','#f9ca24','#a29bfe','#fd79a8'];
 const CL2=['#2ecc71','#3498db','#e74c3c','#f39c12','#9b59b6','#1abc9c'];
+const _charts={};
 function mkChart(id,type,labels,datasets,extra={}){
   const ctx=document.getElementById(id);if(!ctx)return;
-  return new Chart(ctx,{type,data:{labels,datasets},options:{
+  if(_charts[id]){_charts[id].destroy();}
+  _charts[id]=new Chart(ctx,{type,data:{labels,datasets},options:{
     responsive:true,maintainAspectRatio:true,
     plugins:{legend:{labels:{color:'#a0a0b8',font:{size:11}}}},
     scales:type!=='pie'&&type!=='doughnut'?{
@@ -311,6 +269,7 @@ function mkChart(id,type,labels,datasets,extra={}){
       y:{ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}}
     }:undefined,...extra
   }});
+  return _charts[id];
 }
 
 // ─── TAB1 ──────────────────────────────────────────────
@@ -442,6 +401,300 @@ function mkPag(id,total,page,cb){
   if(pages<=1){el.innerHTML='';return;}
   el.innerHTML=`<span>${total.toLocaleString()} registros &mdash; Pág ${page+1}/${pages}</span><button onclick="(${cb})(${Math.max(0,page-1)})" ${page===0?'disabled':''}>&#9664; Anterior</button><button onclick="(${cb})(${Math.min(pages-1,page+1)})" ${page===pages-1?'disabled':''}>Siguiente &#9654;</button>`;
 }
+
+
+// ══ EXPORT & IMPORT ═══════════════════════════════════════════════════════
+
+// ── Descargar Imagen con html2canvas ──────────────────────────────────────
+async function exportImg(tabIdx) {
+  switchTab(tabIdx);
+  await new Promise(r => setTimeout(r, 400));
+  const el = document.getElementById('tab' + tabIdx);
+  try {
+    const canvas = await html2canvas(el, {
+      scale: 2, useCORS: true, allowTaint: true,
+      backgroundColor: '#0f1117', logging: false
+    });
+    const a = document.createElement('a');
+    const nombres = ['Cuota_Julio','AR_Proyeccion','Cases_LiquidGlass','Inventario'];
+    a.download = nombres[tabIdx] + '_' + new Date().toISOString().slice(0,10) + '.png';
+    a.href = canvas.toDataURL('image/png');
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  } catch(e) { alert('Error generando imagen: ' + e.message); }
+}
+
+// ── Descargar Excel con SheetJS ───────────────────────────────────────────
+function exportCSV(tabIdx) {
+  const date = new Date().toISOString().slice(0,10);
+  const nombres = ['Cuota_Julio','AR_Proyeccion','Cases_LiquidGlass','Inventario'];
+  let headers, rows;
+  if (tabIdx === 0) {
+    headers = ['Región','Sub-región','Clave','Tienda','Cuota','Ventas','Alcance%','OH','Resurtido','Faltante','Riesgo','Pzas/Sem'];
+    rows = gT1().map(r => [r.region,r.sub_region,r.clave,r.tienda,r.cuota,r.ventas,r.alcance,r.oh,r.resurtido,r.faltante,r.riesgo,r.piezas_sem]);
+  } else if (tabIdx === 1) {
+    headers = ['Región','Director','Gerente','Clave','Tienda','Alphacomm','Total Acc.','% Alpha','Equipo','AR%'];
+    rows = gT2().map(r => [r.region,r.director,r.gerente,r.clave,r.tienda,r.alphacomm,r.total_acc,r.pct_alpha,r.equipo,r.ar]);
+  } else if (tabIdx === 2) {
+    headers = ['Región','Clave','Tienda','LG Ventas','LG Cuota','OH LG','LG Alc%','Cases Ventas','Cases Cuota','OH Cases','Cases Alc%'];
+    rows = gT3().map(r => [r.region,r.clave,r.tienda,r.lg_v||0,Math.round(r.lg_cuota||0),r.oh_lg||0,r.lg_alc||0,r.cases_v||0,Math.round(r.cases_cuota||0),r.oh_cases||0,r.cases_alc||0]);
+  } else {
+    headers = ['Región','Gerente','Tienda','Cases','Cables','Chargers','Liquid Glass','Screen Prot.','Otros','Total'];
+    rows = gT4().map(r => [r.region,r.gerente,r.tienda,r.cat_cases||0,r.cat_cables||0,r.cat_chargers||0,r.cat_liquid_glass||0,r['cat_screen_prot']||0,r.cat_otros||0,r.cantidad]);
+  }
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  // Auto column width
+  ws['!cols'] = headers.map((_,i) => ({wch: Math.max(headers[i].length, ...rows.slice(0,50).map(r => String(r[i]||'').length)) + 2}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, nombres[tabIdx]);
+  XLSX.writeFile(wb, nombres[tabIdx] + '_' + date + '.xlsx');
+}
+
+// ── Importar Excel y actualizar dashboard ─────────────────────────────────
+function importExcel(input) {
+  const file = input.files[0]; if (!file) return;
+  const tabIdx = parseInt(input.id.replace('fileIn',''));
+  const statusEl = document.getElementById('importStatus' + tabIdx);
+  statusEl.textContent = '⏳ Procesando...';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      let updated = [];
+
+      // ── Cuota Jul ──────────────────────────────────────────────────────
+      if (wb.SheetNames.includes('Cuota Jul')) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets['Cuota Jul'], {header:1, defval:null});
+        D.cuota_jul = rows.slice(3).filter(r => r[0]).map(r => ({
+          region: r[0]||'', sub_region: r[1]||'', clave: r[2]||'', tienda: r[3]||'',
+          cuota: Math.round(+r[4]||0), ventas: Math.round(+r[5]||0),
+          alcance: Math.round((+r[6]||0)*1000)/10,
+          oh: Math.round(+r[7]||0), resurtido: Math.round(+r[8]||0),
+          faltante: Math.round(+r[9]||0), riesgo: String(r[10]||''),
+          piezas_sem: Math.round(+r[11]||0)
+        }));
+        updated.push('Cuota Jul');
+        rebuildReg1(); renderTab1Charts(); rt1();
+      }
+
+      // ── 1.AR ───────────────────────────────────────────────────────────
+      if (wb.SheetNames.includes('1.AR')) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets['1.AR'], {header:1, defval:null});
+        D.ar_clean = rows.slice(3)
+          .filter(r => r[0] && r[3] && !String(r[0]).includes('TOTAL'))
+          .map(r => ({
+            region: r[0]||'', director: r[1]||'', gerente: r[2]||'',
+            clave: r[3]||'', tienda: r[4]||'',
+            alphacomm: Math.round(+r[5]||0), total_acc: Math.round(+r[6]||0),
+            pct_alpha: Math.round((+r[7]||0)*1000)/10,
+            equipo: Math.round(+r[8]||0), ar: Math.round((+r[9]||0)*1000)/10
+          }));
+        D.gerentes_ar = [...new Set(D.ar_clean.map(r=>r.gerente).filter(Boolean))].sort();
+        updated.push('AR');
+        rebuildReg2(); renderTab2Charts(); rt2();
+      }
+
+      // ── Cuota LG-Cases Jul ────────────────────────────────────────────
+      if (wb.SheetNames.includes('Cuota LG-Cases Jul')) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets['Cuota LG-Cases Jul'], {header:1, defval:null});
+        let section = null;
+        const lg_region = [], lg_tienda = [];
+        rows.forEach(r => {
+          if (r[0] === 'Resumen por Región') { section='region'; return; }
+          if (r[0] === 'Detalle por Tienda') { section='tienda'; return; }
+          if (section==='region' && r[0] && r[0]!=='Región' && r[0]!=='TOTAL') {
+            lg_region.push({region:r[0], lg_v:Math.round(+r[3]||0), lg_cuota:Math.round(+r[5]||0),
+              lg_alc:Math.round((+r[6]||0)*1000)/10, cases_v:Math.round(+r[7]||0),
+              cases_cuota:Math.round(+r[9]||0), cases_alc:Math.round((+r[10]||0)*1000)/10,
+              oh_lg:0, oh_cases:0});
+          }
+          if (section==='tienda' && r[0] && r[0]!=='Región') {
+            lg_tienda.push({region:r[0], clave:r[1]||'', tienda:r[2]||'',
+              lg_v:Math.round(+r[3]||0), lg_cuota:Math.round(+r[5]||0),
+              lg_alc:Math.round((+r[6]||0)*1000)/10, cases_v:Math.round(+r[7]||0),
+              cases_cuota:Math.round(+r[9]||0), cases_alc:Math.round((+r[10]||0)*1000)/10});
+          }
+        });
+        D.lg_region = lg_region; D.lg_tienda = lg_tienda;
+        // Rebuild lg_full from lg_tienda + existing OH
+        rebuildLgFull();
+        updated.push('LG-Cases');
+        renderTab3Charts(); rt3();
+      }
+
+      // ── OH detalle ────────────────────────────────────────────────────
+      if (wb.SheetNames.includes('OH detalle')) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets['OH detalle'], {header:1, defval:null});
+        const ohMap = {}, lgRegOH = {}, catTotals = {};
+        rows.slice(3).filter(r => r[0] && r[10]).forEach(r => {
+          const cat = categorizaOH(r[6]);
+          const rg = r[3]||'N/A', k = r[1]||'', cant = Math.round(+r[10]||0);
+          catTotals[cat] = (catTotals[cat]||0) + cant;
+          if (!lgRegOH[rg]) lgRegOH[rg]={lg:0,cases:0,otros:0};
+          if (cat==='Liquid Glass') lgRegOH[rg].lg+=cant;
+          else if (cat==='Cases') lgRegOH[rg].cases+=cant;
+          else lgRegOH[rg].otros+=cant;
+          if (k) {
+            if (!ohMap[k]) ohMap[k]={clave:k,tienda:r[0]||'',region:rg,gerente:r[2]||'',cantidad:0,cats:{}};
+            ohMap[k].cantidad+=cant;
+            ohMap[k].cats[cat]=(ohMap[k].cats[cat]||0)+cant;
+          }
+        });
+        D.cat_totals = catTotals;
+        D.oh_lg_region = lgRegOH;
+        D.oh_tienda = Object.values(ohMap).map(r => {
+          const o = {clave:r.clave,tienda:r.tienda,region:r.region,gerente:r.gerente,cantidad:r.cantidad};
+          Object.entries(r.cats).forEach(([k,v]) => { o['cat_'+k.replace(/[\s\.]/g,'_').toLowerCase()]=v; });
+          return o;
+        });
+        D.gerentes_oh = [...new Set(D.oh_tienda.map(r=>r.gerente).filter(Boolean))].sort();
+        // Update lg_region OH cross
+        D.lg_region.forEach(r => {
+          const oh = lgRegOH[r.region]||{lg:0,cases:0};
+          r.oh_lg=oh.lg; r.oh_cases=oh.cases;
+        });
+        rebuildLgFull();
+        updated.push('OH');
+        renderTab4Charts(); rt4(); renderTab3Charts(); rt3();
+      }
+
+      // Re-populate filter selects
+      repopulateFilters();
+      statusEl.textContent = '✅ Actualizado: ' + updated.join(', ');
+      setTimeout(() => { statusEl.textContent = ''; }, 4000);
+    } catch(err) {
+      statusEl.textContent = '❌ Error: ' + err.message;
+      console.error(err);
+    }
+    input.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function categorizaOH(desc) {
+  const d = (desc||'').toUpperCase();
+  if (d.includes('LIQUID GLASS')) return 'Liquid Glass';
+  if (d.includes('PRESIDIO') || (d.includes('IPHONE') && !d.includes('CABLE') && !d.includes('CHARGER') && !d.includes('GLASS') && !d.includes('TEMPERED'))) return 'Cases';
+  if (d.includes('CABLE')) return 'Cables';
+  if (d.includes('CHARGER') || d.includes('WALL') || d.includes('CAR CHARGER')) return 'Chargers';
+  if (d.includes('GLASS') || d.includes('TEMPERED') || d.includes('SCREEN')) return 'Screen Prot.';
+  return 'Otros';
+}
+
+function rebuildReg1() {
+  const m = {};
+  D.cuota_jul.forEach(r => {
+    if (!m[r.region]) m[r.region]={region:r.region,cuota:0,ventas:0,oh:0,resurtido:0,faltante:0};
+    const g=m[r.region]; g.cuota+=r.cuota; g.ventas+=r.ventas; g.oh+=r.oh; g.resurtido+=r.resurtido; g.faltante+=r.faltante;
+  });
+  D.reg1 = Object.values(m).map(r=>({...r, alcance:r.cuota?Math.round(r.ventas/r.cuota*1000)/10:0, cob_oh:r.faltante>0?Math.round(r.oh/r.faltante*1000)/10:0})).sort((a,b)=>a.region.localeCompare(b.region));
+}
+
+function rebuildReg2() {
+  const m = {};
+  D.ar_clean.forEach(r => {
+    if (!m[r.region]) m[r.region]={region:r.region,alpha:0,total_acc:0,equipo:0};
+    const g=m[r.region]; g.alpha+=r.alphacomm; g.total_acc+=r.total_acc; g.equipo+=r.equipo;
+  });
+  D.reg2 = Object.values(m).map(r=>({...r, ar:r.equipo?Math.round(r.alpha/r.equipo*1000)/10:0, pct_alpha:r.total_acc?Math.round(r.alpha/r.total_acc*1000)/10:0})).sort((a,b)=>a.region.localeCompare(b.region));
+}
+
+function rebuildLgFull() {
+  const lgMap = {}; D.lg_tienda.forEach(r => { lgMap[r.clave]=r; });
+  const ohMap = {}; (D.oh_tienda||[]).forEach(r => {
+    if (!ohMap[r.clave]) ohMap[r.clave]={oh_lg:r.cat_liquid_glass||0, oh_cases:r.cat_cases||0, gerente:r.gerente};
+  });
+  const merged = {};
+  [...Object.keys(lgMap), ...Object.keys(ohMap)].forEach(k => {
+    if (!merged[k]) {
+      const lg=lgMap[k]||{}; const oh=ohMap[k]||{};
+      merged[k]={clave:k, tienda:lg.tienda||'', region:lg.region||'', gerente:oh.gerente||'',
+        oh_lg:oh.oh_lg||0, oh_cases:oh.oh_cases||0,
+        lg_v:lg.lg_v||0, lg_cuota:lg.lg_cuota||0, lg_alc:lg.lg_alc||0,
+        cases_v:lg.cases_v||0, cases_cuota:lg.cases_cuota||0, cases_alc:lg.cases_alc||0};
+    }
+  });
+  D.lg_full = Object.values(merged);
+}
+
+function renderTab1Charts() {
+  const r1=D.reg1;
+  mkChart('c1a','bar',r1.map(r=>r.region),
+    [{label:'Ventas',data:r1.map(r=>r.ventas),backgroundColor:'rgba(108,99,255,.85)',borderRadius:4},
+     {label:'Cuota',data:r1.map(r=>r.cuota),backgroundColor:'rgba(255,255,255,.1)',borderRadius:4}]);
+  mkChart('c1b','bar',r1.map(r=>r.region),
+    [{label:'OH',data:r1.map(r=>r.oh),backgroundColor:CL.map(c=>c+'cc'),borderRadius:4}]);
+  // Rebuild progress bars
+  const rp1=document.getElementById('rprog1'); rp1.innerHTML='';
+  r1.forEach(r=>{
+    const p=Math.min(r.alcance,100);const c=r.alcance>=80?'#2ecc71':r.alcance>=40?'#f39c12':'#e74c3c';
+    rp1.innerHTML+=`<div class="prog-block"><div class="prog-row"><span>${r.region}</span><span style="color:#a0a0b8">${r.ventas.toLocaleString()} / ${r.cuota.toLocaleString()} — <b style="color:${c}">${r.alcance}%</b> &nbsp;|&nbsp; OH ${r.oh.toLocaleString()} (cob. ${r.cob_oh}%)</span></div><div class="prog-bg"><div class="prog-fill" style="width:${p}%;background:${c}"></div></div></div>`;
+  });
+  // Update KPIs
+  const tc=D.cuota_jul.reduce((a,r)=>a+r.cuota,0), tv=D.cuota_jul.reduce((a,r)=>a+r.ventas,0), toh=D.cuota_jul.reduce((a,r)=>a+r.oh,0);
+  document.querySelectorAll('#tab0 .val')[0].textContent=tc.toLocaleString();
+  document.querySelectorAll('#tab0 .val')[1].textContent=tv.toLocaleString();
+  document.querySelectorAll('#tab0 .val')[2].textContent=(tc?Math.round(tv/tc*1000)/10:0)+'%';
+  document.querySelectorAll('#tab0 .val')[3].textContent=toh.toLocaleString();
+}
+
+function renderTab2Charts() {
+  const r2=D.reg2;
+  mkChart('c2a','bar',r2.map(r=>r.region),
+    [{label:'Alphacomm',data:r2.map(r=>r.alpha),backgroundColor:'rgba(108,99,255,.85)',borderRadius:4},
+     {label:'Total Acc.',data:r2.map(r=>r.total_acc),backgroundColor:'rgba(78,205,196,.5)',borderRadius:4},
+     {label:'Equipos',data:r2.map(r=>r.equipo),backgroundColor:'rgba(249,202,36,.5)',borderRadius:4}]);
+  mkChart('c2b','bar',r2.map(r=>r.region),
+    [{label:'AR %',data:r2.map(r=>r.ar),backgroundColor:r2.map(r=>barColor(r.ar,50,35)),borderRadius:4}],
+    {scales:{y:{max:100}}});
+  const ta=r2.reduce((a,r)=>a+r.alpha,0), te=r2.reduce((a,r)=>a+r.equipo,0);
+  document.querySelectorAll('#tab1 .val')[0].textContent=ta.toLocaleString();
+  document.querySelectorAll('#tab1 .val')[1].textContent=te.toLocaleString();
+  document.querySelectorAll('#tab1 .val')[2].textContent=(te?Math.round(ta/te*1000)/10:0)+'%';
+}
+
+function renderTab3Charts() {
+  const r3=D.lg_region;
+  mkChart('c3a','bar',r3.map(r=>r.region),
+    [{label:'LG Ventas',data:r3.map(r=>r.lg_v),backgroundColor:'rgba(78,205,196,.9)',borderRadius:4},
+     {label:'LG Cuota',data:r3.map(r=>r.lg_cuota),backgroundColor:'rgba(78,205,196,.2)',borderRadius:4}]);
+  mkChart('c3b','bar',r3.map(r=>r.region),
+    [{label:'Cases Ventas',data:r3.map(r=>r.cases_v),backgroundColor:'rgba(255,107,107,.9)',borderRadius:4},
+     {label:'Cases Cuota',data:r3.map(r=>r.cases_cuota),backgroundColor:'rgba(255,107,107,.2)',borderRadius:4}]);
+  mkChart('c3c','bar',r3.map(r=>r.region),
+    [{label:'OH Liquid Glass',data:r3.map(r=>r.oh_lg),backgroundColor:CL.map(c=>c+'cc'),borderRadius:4}]);
+  mkChart('c3d','bar',r3.map(r=>r.region),
+    [{label:'OH Cases',data:r3.map(r=>r.oh_cases),backgroundColor:CL2.map(c=>c+'cc'),borderRadius:4}]);
+}
+
+function renderTab4Charts() {
+  const ct=D.cat_totals;
+  mkChart('c4a','doughnut',Object.keys(ct),
+    [{data:Object.values(ct),backgroundColor:CL,borderColor:'rgba(0,0,0,.4)',borderWidth:2}],
+    {scales:undefined,plugins:{legend:{position:'right',labels:{color:'#a0a0b8'}}}});
+  const ohr=D.oh_lg_region;const ohrK=Object.keys(ohr).sort();
+  mkChart('c4b','bar',ohrK,
+    [{label:'Cases',data:ohrK.map(k=>ohr[k].cases||0),backgroundColor:'rgba(255,107,107,.85)',borderRadius:4,stack:'s'},
+     {label:'Cables+Chargers+Otros',data:ohrK.map(k=>ohr[k].otros||0),backgroundColor:'rgba(249,202,36,.7)',borderRadius:4,stack:'s'},
+     {label:'Liquid Glass',data:ohrK.map(k=>ohr[k].lg||0),backgroundColor:'rgba(78,205,196,.85)',borderRadius:4,stack:'s'}],
+    {scales:{x:{stacked:true},y:{stacked:true}}});
+}
+
+function repopulateFilters() {
+  ['f1r','f2r','f3r','f4r'].forEach(id=>{
+    const s=document.getElementById(id); if(!s) return;
+    const cur=s.value; s.innerHTML='<option value="">Todas</option>';
+    D.regiones.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;s.appendChild(o);});
+    s.value=cur;
+  });
+  const f2g=document.getElementById('f2g');
+  if(f2g){const cur=f2g.value;f2g.innerHTML='<option value="">Todos</option>';
+    D.gerentes_ar.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g.split(' ').slice(0,3).join(' ');f2g.appendChild(o);});f2g.value=cur;}
+  const f4g=document.getElementById('f4g');
+  if(f4g){const cur=f4g.value;f4g.innerHTML='<option value="">Todos</option>';
+    D.gerentes_oh.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g.split(' ').slice(0,3).join(' ');f4g.appendChild(o);});f4g.value=cur;}
+}
+
+
 </script>
 </body>
 </html>
