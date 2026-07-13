@@ -67,6 +67,8 @@ input[type=file]{display:none;}
   body { background: #fff !important; color: #000 !important; }
   .card, .cbox, .sec, .kpi, .section { border-color: #ccc !important; background: #fff !important; }
 }
+
+.sarr{font-size:10px;opacity:.6;margin-left:2px;}thead th[data-col]:hover{background:rgba(255,255,255,.06);}
 </style>
 </head>
 <body>
@@ -91,11 +93,11 @@ input[type=file]{display:none;}
   </div>
   <div class="kpi-row">
     <div class="kpi" style="--kc:#6c63ff"><div class="lbl">Cuota Total Julio</div><div class="val">27,007</div><div class="sub">piezas accesorios</div></div>
-    <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Ventas Julio</div><div class="val">4,793</div><div class="sub">piezas vendidas</div></div>
-    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Alcance Total</div><div class="val">17.7%</div><div class="sub">vs cuota</div></div>
+    <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Ventas Julio</div><div class="val">7,200</div><div class="sub">piezas vendidas</div></div>
+    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Alcance Total</div><div class="val">26.7%</div><div class="sub">vs cuota</div></div>
     <div class="kpi" style="--kc:#3498db"><div class="lbl">OH Inventario</div><div class="val">73,125</div><div class="sub">piezas on-hand</div></div>
     <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Cobertura OH</div><div class="val">329.2%</div><div class="sub">OH vs faltante cuota</div></div>
-    <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Faltante Cuota</div><div class="val">22,214</div><div class="sub">piezas por alcanzar</div></div>
+    <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Faltante Cuota</div><div class="val">19,807</div><div class="sub">piezas por alcanzar</div></div>
   </div>
   <div class="charts-row">
     <div class="cbox"><h3>Ventas vs Cuota por Región</h3><canvas id="c1a"></canvas></div>
@@ -109,7 +111,7 @@ input[type=file]{display:none;}
       <div><label>Riesgo</label><select id="f1k" onchange="rt1()"><option value="">Todos</option><option>Sin riesgo</option><option>Con riesgo</option></select></div>
       <div><label>Buscar tienda</label><input type="text" id="f1q" placeholder="Nombre o clave..." oninput="rt1()" style="width:200px"></div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th>Región</th><th>Sub-región</th><th>Tienda</th><th>Cuota</th><th>Ventas</th><th>Alcance</th><th>OH</th><th>Resurtido</th><th>Faltante</th><th>Riesgo</th><th>Pzas/Sem</th></tr></thead><tbody id="tb1"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(1,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="sub_region" onclick="toggleSort(1,'sub_region')" style="cursor:pointer;user-select:none">Sub-región<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(1,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cuota" onclick="toggleSort(1,'cuota')" style="cursor:pointer;user-select:none">Cuota<span class="sarr"> ⇅</span></th><th data-col="ventas" onclick="toggleSort(1,'ventas')" style="cursor:pointer;user-select:none">Ventas<span class="sarr"> ⇅</span></th><th data-col="alcance" onclick="toggleSort(1,'alcance')" style="cursor:pointer;user-select:none">Alcance<span class="sarr"> ⇅</span></th><th data-col="oh" onclick="toggleSort(1,'oh')" style="cursor:pointer;user-select:none">OH<span class="sarr"> ⇅</span></th><th data-col="resurtido" onclick="toggleSort(1,'resurtido')" style="cursor:pointer;user-select:none">Resurtido<span class="sarr"> ⇅</span></th><th data-col="faltante" onclick="toggleSort(1,'faltante')" style="cursor:pointer;user-select:none">Faltante<span class="sarr"> ⇅</span></th><th data-col="riesgo" onclick="toggleSort(1,'riesgo')" style="cursor:pointer;user-select:none">Riesgo<span class="sarr"> ⇅</span></th><th data-col="piezas_sem" onclick="toggleSort(1,'piezas_sem')" style="cursor:pointer;user-select:none">Pzas/Sem<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb1"></tbody></table></div>
     <div class="pag" id="pg1"></div>
   </div>
 </div>
@@ -141,7 +143,7 @@ input[type=file]{display:none;}
       <div><label>Gerente Regional</label><select id="f2g" onchange="rt2()"><option value="">Todos</option></select></div>
       <div><label>Buscar tienda</label><input type="text" id="f2q" placeholder="Nombre o clave..." oninput="rt2()" style="width:200px"></div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th>Región</th><th>Director</th><th>Gerente</th><th>Tienda</th><th>Alphacomm</th><th>Total Acc.</th><th>% Alpha</th><th>Equipo</th><th>AR %</th></tr></thead><tbody id="tb2"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(2,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="director" onclick="toggleSort(2,'director')" style="cursor:pointer;user-select:none">Director<span class="sarr"> ⇅</span></th><th data-col="gerente" onclick="toggleSort(2,'gerente')" style="cursor:pointer;user-select:none">Gerente<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(2,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="alphacomm" onclick="toggleSort(2,'alphacomm')" style="cursor:pointer;user-select:none">Alphacomm<span class="sarr"> ⇅</span></th><th data-col="total_acc" onclick="toggleSort(2,'total_acc')" style="cursor:pointer;user-select:none">Total Acc.<span class="sarr"> ⇅</span></th><th data-col="pct_alpha" onclick="toggleSort(2,'pct_alpha')" style="cursor:pointer;user-select:none">% Alpha<span class="sarr"> ⇅</span></th><th data-col="equipo" onclick="toggleSort(2,'equipo')" style="cursor:pointer;user-select:none">Equipo<span class="sarr"> ⇅</span></th><th data-col="ar" onclick="toggleSort(2,'ar')" style="cursor:pointer;user-select:none">AR %<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb2"></tbody></table></div>
     <div class="pag" id="pg2"></div>
   </div>
 </div>
@@ -175,17 +177,23 @@ input[type=file]{display:none;}
       <div><label>Buscar tienda</label><input type="text" id="f3q" placeholder="Nombre o clave..." oninput="rt3()" style="width:200px"></div>
     </div>
     <div class="tbl-wrap"><table><thead>
-  <tr>
-    <th rowspan="2" style="vertical-align:middle">Región</th>
-    <th rowspan="2" style="vertical-align:middle;min-width:160px">Tienda</th>
-    <th colspan="4" style="text-align:center;background:rgba(78,205,196,.15);color:#4ecdc4;border-bottom:2px solid #4ecdc4">&#x1F7E2; LIQUID GLASS</th>
-    <th colspan="4" style="text-align:center;background:rgba(255,107,107,.15);color:#ff6b6b;border-bottom:2px solid #ff6b6b">&#x1F534; CASES iPHONE</th>
-  </tr>
-  <tr>
-    <th style="color:#4ecdc4">Ventas</th><th style="color:#4ecdc4">Cuota</th><th style="color:#4ecdc4">OH</th><th style="color:#4ecdc4">Alc%</th>
-    <th style="color:#ff6b6b">Ventas</th><th style="color:#ff6b6b">Cuota</th><th style="color:#ff6b6b">OH</th><th style="color:#ff6b6b">Alc%</th>
-  </tr>
-</thead><tbody id="tb3"></tbody></table></div>
+      <tr>
+        <th rowspan="2" data-col="region" onclick="toggleSort(3,'region')" style="vertical-align:middle;cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th>
+        <th rowspan="2" data-col="tienda" onclick="toggleSort(3,'tienda')" style="vertical-align:middle;min-width:160px;cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th>
+        <th colspan="4" style="text-align:center;background:rgba(78,205,196,.15);color:#4ecdc4;border-bottom:2px solid #4ecdc4">&#x1F7E2; LIQUID GLASS</th>
+        <th colspan="4" style="text-align:center;background:rgba(255,107,107,.15);color:#ff6b6b;border-bottom:2px solid #ff6b6b">&#x1F534; CASES iPHONE</th>
+      </tr>
+      <tr>
+        <th data-col="lg_v" onclick="toggleSort(3,'lg_v')" style="color:#4ecdc4;cursor:pointer;user-select:none">Ventas<span class="sarr"> ⇅</span></th>
+        <th data-col="lg_cuota" onclick="toggleSort(3,'lg_cuota')" style="color:#4ecdc4;cursor:pointer;user-select:none">Cuota<span class="sarr"> ⇅</span></th>
+        <th data-col="oh_lg" onclick="toggleSort(3,'oh_lg')" style="color:#4ecdc4;cursor:pointer;user-select:none">OH<span class="sarr"> ⇅</span></th>
+        <th data-col="lg_alc" onclick="toggleSort(3,'lg_alc')" style="color:#4ecdc4;cursor:pointer;user-select:none">Alc%<span class="sarr"> ⇅</span></th>
+        <th data-col="cases_v" onclick="toggleSort(3,'cases_v')" style="color:#ff6b6b;cursor:pointer;user-select:none">Ventas<span class="sarr"> ⇅</span></th>
+        <th data-col="cases_cuota" onclick="toggleSort(3,'cases_cuota')" style="color:#ff6b6b;cursor:pointer;user-select:none">Cuota<span class="sarr"> ⇅</span></th>
+        <th data-col="oh_cases" onclick="toggleSort(3,'oh_cases')" style="color:#ff6b6b;cursor:pointer;user-select:none">OH<span class="sarr"> ⇅</span></th>
+        <th data-col="cases_alc" onclick="toggleSort(3,'cases_alc')" style="color:#ff6b6b;cursor:pointer;user-select:none">Alc%<span class="sarr"> ⇅</span></th>
+      </tr>
+    </thead><tbody id="tb3"></tbody></table></div>
     <div class="pag" id="pg3"></div>
   </div>
 </div>
@@ -225,7 +233,7 @@ input[type=file]{display:none;}
         </select>
       </div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th>Región</th><th>Gerente</th><th>Tienda</th><th style="color:#ff6b6b">Cases</th><th style="color:#3498db">Cables</th><th style="color:#f39c12">Chargers</th><th style="color:#4ecdc4">Liquid Glass</th><th style="color:#a29bfe">Screen Prot.</th><th>Otros</th><th>Total</th></tr></thead><tbody id="tb4"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(4,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="gerente" onclick="toggleSort(4,'gerente')" style="cursor:pointer;user-select:none">Gerente<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(4,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cat_cases" onclick="toggleSort(4,'cat_cases')" style="cursor:pointer;user-select:none">Cases<span class="sarr"> ⇅</span></th><th data-col="cat_cables" onclick="toggleSort(4,'cat_cables')" style="cursor:pointer;user-select:none">Cables<span class="sarr"> ⇅</span></th><th data-col="cat_chargers" onclick="toggleSort(4,'cat_chargers')" style="cursor:pointer;user-select:none">Chargers<span class="sarr"> ⇅</span></th><th data-col="cat_liquid_glass" onclick="toggleSort(4,'cat_liquid_glass')" style="cursor:pointer;user-select:none">Liquid Glass<span class="sarr"> ⇅</span></th><th data-col="cat_screen_prot" onclick="toggleSort(4,'cat_screen_prot')" style="cursor:pointer;user-select:none">Screen Prot.<span class="sarr"> ⇅</span></th><th data-col="cat_otros" onclick="toggleSort(4,'cat_otros')" style="cursor:pointer;user-select:none">Otros<span class="sarr"> ⇅</span></th><th data-col="cantidad" onclick="toggleSort(4,'cantidad')" style="cursor:pointer;user-select:none">Total<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb4"></tbody></table></div>
     <div class="pag" id="pg4"></div>
   </div>
 </div>
@@ -290,9 +298,39 @@ r1.forEach(r=>{
 });
 
 let t1p=0,t1d=[];
-function gT1(){
+function 
+// ── Column sort state ────────────────────────────────────────────────────────
+const _sort = {1:{col:null,dir:1}, 2:{col:null,dir:1}, 3:{col:null,dir:1}, 4:{col:null,dir:1}};
+function sortData(arr, col, dir) {
+  if (!col) return arr;
+  return [...arr].sort((a,b) => {
+    let va = a[col] ?? '', vb = b[col] ?? '';
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+    return String(va).localeCompare(String(vb), 'es', {sensitivity:'base'}) * dir;
+  });
+}
+function toggleSort(tab, col) {
+  const s = _sort[tab];
+  if (s.col === col) { s.dir *= -1; } else { s.col = col; s.dir = 1; }
+  [rt1,rt2,rt3,rt4][tab-1]();
+  // update header arrows
+  document.querySelectorAll(`#tab${tab-1} thead th[data-col]`).forEach(th => {
+    const arrow = th.querySelector('.sarr');
+    if (arrow) {
+      if (th.dataset.col === col) {
+        arrow.textContent = s.dir === 1 ? ' ▲' : ' ▼';
+        th.style.color = 'var(--accent1)';
+      } else {
+        arrow.textContent = ' ⇅';
+        th.style.color = '';
+      }
+    }
+  });
+}
+
+gT1(){
   const reg=document.getElementById('f1r').value,q=document.getElementById('f1q').value.toLowerCase(),k=document.getElementById('f1k').value;
-  return D.cuota_jul.filter(r=>(!reg||r.region===reg)&&(!q||r.tienda.toLowerCase().includes(q)||(r.clave||'').toLowerCase().includes(q))&&(!k||(k==='Sin riesgo'?r.riesgo==='Sin riesgo':r.riesgo!=='Sin riesgo')));
+  return sortData(D.cuota_jul.filter(r=>(!reg||r.region===reg)&&(!q||r.tienda.toLowerCase().includes(q)||(r.clave||'').toLowerCase().includes(q))&&(!k||(k==='Sin riesgo'?r.riesgo==='Sin riesgo':r.riesgo!=='Sin riesgo'))), _sort[1].col, _sort[1].dir);
 }
 function rt1(){t1p=0;t1d=gT1();rT1p();}
 function rT1p(){
@@ -319,7 +357,7 @@ mkChart('c2b','bar',r2.map(r=>r.region),
 let t2p=0,t2d=[];
 function gT2(){
   const reg=document.getElementById('f2r').value,ger=document.getElementById('f2g').value,q=document.getElementById('f2q').value.toLowerCase();
-  return D.ar_clean.filter(r=>(!reg||r.region===reg)&&(!ger||r.gerente===ger)&&(!q||r.tienda.toLowerCase().includes(q)));
+  return sortData(D.ar_clean.filter(r=>(!reg||r.region===reg)&&(!ger||r.gerente===ger)&&(!q||r.tienda.toLowerCase().includes(q))), _sort[2].col, _sort[2].dir);
 }
 function rt2(){t2p=0;t2d=gT2();rT2p();}
 function rT2p(){
@@ -348,7 +386,7 @@ mkChart('c3d','bar',r3.map(r=>r.region),
 let t3p=0,t3d=[];
 function gT3(){
   const reg=document.getElementById('f3r').value,q=document.getElementById('f3q').value.toLowerCase();
-  return D.lg_full.filter(r=>(!reg||r.region===reg)&&(!q||r.tienda.toLowerCase().includes(q)||(r.clave||'').toLowerCase().includes(q)));
+  return sortData(D.lg_full.filter(r=>(!reg||r.region===reg)&&(!q||r.tienda.toLowerCase().includes(q)||(r.clave||'').toLowerCase().includes(q))), _sort[3].col, _sort[3].dir);
 }
 function rt3(){t3p=0;t3d=gT3();rT3p();}
 function rT3p(){
