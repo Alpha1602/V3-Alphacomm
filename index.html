@@ -298,7 +298,6 @@ r1.forEach(r=>{
 });
 
 let t1p=0,t1d=[];
-function 
 // ── Column sort state ────────────────────────────────────────────────────────
 const _sort = {1:{col:null,dir:1}, 2:{col:null,dir:1}, 3:{col:null,dir:1}, 4:{col:null,dir:1}};
 function sortData(arr, col, dir) {
@@ -313,8 +312,7 @@ function toggleSort(tab, col) {
   const s = _sort[tab];
   if (s.col === col) { s.dir *= -1; } else { s.col = col; s.dir = 1; }
   [rt1,rt2,rt3,rt4][tab-1]();
-  // update header arrows
-  document.querySelectorAll(`#tab${tab-1} thead th[data-col]`).forEach(th => {
+  document.querySelectorAll('#tab'+(tab-1)+' thead th[data-col]').forEach(th => {
     const arrow = th.querySelector('.sarr');
     if (arrow) {
       if (th.dataset.col === col) {
@@ -328,7 +326,7 @@ function toggleSort(tab, col) {
   });
 }
 
-gT1(){
+function gT1(){
   const reg=document.getElementById('f1r').value,q=document.getElementById('f1q').value.toLowerCase(),k=document.getElementById('f1k').value;
   return sortData(D.cuota_jul.filter(r=>(!reg||r.region===reg)&&(!q||r.tienda.toLowerCase().includes(q)||(r.clave||'').toLowerCase().includes(q))&&(!k||(k==='Sin riesgo'?r.riesgo==='Sin riesgo':r.riesgo!=='Sin riesgo'))), _sort[1].col, _sort[1].dir);
 }
