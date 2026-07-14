@@ -782,6 +782,8 @@ async function autoLoadExcel() {
       const kf = document.getElementById('kpi_faltante'); if(kf) kf.textContent = tf.toLocaleString();
       document.querySelectorAll('#tab0 .val')[0].textContent = tc.toLocaleString();
       document.querySelectorAll('#tab0 .val')[3].textContent = toh.toLocaleString();
+      // Sync Tab 2 ventas KPI to Cuota Jul total (same source = consistent)
+      const arA2=document.getElementById('ar_alpha'); if(arA2) arA2.textContent=tv.toLocaleString();
     }
 
     // ── 1.AR ─────────────────────────────────────────────────────────────────
@@ -802,9 +804,11 @@ async function autoLoadExcel() {
       rebuildReg2(); renderTab2Charts(); rt2();
       const ta = D.ar_clean.reduce((a,r)=>a+r.alphacomm,0);
       const te = D.ar_clean.reduce((a,r)=>a+r.equipo,0);
-      const arA=document.getElementById('ar_alpha'); if(arA) arA.textContent=ta.toLocaleString();
+      // ar_alpha KPI is kept in sync with CuotaJul ventas (set above)
       const arE=document.getElementById('ar_equipo'); if(arE) arE.textContent=te.toLocaleString();
-      const arP=document.getElementById('ar_pct'); if(arP) arP.textContent=(te?Math.round(ta/te*1000)/10:0)+'%';
+      const arPval = document.getElementById('kpi_ventas');
+      const tvSync = arPval ? parseInt(arPval.textContent.replace(/,/g,'')) : ta;
+      const arP=document.getElementById('ar_pct'); if(arP) arP.textContent=(te?Math.round(tvSync/te*1000)/10:0)+'%';
     }
 
     // ── Cuota LG-Cases Jul ───────────────────────────────────────────────────
@@ -864,8 +868,10 @@ async function autoLoadExcel() {
       const totCc  = D.lg_region.reduce((a,r)=>a+r.cases_cuota,0);
       const elLGv = document.getElementById('kpi_lg_v'); if(elLGv) elLGv.textContent = totLGv.toLocaleString();
       const elCv  = document.getElementById('kpi_cases_v'); if(elCv) elCv.textContent = totCv.toLocaleString();
-      document.querySelectorAll('#tab2 .sub')[1].textContent = 'alcance ' + (totLGc?Math.round(totLGv/totLGc*1000)/10:0) + '%';
-      document.querySelectorAll('#tab2 .sub')[3].textContent = 'alcance ' + (totCc?Math.round(totCv/totCc*1000)/10:0) + '%';
+      // Update alcance sub-labels
+      const lgSubs = document.querySelectorAll('#tab2 .kpi .sub');
+      if(lgSubs[1]) lgSubs[1].textContent = 'alcance ' + (totLGc?Math.round(totLGv/totLGc*1000)/10:0) + '%';
+      if(lgSubs[3]) lgSubs[3].textContent = 'alcance ' + (totCc?Math.round(totCv/totCc*1000)/10:0) + '%';
     }
 
     // ── OH detalle ───────────────────────────────────────────────────────────
