@@ -235,7 +235,7 @@ input[type=file]{display:none;}
         </select>
       </div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(4,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="gerente" onclick="toggleSort(4,'gerente')" style="cursor:pointer;user-select:none">Gerente<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(4,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cat_cases" onclick="toggleSort(4,'cat_cases')" style="cursor:pointer;user-select:none">Cases<span class="sarr"> ⇅</span></th><th data-col="cat_cables" onclick="toggleSort(4,'cat_cables')" style="cursor:pointer;user-select:none">Cables<span class="sarr"> ⇅</span></th><th data-col="cat_chargers" onclick="toggleSort(4,'cat_chargers')" style="cursor:pointer;user-select:none">Chargers<span class="sarr"> ⇅</span></th><th data-col="cat_liquid_glass" onclick="toggleSort(4,'cat_liquid_glass')" style="cursor:pointer;user-select:none">Liquid Glass<span class="sarr"> ⇅</span></th><th data-col="cat_screen_prot" onclick="toggleSort(4,'cat_screen_prot')" style="cursor:pointer;user-select:none">Screen Prot.<span class="sarr"> ⇅</span></th><th data-col="cat_otros" onclick="toggleSort(4,'cat_otros')" style="cursor:pointer;user-select:none">Otros<span class="sarr"> ⇅</span></th><th data-col="cantidad" onclick="toggleSort(4,'cantidad')" style="cursor:pointer;user-select:none">Total<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb4"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(4,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="gerente" onclick="toggleSort(4,'gerente')" style="cursor:pointer;user-select:none">Gerente<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(4,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cat_cases" onclick="toggleSort(4,'cat_cases')" style="cursor:pointer;user-select:none">Cases<span class="sarr"> ⇅</span></th><th data-col="cat_cables" onclick="toggleSort(4,'cat_cables')" style="cursor:pointer;user-select:none">Cables<span class="sarr"> ⇅</span></th><th data-col="cat_chargers" onclick="toggleSort(4,'cat_chargers')" style="cursor:pointer;user-select:none">Chargers<span class="sarr"> ⇅</span></th><th data-col="cat_liquid_glass" onclick="toggleSort(4,'cat_liquid_glass')" style="cursor:pointer;user-select:none">Liquid Glass<span class="sarr"> ⇅</span></th><th data-col="cat_screen_prot" onclick="toggleSort(4,'cat_screen_prot')" style="cursor:pointer;user-select:none">Screen Prot.<span class="sarr"> ⇅</span></th><th data-col="cat_otros" onclick="toggleSort(4,'cat_otros')" style="cursor:pointer;user-select:none">Otros<span class="sarr"> ⇅</span></th><th data-col="ventas_mes" onclick="toggleSort(4,'ventas_mes')" style="cursor:pointer;user-select:none">Ventas Mes<span class="sarr"> ⇅</span></th><th data-col="semanas_inv" onclick="toggleSort(4,'semanas_inv')" style="cursor:pointer;user-select:none">Semanas Inv.<span class="sarr"> ⇅</span></th><th data-col="cantidad" onclick="toggleSort(4,'cantidad')" style="cursor:pointer;user-select:none">Total OH<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb4"></tbody></table></div>
     <div class="pag" id="pg4"></div>
   </div>
 </div>
@@ -427,12 +427,23 @@ function rt4(){t4p=0;t4d=gT4();rT4p();}
 function rT4p(){
   const tbody=document.getElementById('tb4'),sl=t4d.slice(t4p*PG,(t4p+1)*PG);
   tbody.innerHTML=sl.map(r=>{
-    return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente||'').split(' ').slice(0,3).join(' ')}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#ff6b6b">${(r.cat_cases||0).toLocaleString()}</td><td style="text-align:right;color:#3498db">${(r.cat_cables||0).toLocaleString()}</td><td style="text-align:right;color:#f39c12">${(r.cat_chargers||0).toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${(r.cat_liquid_glass||0).toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${(r['cat_screen_prot']||0).toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${(r.cat_otros||0).toLocaleString()}</td><td style="text-align:right;font-weight:700">${r.cantidad.toLocaleString()}</td></tr>`;
+    return (()=>{
+      const vm=r.ventas_mes||0;
+      const si=vm>0?Math.round(r.cantidad/(vm/4.3)*10)/10:0;
+      const siColor=si===0?'#a0a0b8':si<4?'#ff6b6b':si<8?'#f39c12':'#2ecc71';
+      return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente||'').split(' ').slice(0,3).join(' ')}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#ff6b6b">${(r.cat_cases||0).toLocaleString()}</td><td style="text-align:right;color:#3498db">${(r.cat_cables||0).toLocaleString()}</td><td style="text-align:right;color:#f39c12">${(r.cat_chargers||0).toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${(r.cat_liquid_glass||0).toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${(r['cat_screen_prot']||0).toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${(r.cat_otros||0).toLocaleString()}</td><td style="text-align:right;color:#e0b0ff;font-weight:600">${vm>0?vm.toLocaleString():'-'}</td><td style="text-align:right;font-weight:700;color:${siColor}">${vm>0?si+'x':'-'}</td><td style="text-align:right;font-weight:700">${r.cantidad.toLocaleString()}</td></tr>`;
+    })();
   }).join('');
   mkPag('pg4',t4d.length,t4p,n=>{t4p=n;rT4p();});
 }
 rt4();
 
+// Enrich oh_tienda with ventas_mes from cuota_jul (join by clave)
+(function(){
+  const venMap={};
+  (D.cuota_jul||[]).forEach(r=>{ venMap[r.clave]=(venMap[r.clave]||0)+(r.ventas||0); });
+  (D.oh_tienda||[]).forEach(r=>{ r.ventas_mes=venMap[r.clave]||0; });
+})();
 // Pagination helper
 function mkPag(id,total,page,cb){
   const pages=Math.ceil(total/PG),el=document.getElementById(id);
