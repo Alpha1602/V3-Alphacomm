@@ -158,9 +158,13 @@ input[type=file]{display:none;}
   </div>
   <div class="kpi-row">
     <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Cuota Liquid Glass</div><div class="val">3,500</div><div class="sub">piezas julio</div></div>
-    <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Ventas LG</div><div class="val">153</div><div class="sub">alcance 4.4%</div></div>
+    <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Ventas LG</div>
+    <div class="val" id="kpi_lg_v">169</div>
+    <div class="sub">alcance 4.8%</div></div>
     <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Cuota Cases iPhone</div><div class="val">3,500</div><div class="sub">piezas julio</div></div>
-    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Ventas Cases</div><div class="val">182</div><div class="sub">alcance 5.2%</div></div>
+    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Ventas Cases</div>
+    <div class="val" id="kpi_cases_v">260</div>
+    <div class="sub">alcance 7.4%</div></div>
     <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">OH Liquid Glass</div><div class="val">7,741</div><div class="sub">unidades inventario</div></div>
     <div class="kpi" style="--kc:#3498db"><div class="lbl">OH Cases</div><div class="val">13,402</div><div class="sub">unidades inventario</div></div>
   </div>
@@ -853,6 +857,15 @@ async function autoLoadExcel() {
       rebuildLgFull();
       updated.push('LG-Cases (' + lg_tienda_new.length + ' tiendas)');
       renderTab3Charts(); rt3();
+      // Update LG/Cases KPI cards
+      const totLGv = D.lg_region.reduce((a,r)=>a+r.lg_v,0);
+      const totCv  = D.lg_region.reduce((a,r)=>a+r.cases_v,0);
+      const totLGc = D.lg_region.reduce((a,r)=>a+r.lg_cuota,0);
+      const totCc  = D.lg_region.reduce((a,r)=>a+r.cases_cuota,0);
+      const elLGv = document.getElementById('kpi_lg_v'); if(elLGv) elLGv.textContent = totLGv.toLocaleString();
+      const elCv  = document.getElementById('kpi_cases_v'); if(elCv) elCv.textContent = totCv.toLocaleString();
+      document.querySelectorAll('#tab2 .sub')[1].textContent = 'alcance ' + (totLGc?Math.round(totLGv/totLGc*1000)/10:0) + '%';
+      document.querySelectorAll('#tab2 .sub')[3].textContent = 'alcance ' + (totCc?Math.round(totCv/totCc*1000)/10:0) + '%';
     }
 
     // ── OH detalle ───────────────────────────────────────────────────────────
