@@ -72,6 +72,12 @@ input[type=file]{display:none;}
 </style>
 </head>
 <body>
+<div id="autoload-bar" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#1a1a2e;color:#a0a0b8;font-size:12px;padding:6px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1);">
+  <span id="al-spinner" style="animation:spin 1s linear infinite;display:inline-block">⏳</span>
+  <span id="al-msg">Cargando datos desde Excel...</span>
+  <span id="al-time" style="margin-left:auto;opacity:.5"></span>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 <div class="header">
   <h1>&#x1F4CA; Dashboard Prime &mdash; Julio 2026</h1>
   <span>Datos: Semana 27 &bull; Región Prime</span>
@@ -93,11 +99,11 @@ input[type=file]{display:none;}
   </div>
   <div class="kpi-row">
     <div class="kpi" style="--kc:#6c63ff"><div class="lbl">Cuota Total Julio</div><div class="val">27,007</div><div class="sub">piezas accesorios</div></div>
-    <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Ventas Julio</div><div class="val">7,200</div><div class="sub">piezas vendidas</div></div>
-    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Alcance Total</div><div class="val">26.7%</div><div class="sub">vs cuota</div></div>
+    <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Ventas Julio</div><div class="val" id="kpi_ventas">7,287</div><div class="sub">piezas vendidas</div></div>
+    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Alcance Total</div><div class="val" id="kpi_alcance">27.0%</div><div class="sub">vs cuota</div></div>
     <div class="kpi" style="--kc:#3498db"><div class="lbl">OH Inventario</div><div class="val">73,125</div><div class="sub">piezas on-hand</div></div>
     <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Cobertura OH</div><div class="val">329.2%</div><div class="sub">OH vs faltante cuota</div></div>
-    <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Faltante Cuota</div><div class="val">19,807</div><div class="sub">piezas por alcanzar</div></div>
+    <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Faltante Cuota</div><div class="val" id="kpi_faltante">19,720</div><div class="sub">piezas por alcanzar</div></div>
   </div>
   <div class="charts-row">
     <div class="cbox"><h3>Ventas vs Cuota por Región</h3><canvas id="c1a"></canvas></div>
@@ -730,6 +736,180 @@ function repopulateFilters() {
     D.gerentes_oh.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g.split(' ').slice(0,3).join(' ');f4g.appendChild(o);});f4g.value=cur;}
 }
 
+
+
+// ══ AUTO-LOAD EXCEL FROM REPO ════════════════════════════════════════════════
+async function autoLoadExcel() {
+  const bar = document.getElementById('autoload-bar');
+  const msg = document.getElementById('al-msg');
+  const spinner = document.getElementById('al-spinner');
+  const timeEl = document.getElementById('al-time');
+
+  // Try to fetch the Excel file from the same directory (GitHub Pages)
+  const filenames = ['Sales YoY .xlsx', 'Sales%20YoY%20.xlsx', 'sales_yoy.xlsx', 'Dashboard Prime.xlsx'];
+  let buf = null, fname = '';
+
+  for (const fn of filenames) {
+    try {
+      const res = await fetch('./' + fn, {cache: 'no-cache'});
+      if (res.ok) {
+        buf = await res.arrayBuffer();
+        fname = fn;
+        break;
+      }
+    } catch(e) {}
+  }
+
+  if (!buf) {
+    spinner.textContent = '⚠️';
+    msg.textContent = 'No se encontró el Excel en el repo — usando datos embebidos';
+    setTimeout(() => { bar.style.display = 'none'; }, 4000);
+    return;
+  }
+
+  msg.textContent = 'Procesando ' + fname + '...';
+
+  try {
+    const wb = XLSX.read(new Uint8Array(buf), {type: 'array'});
+    let updated = [];
+
+    // ── Cuota Jul ────────────────────────────────────────────────────────────
+    const sheetCQ = wb.SheetNames.find(n => n.trim() === 'Cuota Jul');
+    if (sheetCQ) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetCQ], {header:1, defval:null});
+      D.cuota_jul = rows.slice(3).filter(r => r[0] && r[2]).map(r => ({
+        region: r[0]||'', sub_region: r[1]||'', clave: r[2]||'', tienda: r[3]||'',
+        cuota: Math.round(+r[4]||0), ventas: Math.round(+r[5]||0),
+        alcance: Math.round((+r[6]||0)*1000)/10,
+        oh: Math.round(+r[7]||0), resurtido: Math.round(+r[8]||0),
+        faltante: Math.round(+r[9]||0), riesgo: String(r[10]||''),
+        piezas_sem: Math.round(+r[11]||0)
+      }));
+      D.regiones = [...new Set(D.cuota_jul.map(r=>r.region).filter(Boolean))].sort();
+      updated.push('Cuota Jul');
+      rebuildReg1(); renderTab1Charts(); rt1();
+      // Update KPIs
+      const tc = D.cuota_jul.reduce((a,r)=>a+r.cuota,0);
+      const tv = D.cuota_jul.reduce((a,r)=>a+r.ventas,0);
+      const toh = D.cuota_jul.reduce((a,r)=>a+r.oh,0);
+      const tf = D.cuota_jul.reduce((a,r)=>a+r.faltante,0);
+      const alc = tc ? Math.round(tv/tc*1000)/10 : 0;
+      const kv = document.getElementById('kpi_ventas'); if(kv) kv.textContent = tv.toLocaleString();
+      const ka = document.getElementById('kpi_alcance'); if(ka) ka.textContent = alc + '%';
+      const kf = document.getElementById('kpi_faltante'); if(kf) kf.textContent = tf.toLocaleString();
+      document.querySelectorAll('#tab0 .val')[0].textContent = tc.toLocaleString();
+      document.querySelectorAll('#tab0 .val')[3].textContent = toh.toLocaleString();
+    }
+
+    // ── 1.AR ─────────────────────────────────────────────────────────────────
+    const sheetAR = wb.SheetNames.find(n => n.trim() === '1.AR');
+    if (sheetAR) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetAR], {header:1, defval:null});
+      D.ar_clean = rows.slice(3)
+        .filter(r => r[3] && !String(r[0]||'').includes('TOTAL') && !String(r[0]||'').includes('SUBTOTAL'))
+        .map(r => ({
+          region: r[0]||'', director: r[1]||'', gerente: r[2]||'',
+          clave: r[3]||'', tienda: r[4]||'',
+          alphacomm: Math.round(+r[5]||0), total_acc: Math.round(+r[6]||0),
+          pct_alpha: Math.round((+r[7]||0)*1000)/10,
+          equipo: Math.round(+r[8]||0), ar: Math.round((+r[9]||0)*1000)/10
+        }));
+      D.gerentes_ar = [...new Set(D.ar_clean.map(r=>r.gerente).filter(Boolean))].sort();
+      updated.push('AR');
+      rebuildReg2(); renderTab2Charts(); rt2();
+      const ta = D.ar_clean.reduce((a,r)=>a+r.alphacomm,0);
+      const te = D.ar_clean.reduce((a,r)=>a+r.equipo,0);
+      document.querySelectorAll('#tab1 .val')[0].textContent = ta.toLocaleString();
+      document.querySelectorAll('#tab1 .val')[1].textContent = te.toLocaleString();
+      document.querySelectorAll('#tab1 .val')[2].textContent = (te?Math.round(ta/te*1000)/10:0)+'%';
+    }
+
+    // ── Cuota LG-Cases Jul ───────────────────────────────────────────────────
+    const sheetLG = wb.SheetNames.find(n => n.includes('LG') || n.includes('Cases'));
+    if (sheetLG) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetLG], {header:1, defval:null});
+      const lg_tienda = [];
+      rows.forEach(r => {
+        if (r[0] && r[0]!=='Región' && r[2] && typeof r[3]==='number') {
+          lg_tienda.push({
+            region: r[0]||'', clave: r[1]||'', tienda: r[2]||'',
+            lg_v: Math.round(+r[3]||0), lg_cuota: Math.round(+r[5]||0),
+            lg_alc: Math.round((+r[6]||0)*1000)/10,
+            cases_v: Math.round(+r[7]||0), cases_cuota: Math.round(+r[9]||0),
+            cases_alc: Math.round((+r[10]||0)*1000)/10
+          });
+        }
+      });
+      if (lg_tienda.length) {
+        D.lg_tienda = lg_tienda;
+        // Rebuild region summary
+        const rm = {};
+        lg_tienda.forEach(r => {
+          if (!rm[r.region]) rm[r.region]={region:r.region,lg_v:0,lg_cuota:0,cases_v:0,cases_cuota:0,oh_lg:0,oh_cases:0};
+          rm[r.region].lg_v+=r.lg_v; rm[r.region].lg_cuota+=r.lg_cuota;
+          rm[r.region].cases_v+=r.cases_v; rm[r.region].cases_cuota+=r.cases_cuota;
+        });
+        D.lg_region = Object.values(rm);
+        rebuildLgFull();
+        updated.push('LG-Cases');
+        renderTab3Charts(); rt3();
+      }
+    }
+
+    // ── OH detalle ───────────────────────────────────────────────────────────
+    const sheetOH = wb.SheetNames.find(n => n.includes('OH detalle') || n.includes('OH Detalle'));
+    if (sheetOH) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetOH], {header:1, defval:null});
+      const ohMap = {}, lgRegOH = {}, catTotals = {};
+      rows.slice(3).filter(r => r[0] && r[10]).forEach(r => {
+        const cat = categorizaOH(r[6]);
+        const rg = r[3]||'N/A', k = r[1]||'', cant = Math.round(+r[10]||0);
+        catTotals[cat] = (catTotals[cat]||0) + cant;
+        if (!lgRegOH[rg]) lgRegOH[rg]={lg:0,cases:0,otros:0};
+        if (cat==='Liquid Glass') lgRegOH[rg].lg+=cant;
+        else if (cat==='Cases') lgRegOH[rg].cases+=cant;
+        else lgRegOH[rg].otros+=cant;
+        if (k) {
+          if (!ohMap[k]) ohMap[k]={clave:k,tienda:r[0]||'',region:rg,gerente:r[2]||'',cantidad:0,cats:{}};
+          ohMap[k].cantidad+=cant; ohMap[k].cats[cat]=(ohMap[k].cats[cat]||0)+cant;
+        }
+      });
+      D.cat_totals=catTotals; D.oh_lg_region=lgRegOH;
+      D.oh_tienda=Object.values(ohMap).map(r=>{
+        const o={clave:r.clave,tienda:r.tienda,region:r.region,gerente:r.gerente,cantidad:r.cantidad};
+        Object.entries(r.cats).forEach(([k,v])=>{o['cat_'+k.replace(/[\s\.]/g,'_').toLowerCase()]=v;});
+        return o;
+      });
+      D.gerentes_oh=[...new Set(D.oh_tienda.map(r=>r.gerente).filter(Boolean))].sort();
+      D.lg_region.forEach(r=>{const oh=lgRegOH[r.region]||{lg:0,cases:0};r.oh_lg=oh.lg;r.oh_cases=oh.cases;});
+      rebuildLgFull();
+      updated.push('OH');
+      renderTab4Charts(); rt4(); renderTab3Charts(); rt3();
+    }
+
+    repopulateFilters();
+
+    // Update banner
+    const now = new Date().toLocaleTimeString('es-MX');
+    spinner.textContent = '✅';
+    spinner.style.animation = 'none';
+    msg.textContent = 'Datos actualizados desde ' + fname + ' (' + updated.join(', ') + ')';
+    timeEl.textContent = now;
+    setTimeout(() => { bar.style.display = 'none'; }, 5000);
+
+  } catch(err) {
+    spinner.textContent = '❌';
+    msg.textContent = 'Error al procesar Excel: ' + err.message;
+    console.error(err);
+    setTimeout(() => { bar.style.display = 'none'; }, 6000);
+  }
+}
+
+// Run on page load
+window.addEventListener('DOMContentLoaded', () => {
+  // Small delay to let charts render first with embedded data
+  setTimeout(autoLoadExcel, 800);
+});
 
 </script>
 </body>
