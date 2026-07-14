@@ -415,6 +415,12 @@ mkChart('c4b','bar',ohrK,
   {scales:{x:{stacked:true},y:{stacked:true}}});
 
 let t4p=0,t4d=[];
+// Pre-compute ventas_mes per tienda (join cuota_jul by clave)
+(function enrichOH(){
+  const vm={};
+  (D.cuota_jul||[]).forEach(r=>{ vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0); });
+  (D.oh_tienda||[]).forEach(r=>{ r.ventas_mes=vm[r.clave]||0; });
+})();
 function gT4(){
   const reg=document.getElementById('f4r').value,ger=document.getElementById('f4g').value,q=document.getElementById('f4q').value.toLowerCase(),s=document.getElementById('f4s').value;
   let rows=D.oh_tienda.filter(r=>(!reg||r.region===reg)&&(!ger||r.gerente===ger)&&(!q||r.tienda.toLowerCase().includes(q)||(r.clave||'').toLowerCase().includes(q)));
@@ -438,12 +444,6 @@ function rT4p(){
 }
 rt4();
 
-// Enrich oh_tienda with ventas_mes from cuota_jul (join by clave)
-(function(){
-  const venMap={};
-  (D.cuota_jul||[]).forEach(r=>{ venMap[r.clave]=(venMap[r.clave]||0)+(r.ventas||0); });
-  (D.oh_tienda||[]).forEach(r=>{ r.ventas_mes=venMap[r.clave]||0; });
-})();
 // Pagination helper
 function mkPag(id,total,page,cb){
   const pages=Math.ceil(total/PG),el=document.getElementById(id);
@@ -924,6 +924,9 @@ async function autoLoadExcel() {
     spinner.style.animation = 'none';
     msg.textContent = 'Datos actualizados desde ' + fname + ' (' + updated.join(', ') + ')';
     timeEl.textContent = now;
+    // Re-enrich oh_tienda con ventas_mes actualizadas
+    (function enrichOH(){const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});})();
+    if(typeof rt4==='function'){t4p=0;t4d=gT4();rT4p();}
     setTimeout(() => { bar.style.display = 'none'; }, 5000);
 
   } catch(err) {
