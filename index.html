@@ -127,9 +127,9 @@ input[type=file]{display:none;}
     <span id="importStatus1" style="font-size:11px;color:var(--accent3)"></span>
   </div>
   <div class="kpi-row">
-    <div class="kpi" style="--kc:#6c63ff"><div class="lbl">Alphacomm (Mes)</div><div class="val">4,785</div><div class="sub">piezas accesorios</div></div>
-    <div class="kpi" style="--kc:#3498db"><div class="lbl">Venta de Equipos</div><div class="val">10,696</div><div class="sub">piezas vendidas</div></div>
-    <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Attach Rate</div><div class="val">44.7%</div><div class="sub">alphacomm / equipo</div></div>
+    <div class="kpi" style="--kc:#6c63ff"><div class="lbl">Alphacomm (Mes)</div><div class="val" id="ar_alpha">7,287</div><div class="sub">piezas accesorios</div></div>
+    <div class="kpi" style="--kc:#3498db"><div class="lbl">Venta de Equipos</div><div class="val" id="ar_equipo">13,393</div><div class="sub">piezas vendidas</div></div>
+    <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Attach Rate</div><div class="val" id="ar_pct">54.4%</div><div class="sub">alphacomm / equipo</div></div>
     <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Total Accesorios</div><div class="val">5,704</div><div class="sub">todas las marcas</div></div>
     <div class="kpi" style="--kc:#f39c12"><div class="lbl">% Alpha del Total</div><div class="val">83.9%</div><div class="sub">participación marca</div></div>
     <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Tiendas en análisis</div><div class="val">619</div><div class="sub">registros activos</div></div>
@@ -811,41 +811,61 @@ async function autoLoadExcel() {
       rebuildReg2(); renderTab2Charts(); rt2();
       const ta = D.ar_clean.reduce((a,r)=>a+r.alphacomm,0);
       const te = D.ar_clean.reduce((a,r)=>a+r.equipo,0);
-      document.querySelectorAll('#tab1 .val')[0].textContent = ta.toLocaleString();
-      document.querySelectorAll('#tab1 .val')[1].textContent = te.toLocaleString();
-      document.querySelectorAll('#tab1 .val')[2].textContent = (te?Math.round(ta/te*1000)/10:0)+'%';
+      const arA=document.getElementById('ar_alpha'); if(arA) arA.textContent=ta.toLocaleString();
+      const arE=document.getElementById('ar_equipo'); if(arE) arE.textContent=te.toLocaleString();
+      const arP=document.getElementById('ar_pct'); if(arP) arP.textContent=(te?Math.round(ta/te*1000)/10:0)+'%';
     }
 
     // ── Cuota LG-Cases Jul ───────────────────────────────────────────────────
-    const sheetLG = wb.SheetNames.find(n => n.includes('LG') || n.includes('Cases'));
+    // ── Cuota LG-Cases ────────────────────────────────────────────────────────
+    const sheetLG = wb.SheetNames.find(n => n.includes('LG') || n.includes('Cases') || n.includes('Cuota L'));
     if (sheetLG) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetLG], {header:1, defval:null});
-      const lg_tienda = [];
-      rows.forEach(r => {
-        if (r[0] && r[0]!=='Región' && r[2] && typeof r[3]==='number') {
-          lg_tienda.push({
-            region: r[0]||'', clave: r[1]||'', tienda: r[2]||'',
+      // Find the "Detalle por Tienda" section header row index
+      let detailRow = -1;
+      rows.forEach((r,i) => { if(r[0]==='Detalle por Tienda') detailRow=i; });
+      // Also find region summary section
+      let regionRow = -1;
+      rows.forEach((r,i) => { if(r[0]==='Resumen por Región' || (r[0]==='Región' && r[3]==='LG Ventas')) regionRow=i; });
+
+      // Parse region summary (rows after region header, before TOTAL or Detalle)
+      const lg_region_new = [];
+      if (regionRow >= 0) {
+        for (let i = regionRow+1; i < rows.length; i++) {
+          const r = rows[i];
+          if (!r[0] || r[0]==='TOTAL' || r[0]==='Detalle por Tienda') break;
+          if (r[0]==='Región') continue;
+          lg_region_new.push({
+            region: r[0], oh_lg: 0, oh_cases: 0,
             lg_v: Math.round(+r[3]||0), lg_cuota: Math.round(+r[5]||0),
             lg_alc: Math.round((+r[6]||0)*1000)/10,
             cases_v: Math.round(+r[7]||0), cases_cuota: Math.round(+r[9]||0),
             cases_alc: Math.round((+r[10]||0)*1000)/10
           });
         }
-      });
-      if (lg_tienda.length) {
-        D.lg_tienda = lg_tienda;
-        // Rebuild region summary
-        const rm = {};
-        lg_tienda.forEach(r => {
-          if (!rm[r.region]) rm[r.region]={region:r.region,lg_v:0,lg_cuota:0,cases_v:0,cases_cuota:0,oh_lg:0,oh_cases:0};
-          rm[r.region].lg_v+=r.lg_v; rm[r.region].lg_cuota+=r.lg_cuota;
-          rm[r.region].cases_v+=r.cases_v; rm[r.region].cases_cuota+=r.cases_cuota;
-        });
-        D.lg_region = Object.values(rm);
-        rebuildLgFull();
-        updated.push('LG-Cases');
-        renderTab3Charts(); rt3();
       }
+
+      // Parse tienda detail
+      const lg_tienda_new = [];
+      const startRow = detailRow >= 0 ? detailRow + 2 : 18; // skip header row after Detalle
+      for (let i = startRow; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[0] || r[0]==='Región') continue;
+        if (typeof r[3] !== 'number' && typeof r[3] !== 'string') continue;
+        lg_tienda_new.push({
+          region: r[0]||'', clave: r[1]||'', tienda: r[2]||'',
+          lg_v: Math.round(+r[3]||0), lg_cuota: Math.round(+r[5]||0),
+          lg_alc: Math.round((+r[6]||0)*1000)/10,
+          cases_v: Math.round(+r[7]||0), cases_cuota: Math.round(+r[9]||0),
+          cases_alc: Math.round((+r[10]||0)*1000)/10
+        });
+      }
+
+      if (lg_region_new.length) D.lg_region = lg_region_new;
+      if (lg_tienda_new.length) { D.lg_tienda = lg_tienda_new; }
+      rebuildLgFull();
+      updated.push('LG-Cases (' + lg_tienda_new.length + ' tiendas)');
+      renderTab3Charts(); rt3();
     }
 
     // ── OH detalle ───────────────────────────────────────────────────────────
@@ -897,11 +917,21 @@ async function autoLoadExcel() {
   }
 }
 
-// Run on page load
-window.addEventListener('DOMContentLoaded', () => {
-  // Small delay to let charts render first with embedded data
-  setTimeout(autoLoadExcel, 800);
-});
+// Run on page load — wait for SheetJS to be available
+function waitForXLSX(retries) {
+  if (typeof XLSX !== 'undefined') {
+    autoLoadExcel();
+  } else if (retries > 0) {
+    setTimeout(() => waitForXLSX(retries - 1), 500);
+  } else {
+    const msg = document.getElementById('al-msg');
+    const sp = document.getElementById('al-spinner');
+    if(msg) msg.textContent = 'SheetJS no cargó — usando datos embebidos';
+    if(sp) { sp.textContent = '⚠️'; sp.style.animation='none'; }
+    setTimeout(() => { const b=document.getElementById('autoload-bar'); if(b) b.style.display='none'; }, 4000);
+  }
+}
+window.addEventListener('load', () => setTimeout(() => waitForXLSX(10), 300));
 
 </script>
 </body>
