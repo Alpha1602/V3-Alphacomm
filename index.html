@@ -78,9 +78,10 @@ input[type=file]{display:none;}
   <span id="al-time" style="margin-left:auto;opacity:.5"></span>
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-<div class="header">
+<div class="header" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
   <h1>&#x1F4CA; Dashboard Prime &mdash; Julio 2026</h1>
   <span>Datos: Semana 27 &bull; Región Prime</span>
+  <span id="update-badge" style="display:none;margin-left:auto;font-size:11px;color:#a0a0b8;background:rgba(255,255,255,.06);padding:4px 12px;border-radius:20px">📅 <span id="update-ts"></span></span>
 </div>
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab(0)">&#x1F4E6; Cuota Julio</button>
@@ -115,7 +116,7 @@ input[type=file]{display:none;}
       <div><label>Riesgo</label><select id="f1k" onchange="rt1()"><option value="">Todos</option><option>Sin riesgo</option><option>Con riesgo</option></select></div>
       <div><label>Buscar tienda</label><input type="text" id="f1q" placeholder="Nombre o clave..." oninput="rt1()" style="width:200px"></div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(1,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="sub_region" onclick="toggleSort(1,'sub_region')" style="cursor:pointer;user-select:none">Sub-región<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(1,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cuota" onclick="toggleSort(1,'cuota')" style="cursor:pointer;user-select:none">Cuota<span class="sarr"> ⇅</span></th><th data-col="ventas" onclick="toggleSort(1,'ventas')" style="cursor:pointer;user-select:none">Ventas<span class="sarr"> ⇅</span></th><th data-col="alcance" onclick="toggleSort(1,'alcance')" style="cursor:pointer;user-select:none">Alcance<span class="sarr"> ⇅</span></th><th data-col="oh" onclick="toggleSort(1,'oh')" style="cursor:pointer;user-select:none">OH<span class="sarr"> ⇅</span></th><th data-col="resurtido" onclick="toggleSort(1,'resurtido')" style="cursor:pointer;user-select:none">Resurtido<span class="sarr"> ⇅</span></th><th data-col="faltante" onclick="toggleSort(1,'faltante')" style="cursor:pointer;user-select:none">Faltante<span class="sarr"> ⇅</span></th><th data-col="riesgo" onclick="toggleSort(1,'riesgo')" style="cursor:pointer;user-select:none">Riesgo<span class="sarr"> ⇅</span></th><th data-col="piezas_sem" onclick="toggleSort(1,'piezas_sem')" style="cursor:pointer;user-select:none">Pzas/Sem<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb1"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(1,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="sub_region" onclick="toggleSort(1,'sub_region')" style="cursor:pointer;user-select:none">Sub-región<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(1,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cuota" onclick="toggleSort(1,'cuota')" style="cursor:pointer;user-select:none">Cuota<span class="sarr"> ⇅</span></th><th data-col="ventas" onclick="toggleSort(1,'ventas')" style="cursor:pointer;user-select:none">Acumulado ventas Jul<span class="sarr"> ⇅</span></th><th data-col="alcance" onclick="toggleSort(1,'alcance')" style="cursor:pointer;user-select:none">Alcance<span class="sarr"> ⇅</span></th><th data-col="oh" onclick="toggleSort(1,'oh')" style="cursor:pointer;user-select:none">OH<span class="sarr"> ⇅</span></th><th data-col="resurtido" onclick="toggleSort(1,'resurtido')" style="cursor:pointer;user-select:none">Resurtido<span class="sarr"> ⇅</span></th><th data-col="faltante" onclick="toggleSort(1,'faltante')" style="cursor:pointer;user-select:none">Faltante<span class="sarr"> ⇅</span></th><th data-col="riesgo" onclick="toggleSort(1,'riesgo')" style="cursor:pointer;user-select:none">Riesgo<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb1"></tbody></table></div>
     <div class="pag" id="pg1"></div>
   </div>
 </div>
@@ -338,7 +339,7 @@ function rT1p(){
   tbody.innerHTML=sl.map(r=>{
     const p=Math.min(r.alcance,100),c=r.alcance>=80?'green':r.alcance>=40?'yellow':'red';
     const rc=r.riesgo==='Sin riesgo'?'#2ecc71':'#e74c3c';
-    return `<tr><td>${r.region}</td><td style="color:#a0a0b8;font-size:11px">${r.sub_region}</td><td>${r.tienda}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${r.ventas.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:var(--${c})"></div></div><span>${r.alcance}%</span></div></td><td style="text-align:right">${r.oh.toLocaleString()}</td><td style="text-align:right">${r.resurtido.toLocaleString()}</td><td style="text-align:right">${r.faltante.toLocaleString()}</td><td style="color:${rc};font-size:11px">${r.riesgo}</td><td style="text-align:right">${r.piezas_sem}</td></tr>`;
+    return `<tr><td>${r.region}</td><td style="color:#a0a0b8;font-size:11px">${r.sub_region}</td><td>${r.tienda}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${r.ventas.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:var(--${c})"></div></div><span>${r.alcance}%</span></div></td><td style="text-align:right">${r.oh.toLocaleString()}</td><td style="text-align:right">${r.resurtido.toLocaleString()}</td><td style="text-align:right">${r.faltante.toLocaleString()}</td><td style="color:${rc};font-size:11px">${r.riesgo}</td></tr>`;
   }).join('');
   mkPag('pg1',t1d.length,t1p,n=>{t1p=n;rT1p();});
 }
@@ -435,9 +436,9 @@ function rT4p(){
   tbody.innerHTML=sl.map(r=>{
     return (()=>{
       const vm=r.ventas_mes||0;
-      const today=new Date();
-      const wksElapsed=Math.max(1,Math.round((today.getDate())/7*10)/10);
-      const moi=vm>0?Math.round(r.cantidad/(vm/wksElapsed)*10)/10:0;
+      const dayOfMonth=new Date().getDate();
+      const wksElapsed=Math.max(1,dayOfMonth/7);
+      const moi=vm>0?Math.round(r.cantidad/wksElapsed*vm===0?0:r.cantidad/(vm/wksElapsed)*10)/10:0;
       const moiColor=moi===0?'#a0a0b8':moi<2?'#ff6b6b':moi<4?'#f39c12':'#2ecc71';
       return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente||'').split(' ').slice(0,3).join(' ')}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#ff6b6b">${(r.cat_cases||0).toLocaleString()}</td><td style="text-align:right;color:#3498db">${(r.cat_cables||0).toLocaleString()}</td><td style="text-align:right;color:#f39c12">${(r.cat_chargers||0).toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${(r.cat_liquid_glass||0).toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${(r['cat_screen_prot']||0).toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${(r.cat_otros||0).toLocaleString()}</td><td style="text-align:right;font-weight:700">${r.cantidad.toLocaleString()}</td><td style="text-align:right;color:#e0b0ff;font-weight:600">${vm>0?vm.toLocaleString():'-'}</td><td style="text-align:right;font-weight:700;color:${moiColor}">${vm>0?moi+' sem':'-'}</td></tr>`;
     })();
@@ -754,7 +755,7 @@ async function autoLoadExcel() {
 
   for (const fn of filenames) {
     try {
-      const res = await fetch('./' + fn, {cache: 'no-cache'});
+      const res = await fetch('./' + fn + '?v=' + Date.now(), {cache: 'no-store'});
       if (res.ok) {
         buf = await res.arrayBuffer();
         fname = fn;
@@ -933,6 +934,9 @@ async function autoLoadExcel() {
     spinner.style.animation = 'none';
     msg.textContent = 'Datos actualizados desde ' + fname + ' (' + updated.join(', ') + ')';
     timeEl.textContent = now;
+    // Timestamp de actualización
+    const badge=document.getElementById('update-badge'),tsEl=document.getElementById('update-ts');
+    if(badge&&tsEl){const d=new Date();tsEl.textContent='Datos al '+d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});badge.style.display='inline-flex';}
     // Re-enrich oh_tienda con ventas_mes actualizadas
     (function enrichOH(){const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});})();
     if(typeof rt4==='function'){t4p=0;t4d=gT4();rT4p();}
