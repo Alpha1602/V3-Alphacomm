@@ -364,6 +364,10 @@ function rT2p(){
   }).join('');
   mkPag('pg2',t2d.length,t2p,n=>{t2p=n;rT2p();});
 }
+// Init Tab2 KPIs from embedded data
+enrichAR();
+rebuildReg2();
+renderTab2Charts();
 rt2();
 
 // ─── TAB3 ──────────────────────────────────────────────
