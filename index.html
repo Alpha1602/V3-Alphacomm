@@ -138,7 +138,7 @@ input[type=file]{display:none;}
   <div class="sec">
     <h3>Detalle AR por Tienda</h3>
     <div class="filters">
-      <div><label>Región</label><select id="f2r" onchange="rt2()"><option value="">Todas</option></select></div>
+      <div><label>Región</label><select id="f2r" onchange="updateGerentes2();rt2()"><option value="">Todas</option></select></div>
       <div><label>Gerente Regional</label><select id="f2g" onchange="rt2()"><option value="">Todos</option></select></div>
       <div><label>Buscar tienda</label><input type="text" id="f2q" placeholder="Nombre o clave..." oninput="rt2()" style="width:200px"></div>
     </div>
@@ -745,10 +745,17 @@ function repopulateFilters() {
     D.regiones.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;s.appendChild(o);});
     s.value=cur;
   });
-  const f2g=document.getElementById('f2g');
-  if(f2g){const cur=f2g.value;f2g.innerHTML='<option value="">Todos</option>';
-    D.gerentes_ar.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g.split(' ').slice(0,3).join(' ');f2g.appendChild(o);});f2g.value=cur;}
+  updateGerentes2();
   updateGerentes4();
+}
+function updateGerentes2(){
+  const reg=document.getElementById('f2r').value;
+  const f2g=document.getElementById('f2g'); if(!f2g) return;
+  const cur=f2g.value;
+  const gers=[...new Set(D.cuota_jul.filter(r=>!reg||r.region===reg).map(r=>r.gerente_ar||r.gerente).filter(Boolean))].sort();
+  f2g.innerHTML='<option value="">Todos</option>';
+  gers.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g.split(' ').slice(0,3).join(' ');f2g.appendChild(o);});
+  f2g.value=gers.includes(cur)?cur:'';
 }
 function updateGerentes4(){
   const reg=document.getElementById('f4r').value;
