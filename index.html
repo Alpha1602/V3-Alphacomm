@@ -416,11 +416,12 @@ mkChart('c4b','bar',ohrK,
 
 let t4p=0,t4d=[];
 // Enrich cuota_jul with equipo+gerente from ar_clean (join by clave)
-(function enrichAR(){
+function enrichAR(){
   const arMap={};
   (D.ar_clean||[]).forEach(r=>{ arMap[r.clave]={equipo_ar:r.equipo, gerente_ar:r.gerente, director_ar:r.director}; });
   (D.cuota_jul||[]).forEach(r=>{ const m=arMap[r.clave]||{}; r.equipo_ar=m.equipo_ar||0; r.gerente_ar=m.gerente_ar||''; });
-})();
+}
+enrichAR(); // run on startup
 // Pre-compute ventas_mes per tienda (join cuota_jul by clave)
 (function enrichOH(){
   const vm={};
@@ -896,7 +897,7 @@ async function autoLoadExcel() {
     const badge=document.getElementById('update-badge'),tsEl=document.getElementById('update-ts');
     if(badge&&tsEl){const d=new Date();tsEl.textContent='Datos al '+d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});badge.style.display='inline-flex';}
     // Re-enrich cuota_jul with equipo/gerente from ar_clean after auto-load
-    (function enrichAR(){const arMap={};(D.ar_clean||[]).forEach(r=>{arMap[r.clave]={equipo_ar:r.equipo,gerente_ar:r.gerente};});(D.cuota_jul||[]).forEach(r=>{const m=arMap[r.clave]||{};r.equipo_ar=m.equipo_ar||0;r.gerente_ar=m.gerente_ar||'';});})();
+    enrichAR();
     if(typeof rt2==='function'){t2p=0;t2d=gT2();rT2p();}
     // Re-enrich oh_tienda con ventas_mes actualizadas
     (function enrichOH(){const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});})();
