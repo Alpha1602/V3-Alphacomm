@@ -72,11 +72,7 @@ input[type=file]{display:none;}
 </style>
 </head>
 <body>
-<div id="autoload-bar" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#1a1a2e;color:#a0a0b8;font-size:12px;padding:6px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1);">
-  <span id="al-spinner" style="animation:spin 1s linear infinite;display:inline-block">⏳</span>
-  <span id="al-msg">Cargando datos desde Excel...</span>
-  <span id="al-time" style="margin-left:auto;opacity:.5"></span>
-</div>
+
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 <div class="header" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
   <h1>&#x1F4CA; Dashboard Prime &mdash; Julio 2026</h1>
@@ -128,7 +124,7 @@ input[type=file]{display:none;}
     <span id="importStatus1" style="font-size:11px;color:var(--accent3)"></span>
   </div>
   <div class="kpi-row">
-    <div class="kpi" style="--kc:#6c63ff"><div class="lbl">Alphacomm (Mes)</div><div class="val" id="ar_alpha">7,287</div><div class="sub">piezas accesorios</div></div>
+    <div class="kpi" style="--kc:#6c63ff"><div class="lbl">Alphacomm (Mes)</div><div class="val" id="ar_alpha">—</div><div class="sub">piezas accesorios</div></div>
     <div class="kpi" style="--kc:#3498db"><div class="lbl">Venta de Equipos</div><div class="val" id="ar_equipo">13,393</div><div class="sub">piezas vendidas</div></div>
     <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Attach Rate</div><div class="val" id="ar_pct">54.4%</div><div class="sub">alphacomm / equipo</div></div>
     <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Total Accesorios</div><div class="val">5,704</div><div class="sub">todas las marcas</div></div>
@@ -146,7 +142,7 @@ input[type=file]{display:none;}
       <div><label>Gerente Regional</label><select id="f2g" onchange="rt2()"><option value="">Todos</option></select></div>
       <div><label>Buscar tienda</label><input type="text" id="f2q" placeholder="Nombre o clave..." oninput="rt2()" style="width:200px"></div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(2,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="director" onclick="toggleSort(2,'director')" style="cursor:pointer;user-select:none">Director<span class="sarr"> ⇅</span></th><th data-col="gerente" onclick="toggleSort(2,'gerente')" style="cursor:pointer;user-select:none">Gerente<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(2,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="alphacomm" onclick="toggleSort(2,'alphacomm')" style="cursor:pointer;user-select:none">Ventas Jul<span class="sarr"> ⇅</span></th><th data-col="total_acc" onclick="toggleSort(2,'total_acc')" style="cursor:pointer;user-select:none">Total Acc.<span class="sarr"> ⇅</span></th><th data-col="pct_alpha" onclick="toggleSort(2,'pct_alpha')" style="cursor:pointer;user-select:none">% Alpha<span class="sarr"> ⇅</span></th><th data-col="equipo" onclick="toggleSort(2,'equipo')" style="cursor:pointer;user-select:none">Equipo<span class="sarr"> ⇅</span></th><th data-col="ar" onclick="toggleSort(2,'ar')" style="cursor:pointer;user-select:none">AR %<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb2"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(2,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="sub_region" onclick="toggleSort(2,'sub_region')" style="cursor:pointer;user-select:none">Sub-Región<span class="sarr"> ⇅</span></th><th data-col="gerente" onclick="toggleSort(2,'gerente')" style="cursor:pointer;user-select:none">Gerente<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(2,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="ventas" onclick="toggleSort(2,'ventas')" style="cursor:pointer;user-select:none">Ventas Jul<span class="sarr"> ⇅</span></th><th data-col="cuota" onclick="toggleSort(2,'cuota')" style="cursor:pointer;user-select:none">Cuota<span class="sarr"> ⇅</span></th><th data-col="equipo_ar" onclick="toggleSort(2,'equipo_ar')" style="cursor:pointer;user-select:none">Equipo<span class="sarr"> ⇅</span></th><th data-col="ar_pct" onclick="toggleSort(2,'ar_pct')" style="cursor:pointer;user-select:none">AR %<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb2"></tbody></table></div>
     <div class="pag" id="pg2"></div>
   </div>
 </div>
@@ -356,14 +352,15 @@ mkChart('c2b','bar',r2.map(r=>r.region),
 let t2p=0,t2d=[];
 function gT2(){
   const reg=document.getElementById('f2r').value,ger=document.getElementById('f2g').value,q=document.getElementById('f2q').value.toLowerCase();
-  return sortData(D.ar_clean.filter(r=>(!reg||r.region===reg)&&(!ger||r.gerente===ger)&&(!q||r.tienda.toLowerCase().includes(q))), _sort[2].col, _sort[2].dir);
+  return sortData((D.cuota_jul||[]).filter(r=>(!reg||r.region===reg)&&(!ger||r.gerente===ger)&&(!q||r.tienda.toLowerCase().includes(q))), _sort[2].col, _sort[2].dir);
 }
 function rt2(){t2p=0;t2d=gT2();rT2p();}
 function rT2p(){
   const tbody=document.getElementById('tb2'),sl=t2d.slice(t2p*PG,(t2p+1)*PG);
   tbody.innerHTML=sl.map(r=>{
-    const p=Math.min(r.ar,100),c=r.ar>=50?'green':r.ar>=35?'yellow':'red';
-    return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${r.director.split(' ').slice(0,3).join(' ')}</td><td style="font-size:10px">${r.gerente.split(' ').slice(0,3).join(' ')}</td><td>${r.tienda}</td><td style="text-align:right">${(r.ventas_jul||r.alphacomm).toLocaleString()}</td><td style="text-align:right">${r.total_acc.toLocaleString()}</td><td style="text-align:right">${r.pct_alpha}%</td><td style="text-align:right">${r.equipo.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:var(--${c})"></div></div><span>${r.ar}%</span></div></td></tr>`;
+    // ar% calculated inline below
+    const eq=r.equipo_ar||0; const arPct=eq>0?Math.round(r.ventas/eq*1000)/10:0; const ap2=Math.min(arPct,100),cp2=arPct>=50?'green':arPct>=35?'yellow':'red';
+      return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.sub_region||'')}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente_ar||r.gerente||'').split(' ').slice(0,3).join(' ')}</td><td>${r.tienda}</td><td style="text-align:right;font-weight:600">${r.ventas.toLocaleString()}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${eq>0?eq.toLocaleString():'-'}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${ap2}%;background:var(--${cp2})"></div></div><span>${eq>0?arPct+'%':'-'}</span></div></td></tr>`;
   }).join('');
   mkPag('pg2',t2d.length,t2p,n=>{t2p=n;rT2p();});
 }
@@ -414,11 +411,11 @@ mkChart('c4b','bar',ohrK,
   {scales:{x:{stacked:true},y:{stacked:true}}});
 
 let t4p=0,t4d=[];
-// Sync ar_clean ventas to cuota_jul (same metric, same source as Tab 1)
+// Enrich cuota_jul with equipo+gerente from ar_clean (join by clave)
 (function enrichAR(){
-  const cjMap={};
-  (D.cuota_jul||[]).forEach(r=>{ cjMap[r.clave]=r.ventas; });
-  (D.ar_clean||[]).forEach(r=>{ r.ventas_jul = cjMap[r.clave]!==undefined ? cjMap[r.clave] : r.alphacomm; });
+  const arMap={};
+  (D.ar_clean||[]).forEach(r=>{ arMap[r.clave]={equipo_ar:r.equipo, gerente_ar:r.gerente, director_ar:r.director}; });
+  (D.cuota_jul||[]).forEach(r=>{ const m=arMap[r.clave]||{}; r.equipo_ar=m.equipo_ar||0; r.gerente_ar=m.gerente_ar||''; });
 })();
 // Pre-compute ventas_mes per tienda (join cuota_jul by clave)
 (function enrichOH(){
@@ -645,11 +642,12 @@ function rebuildReg1() {
 
 function rebuildReg2() {
   const m = {};
-  D.ar_clean.forEach(r => {
-    if (!m[r.region]) m[r.region]={region:r.region,alpha:0,total_acc:0,equipo:0};
-    const g=m[r.region]; g.alpha+=r.alphacomm; g.total_acc+=r.total_acc; g.equipo+=r.equipo;
+  // Use cuota_jul as base (same stores as Tab 1)
+  (D.cuota_jul||[]).forEach(r => {
+    if (!m[r.region]) m[r.region]={region:r.region,ventas:0,cuota:0,equipo:0};
+    const g=m[r.region]; g.ventas+=r.ventas||0; g.cuota+=r.cuota||0; g.equipo+=r.equipo_ar||0;
   });
-  D.reg2 = Object.values(m).map(r=>({...r, ar:r.equipo?Math.round(r.alpha/r.equipo*1000)/10:0, pct_alpha:r.total_acc?Math.round(r.alpha/r.total_acc*1000)/10:0})).sort((a,b)=>a.region.localeCompare(b.region));
+  D.reg2 = Object.values(m).map(r=>({...r, ar:r.equipo?Math.round(r.ventas/r.equipo*1000)/10:0})).sort((a,b)=>a.region.localeCompare(b.region));
 }
 
 function rebuildLgFull() {
@@ -694,16 +692,16 @@ function renderTab1Charts() {
 function renderTab2Charts() {
   const r2=D.reg2;
   mkChart('c2a','bar',r2.map(r=>r.region),
-    [{label:'Alphacomm',data:r2.map(r=>r.alpha),backgroundColor:'rgba(108,99,255,.85)',borderRadius:4},
-     {label:'Total Acc.',data:r2.map(r=>r.total_acc),backgroundColor:'rgba(78,205,196,.5)',borderRadius:4},
+    [{label:'Ventas Jul',data:r2.map(r=>r.ventas),backgroundColor:'rgba(108,99,255,.85)',borderRadius:4},
+     {label:'Cuota',data:r2.map(r=>r.cuota),backgroundColor:'rgba(78,205,196,.5)',borderRadius:4},
      {label:'Equipos',data:r2.map(r=>r.equipo),backgroundColor:'rgba(249,202,36,.5)',borderRadius:4}]);
   mkChart('c2b','bar',r2.map(r=>r.region),
     [{label:'AR %',data:r2.map(r=>r.ar),backgroundColor:r2.map(r=>barColor(r.ar,50,35)),borderRadius:4}],
     {scales:{y:{max:100}}});
-  const ta=r2.reduce((a,r)=>a+r.alpha,0), te=r2.reduce((a,r)=>a+r.equipo,0);
-  document.querySelectorAll('#tab1 .val')[0].textContent=ta.toLocaleString();
-  document.querySelectorAll('#tab1 .val')[1].textContent=te.toLocaleString();
-  document.querySelectorAll('#tab1 .val')[2].textContent=(te?Math.round(ta/te*1000)/10:0)+'%';
+  const tv=r2.reduce((a,r)=>a+r.ventas,0), te=r2.reduce((a,r)=>a+r.equipo,0);
+  const arA=document.getElementById('ar_alpha'); if(arA) arA.textContent=tv.toLocaleString();
+  const arE=document.getElementById('ar_equipo'); if(arE) arE.textContent=te.toLocaleString();
+  const arP=document.getElementById('ar_pct'); if(arP) arP.textContent=(te?Math.round(tv/te*1000)/10:0)+'%';
 }
 
 function renderTab3Charts() {
@@ -761,10 +759,7 @@ function updateGerentes4(){
 
 // ══ AUTO-LOAD EXCEL FROM REPO ════════════════════════════════════════════════
 async function autoLoadExcel() {
-  const bar = document.getElementById('autoload-bar');
-  const msg = document.getElementById('al-msg');
-  const spinner = document.getElementById('al-spinner');
-  const timeEl = document.getElementById('al-time');
+  // (loading bar removed)
 
   // Try to fetch the Excel file from the same directory (GitHub Pages)
   const filenames = ['Sales YoY .xlsx', 'Sales%20YoY%20.xlsx', 'sales_yoy.xlsx', 'Dashboard Prime.xlsx'];
@@ -782,13 +777,11 @@ async function autoLoadExcel() {
   }
 
   if (!buf) {
-    spinner.textContent = '⚠️';
-    msg.textContent = 'No se encontró el Excel en el repo — usando datos embebidos';
-    setTimeout(() => { bar.style.display = 'none'; }, 4000);
+    console.warn('Excel not found in repo — using embedded data');
     return;
   }
 
-  msg.textContent = 'Procesando ' + fname + '...';
+  //
 
   try {
     const wb = XLSX.read(new Uint8Array(buf), {type: 'array'});
@@ -842,75 +835,19 @@ async function autoLoadExcel() {
       rebuildReg2(); renderTab2Charts(); rt2();
       const ta = D.ar_clean.reduce((a,r)=>a+r.alphacomm,0);
       const te = D.ar_clean.reduce((a,r)=>a+r.equipo,0);
-      // ar_alpha KPI is kept in sync with CuotaJul ventas (set above)
+      // ar_alpha always mirrors Tab 1 (kpi_ventas) — guaranteed match
+      const _kv1=document.getElementById('kpi_ventas');
+      const _arA=document.getElementById('ar_alpha'); if(_arA&&_kv1) _arA.textContent=_kv1.textContent;
       const arE=document.getElementById('ar_equipo'); if(arE) arE.textContent=te.toLocaleString();
-      const arPval = document.getElementById('kpi_ventas');
-      const tvSync = arPval ? parseInt(arPval.textContent.replace(/,/g,'')) : ta;
-      const arP=document.getElementById('ar_pct'); if(arP) arP.textContent=(te?Math.round(tvSync/te*1000)/10:0)+'%';
+      const tvSync2=_kv1?parseInt(_kv1.textContent.replace(/,/g,'')):ta;
+      const arP=document.getElementById('ar_pct'); if(arP) arP.textContent=(te?Math.round(tvSync2/te*1000)/10:0)+'%';
     }
 
     // ── Cuota LG-Cases Jul ───────────────────────────────────────────────────
-    // ── Cuota LG-Cases ────────────────────────────────────────────────────────
-    const sheetLG = wb.SheetNames.find(n => n.includes('LG') || n.includes('Cases') || n.includes('Cuota L'));
-    if (sheetLG) {
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetLG], {header:1, defval:null});
-      // Find the "Detalle por Tienda" section header row index
-      let detailRow = -1;
-      rows.forEach((r,i) => { if(r[0]==='Detalle por Tienda') detailRow=i; });
-      // Also find region summary section
-      let regionRow = -1;
-      rows.forEach((r,i) => { if(r[0]==='Resumen por Región' || (r[0]==='Región' && r[3]==='LG Ventas')) regionRow=i; });
-
-      // Parse region summary (rows after region header, before TOTAL or Detalle)
-      const lg_region_new = [];
-      if (regionRow >= 0) {
-        for (let i = regionRow+1; i < rows.length; i++) {
-          const r = rows[i];
-          if (!r[0] || r[0]==='TOTAL' || r[0]==='Detalle por Tienda') break;
-          if (r[0]==='Región') continue;
-          lg_region_new.push({
-            region: r[0], oh_lg: 0, oh_cases: 0,
-            lg_v: Math.round(+r[3]||0), lg_cuota: Math.round(+r[5]||0),
-            lg_alc: Math.round((+r[6]||0)*1000)/10,
-            cases_v: Math.round(+r[7]||0), cases_cuota: Math.round(+r[9]||0),
-            cases_alc: Math.round((+r[10]||0)*1000)/10
-          });
-        }
-      }
-
-      // Parse tienda detail
-      const lg_tienda_new = [];
-      const startRow = detailRow >= 0 ? detailRow + 2 : 18; // skip header row after Detalle
-      for (let i = startRow; i < rows.length; i++) {
-        const r = rows[i];
-        if (!r[0] || r[0]==='Región') continue;
-        if (typeof r[3] !== 'number' && typeof r[3] !== 'string') continue;
-        lg_tienda_new.push({
-          region: r[0]||'', clave: r[1]||'', tienda: r[2]||'',
-          lg_v: Math.round(+r[3]||0), lg_cuota: Math.round(+r[5]||0),
-          lg_alc: Math.round((+r[6]||0)*1000)/10,
-          cases_v: Math.round(+r[7]||0), cases_cuota: Math.round(+r[9]||0),
-          cases_alc: Math.round((+r[10]||0)*1000)/10
-        });
-      }
-
-      if (lg_region_new.length) D.lg_region = lg_region_new;
-      if (lg_tienda_new.length) { D.lg_tienda = lg_tienda_new; }
-      rebuildLgFull();
-      updated.push('LG-Cases (' + lg_tienda_new.length + ' tiendas)');
-      renderTab3Charts(); rt3();
-      // Update LG/Cases KPI cards
-      const totLGv = D.lg_region.reduce((a,r)=>a+r.lg_v,0);
-      const totCv  = D.lg_region.reduce((a,r)=>a+r.cases_v,0);
-      const totLGc = D.lg_region.reduce((a,r)=>a+r.lg_cuota,0);
-      const totCc  = D.lg_region.reduce((a,r)=>a+r.cases_cuota,0);
-      const elLGv = document.getElementById('kpi_lg_v'); if(elLGv) elLGv.textContent = totLGv.toLocaleString();
-      const elCv  = document.getElementById('kpi_cases_v'); if(elCv) elCv.textContent = totCv.toLocaleString();
-      // Update alcance sub-labels
-      const lgSubs = document.querySelectorAll('#tab2 .kpi .sub');
-      if(lgSubs[1]) lgSubs[1].textContent = 'alcance ' + (totLGc?Math.round(totLGv/totLGc*1000)/10:0) + '%';
-      if(lgSubs[3]) lgSubs[3].textContent = 'alcance ' + (totCc?Math.round(totCv/totCc*1000)/10:0) + '%';
-    }
+    // ── Cuota LG-Cases ─ (usa datos embebidos, no se sobreescribe desde GitHub)
+    // Los valores LG/Cases están hardcodeados para garantizar consistencia.
+    // Para actualizarlos, editar el HTML directamente o contactar al administrador.
+    updated.push('LG-Cases (embebido)');
 
     // ── OH detalle ───────────────────────────────────────────────────────────
     const sheetOH = wb.SheetNames.find(n => n.includes('OH detalle') || n.includes('OH Detalle'));
@@ -950,41 +887,24 @@ async function autoLoadExcel() {
     spinner.textContent = '✅';
     spinner.style.animation = 'none';
     msg.textContent = 'Datos actualizados desde ' + fname + ' (' + updated.join(', ') + ')';
-    timeEl.textContent = now;
+    // timestamp skipped
     // Timestamp de actualización
     const badge=document.getElementById('update-badge'),tsEl=document.getElementById('update-ts');
     if(badge&&tsEl){const d=new Date();tsEl.textContent='Datos al '+d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});badge.style.display='inline-flex';}
-    // Re-sync AR ventas after auto-load
-    (function enrichAR(){const cjMap={};(D.cuota_jul||[]).forEach(r=>{cjMap[r.clave]=r.ventas;});(D.ar_clean||[]).forEach(r=>{r.ventas_jul=cjMap[r.clave]!==undefined?cjMap[r.clave]:r.alphacomm;});})();
+    // Re-enrich cuota_jul with equipo/gerente from ar_clean after auto-load
+    (function enrichAR(){const arMap={};(D.ar_clean||[]).forEach(r=>{arMap[r.clave]={equipo_ar:r.equipo,gerente_ar:r.gerente};});(D.cuota_jul||[]).forEach(r=>{const m=arMap[r.clave]||{};r.equipo_ar=m.equipo_ar||0;r.gerente_ar=m.gerente_ar||'';});})();
     if(typeof rt2==='function'){t2p=0;t2d=gT2();rT2p();}
     // Re-enrich oh_tienda con ventas_mes actualizadas
     (function enrichOH(){const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});})();
     if(typeof rt4==='function'){t4p=0;t4d=gT4();rT4p();}
-    setTimeout(() => { bar.style.display = 'none'; }, 5000);
-
   } catch(err) {
-    spinner.textContent = '❌';
-    msg.textContent = 'Error al procesar Excel: ' + err.message;
+    console.warn('Error al procesar Excel:', err.message);
     console.error(err);
-    setTimeout(() => { bar.style.display = 'none'; }, 6000);
   }
 }
 
 // Run on page load — wait for SheetJS to be available
-function waitForXLSX(retries) {
-  if (typeof XLSX !== 'undefined') {
-    autoLoadExcel();
-  } else if (retries > 0) {
-    setTimeout(() => waitForXLSX(retries - 1), 500);
-  } else {
-    const msg = document.getElementById('al-msg');
-    const sp = document.getElementById('al-spinner');
-    if(msg) msg.textContent = 'SheetJS no cargó — usando datos embebidos';
-    if(sp) { sp.textContent = '⚠️'; sp.style.animation='none'; }
-    setTimeout(() => { const b=document.getElementById('autoload-bar'); if(b) b.style.display='none'; }, 4000);
-  }
-}
-window.addEventListener('load', () => setTimeout(() => waitForXLSX(10), 300));
+// Auto-load desactivado — datos servidos desde HTML
 
 </script>
 </body>
