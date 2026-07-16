@@ -887,12 +887,6 @@ async function autoLoadExcel() {
 
     repopulateFilters();
 
-    // Update banner
-    const now = new Date().toLocaleTimeString('es-MX');
-    spinner.textContent = '✅';
-    spinner.style.animation = 'none';
-    msg.textContent = 'Datos actualizados desde ' + fname + ' (' + updated.join(', ') + ')';
-    // timestamp skipped
     // Timestamp de actualización
     const badge=document.getElementById('update-badge'),tsEl=document.getElementById('update-ts');
     if(badge&&tsEl){const d=new Date();tsEl.textContent='Datos al '+d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});badge.style.display='inline-flex';}
