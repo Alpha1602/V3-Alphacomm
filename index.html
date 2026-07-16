@@ -908,7 +908,12 @@ async function autoLoadExcel() {
 }
 
 // Run on page load — wait for SheetJS to be available
-// Auto-load desactivado — datos servidos desde HTML
+function waitForXLSX(retries) {
+  if (typeof XLSX !== 'undefined') { autoLoadExcel(); }
+  else if (retries > 0) { setTimeout(() => waitForXLSX(retries-1), 500); }
+  else { console.warn('SheetJS no cargó'); }
+}
+window.addEventListener('load', () => setTimeout(() => waitForXLSX(10), 300));
 
 </script>
 </body>
