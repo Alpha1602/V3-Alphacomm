@@ -171,6 +171,11 @@ input[type=file]{display:none;}
       <div><label>Región</label><select id="f3r" onchange="rt3()"><option value="">Todas</option></select></div>
       <div><label>Buscar tienda</label><input type="text" id="f3q" placeholder="Nombre o clave..." oninput="rt3()" style="width:200px"></div>
     </div>
+    <div id="t3_totals" style="display:none;margin:8px 0;padding:10px 16px;background:rgba(255,255,255,.05);border-radius:8px;border:1px solid rgba(255,255,255,.1);display:flex;gap:24px;flex-wrap:wrap;font-size:13px">
+      <span style="color:#a0a0b8">Filtro actual —</span>
+      <span>🟢 LG Ventas: <b id="t3s_lgv" style="color:#4ecdc4">—</b> / Cuota: <b id="t3s_lgc" style="color:#4ecdc4">—</b> → <b id="t3s_lga" style="color:#4ecdc4">—</b></span>
+      <span>🔴 Cases Ventas: <b id="t3s_csv" style="color:#ff6b6b">—</b> / Cuota: <b id="t3s_csc" style="color:#ff6b6b">—</b> → <b id="t3s_csa" style="color:#ff6b6b">—</b></span>
+    </div>
     <div class="tbl-wrap"><table><thead>
       <tr>
         <th rowspan="2" data-col="region" onclick="toggleSort(3,'region')" style="vertical-align:middle;cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th>
@@ -394,6 +399,22 @@ function rT3p(){
     return `<tr><td>${r.region}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#4ecdc4">${r.lg_v||0}</td><td style="text-align:right">${Math.round(r.lg_cuota||0)}</td><td style="text-align:right;color:#4ecdc4"><b>${r.oh_lg||0}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${lp}%;background:var(--${lc})"></div></div><span>${r.lg_alc||0}%</span></div></td><td style="text-align:right;color:#ff6b6b">${r.cases_v||0}</td><td style="text-align:right">${Math.round(r.cases_cuota||0)}</td><td style="text-align:right;color:#ff6b6b"><b>${r.oh_cases||0}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${cp}%;background:var(--${cc})"></div></div><span>${r.cases_alc||0}%</span></div></td></tr>`;
   }).join('');
   mkPag('pg3',t3d.length,t3p,n=>{t3p=n;rT3p();});
+  // Totals bar — sólo si hay filtro activo
+  const reg=document.getElementById('f3r').value, q=document.getElementById('f3q').value;
+  const bar=document.getElementById('t3_totals');
+  if(bar){
+    if(reg||q){
+      const lgv=t3d.reduce((a,r)=>a+(r.lg_v||0),0), lgc=t3d.reduce((a,r)=>a+(r.lg_cuota||0),0);
+      const csv=t3d.reduce((a,r)=>a+(r.cases_v||0),0), csc=t3d.reduce((a,r)=>a+(r.cases_cuota||0),0);
+      const lga=lgc?Math.round(lgv/lgc*1000)/10:0, csa=csc?Math.round(csv/csc*1000)/10:0;
+      const g=id=>document.getElementById(id);
+      g('t3s_lgv').textContent=lgv; g('t3s_lgc').textContent=Math.round(lgc);
+      g('t3s_lga').textContent=lga+'%';
+      g('t3s_csv').textContent=csv; g('t3s_csc').textContent=Math.round(csc);
+      g('t3s_csa').textContent=csa+'%';
+      bar.style.display='flex';
+    } else { bar.style.display='none'; }
+  }
 }
 rt3();
 
