@@ -154,16 +154,12 @@ input[type=file]{display:none;}
     <span id="importStatus2" style="font-size:11px;color:var(--accent3)"></span>
   </div>
   <div class="kpi-row">
-    <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Cuota Liquid Glass</div><div class="val">3,500</div><div class="sub">piezas julio</div></div>
-    <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Ventas LG</div>
-    <div class="val" id="kpi_lg_v">360</div>
-    <div class="sub">alcance 4.8%</div></div>
-    <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Cuota Cases iPhone</div><div class="val">3,500</div><div class="sub">piezas julio</div></div>
-    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Ventas Cases</div>
-    <div class="val" id="kpi_cases_v">662</div>
-    <div class="sub">alcance 7.4%</div></div>
-    <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">OH Liquid Glass</div><div class="val">7,741</div><div class="sub">unidades inventario</div></div>
-    <div class="kpi" style="--kc:#3498db"><div class="lbl">OH Cases</div><div class="val">13,402</div><div class="sub">unidades inventario</div></div>
+    <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Cuota Liquid Glass</div><div class="val" id="kpi_lg_cuota">3,500</div><div class="sub">piezas julio</div></div>
+    <div class="kpi" style="--kc:#2ecc71"><div class="lbl">Ventas LG</div><div class="val" id="kpi_lg_v">153</div><div class="sub" id="kpi_lg_alc">alcance 4.4%</div></div>
+    <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Cuota Cases iPhone</div><div class="val" id="kpi_cases_cuota">3,500</div><div class="sub">piezas julio</div></div>
+    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Ventas Cases</div><div class="val" id="kpi_cases_v">182</div><div class="sub" id="kpi_cases_alc">alcance 5.2%</div></div>
+    <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">OH Liquid Glass</div><div class="val" id="kpi_oh_lg">7,741</div><div class="sub">unidades inventario</div></div>
+    <div class="kpi" style="--kc:#3498db"><div class="lbl">OH Cases</div><div class="val" id="kpi_oh_cases">13,402</div><div class="sub">unidades inventario</div></div>
   </div>
   <div class="charts-row" style="grid-template-columns:1fr 1fr">
     <div class="cbox"><h3>🏆 Top 10 Tiendas — Alcance Liquid Glass</h3><canvas id="c3lg"></canvas></div>
@@ -204,12 +200,12 @@ input[type=file]{display:none;}
     <span id="importStatus3" style="font-size:11px;color:var(--accent3)"></span>
   </div>
   <div class="kpi-row">
-    <div class="kpi" style="--kc:#6c63ff"><div class="lbl">OH Total</div><div class="val">48,604</div><div class="sub">unidades totales</div></div>
-    <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Cases iPhone</div><div class="val">13,402</div><div class="sub">unidades</div></div>
-    <div class="kpi" style="--kc:#3498db"><div class="lbl">Cables</div><div class="val">13,196</div><div class="sub">unidades</div></div>
-    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Chargers</div><div class="val">10,800</div><div class="sub">unidades</div></div>
-    <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Liquid Glass</div><div class="val">7,741</div><div class="sub">unidades</div></div>
-    <div class="kpi" style="--kc:#a29bfe"><div class="lbl">Screen Prot.</div><div class="val">3,465</div><div class="sub">unidades</div></div>
+    <div class="kpi" style="--kc:#6c63ff"><div class="lbl">OH Total</div><div class="val" id="kpi_oh_total">48,604</div><div class="sub">unidades totales</div></div>
+    <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Cases iPhone</div><div class="val" id="kpi_cat_cases">13,402</div><div class="sub">unidades</div></div>
+    <div class="kpi" style="--kc:#3498db"><div class="lbl">Cables</div><div class="val" id="kpi_cat_cables">13,196</div><div class="sub">unidades</div></div>
+    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Chargers</div><div class="val" id="kpi_cat_chargers">10,800</div><div class="sub">unidades</div></div>
+    <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Liquid Glass</div><div class="val" id="kpi_cat_lg">7,741</div><div class="sub">unidades</div></div>
+    <div class="kpi" style="--kc:#a29bfe"><div class="lbl">Screen Prot.</div><div class="val" id="kpi_cat_screen">3,465</div><div class="sub">unidades</div></div>
   </div>
   <div class="charts-row">
     <div class="cbox"><h3>Distribución por Categoría</h3><canvas id="c4a"></canvas></div>
@@ -710,6 +706,24 @@ function renderTab2Charts() {
 }
 
 function renderTab3Charts() {
+  // Actualizar KPI cards desde totales de lg_region
+  const totalLgV = D.lg_region.reduce((a,r)=>a+(r.lg_v||0),0);
+  const totalLgCuota = D.lg_region.reduce((a,r)=>a+(r.lg_cuota||0),0);
+  const totalCasesV = D.lg_region.reduce((a,r)=>a+(r.cases_v||0),0);
+  const totalCasesCuota = D.lg_region.reduce((a,r)=>a+(r.cases_cuota||0),0);
+  const totalOhLg = D.lg_region.reduce((a,r)=>a+(r.oh_lg||0),0);
+  const totalOhCases = D.lg_region.reduce((a,r)=>a+(r.oh_cases||0),0);
+  const lgAlc = totalLgCuota ? Math.round(totalLgV/totalLgCuota*1000)/10 : 0;
+  const csAlc = totalCasesCuota ? Math.round(totalCasesV/totalCasesCuota*1000)/10 : 0;
+  const el = id => document.getElementById(id);
+  if(el('kpi_lg_v')) el('kpi_lg_v').textContent = totalLgV.toLocaleString();
+  if(el('kpi_lg_cuota')) el('kpi_lg_cuota').textContent = totalLgCuota.toLocaleString();
+  if(el('kpi_lg_alc')) el('kpi_lg_alc').textContent = lgAlc + '%';
+  if(el('kpi_cases_v')) el('kpi_cases_v').textContent = totalCasesV.toLocaleString();
+  if(el('kpi_cases_cuota')) el('kpi_cases_cuota').textContent = totalCasesCuota.toLocaleString();
+  if(el('kpi_cases_alc')) el('kpi_cases_alc').textContent = csAlc + '%';
+  if(el('kpi_oh_lg')) el('kpi_oh_lg').textContent = totalOhLg.toLocaleString();
+  if(el('kpi_oh_cases')) el('kpi_oh_cases').textContent = totalOhCases.toLocaleString();
   // Top 10 LG por alcance (tiendas con ventas > 0)
   const lgTop = [...D.lg_tienda].filter(r=>r.lg_v>0).sort((a,b)=>b.lg_alc-a.lg_alc).slice(0,10);
   mkChart('c3lg','bar',
@@ -727,6 +741,15 @@ function renderTab3Charts() {
 }
 function renderTab4Charts() {
   const ct=D.cat_totals;
+  // Actualizar KPIs de Tab 4 desde cat_totals y oh_tienda
+  const el4=id=>document.getElementById(id);
+  const ohTotal=D.oh_tienda.reduce((a,r)=>a+(r.cantidad||0),0);
+  if(el4('kpi_oh_total')) el4('kpi_oh_total').textContent=ohTotal.toLocaleString();
+  if(el4('kpi_cat_cases')) el4('kpi_cat_cases').textContent=(ct['Cases']||0).toLocaleString();
+  if(el4('kpi_cat_cables')) el4('kpi_cat_cables').textContent=(ct['Cables']||0).toLocaleString();
+  if(el4('kpi_cat_chargers')) el4('kpi_cat_chargers').textContent=(ct['Chargers']||0).toLocaleString();
+  if(el4('kpi_cat_lg')) el4('kpi_cat_lg').textContent=(ct['Liquid Glass']||0).toLocaleString();
+  if(el4('kpi_cat_screen')) el4('kpi_cat_screen').textContent=(ct['Screen Prot.']||0).toLocaleString();
   mkChart('c4a','doughnut',Object.keys(ct),
     [{data:Object.values(ct),backgroundColor:CL,borderColor:'rgba(0,0,0,.4)',borderWidth:2}],
     {scales:undefined,plugins:{legend:{position:'right',labels:{color:'#a0a0b8'}}}});
