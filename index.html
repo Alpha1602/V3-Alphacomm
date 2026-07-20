@@ -943,6 +943,7 @@ async function autoLoadExcel() {
     if(badge&&tsEl){const d=new Date();tsEl.textContent='Datos al '+d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});badge.style.display='inline-flex';}
     // Re-enrich cuota_jul with equipo/gerente from ar_clean after auto-load
     enrichAR();
+    rebuildReg2(); renderTab2Charts();
     if(typeof rt2==='function'){t2p=0;t2d=gT2();rT2p();}
     // Re-enrich oh_tienda con ventas_mes actualizadas
     (function enrichOH(){const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});})();
