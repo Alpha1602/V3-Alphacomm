@@ -11,10 +11,10 @@
 :root{--bg:#0f1117;--bg2:#1a1d2e;--bg3:#252840;--accent:#6c63ff;--accent2:#ff6b6b;--accent3:#4ecdc4;--accent4:#f9ca24;--text:#e8e8f0;--text2:#a0a0b8;--border:#2e3150;--green:#2ecc71;--red:#e74c3c;--yellow:#f39c12;--blue:#3498db;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;}
-.header{background:linear-gradient(135deg,#1a1d2e,#252840);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.header{background:linear-gradient(135deg,#1a1d2e,#252840);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:11;}
 .header h1{font-size:18px;font-weight:700;color:#fff;}
 .header span{color:var(--text2);font-size:12px;}
-.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;}
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:53px;z-index:10;}
 .tab-btn{padding:12px 22px;cursor:pointer;white-space:nowrap;font-size:12px;font-weight:600;color:var(--text2);border:none;background:none;border-bottom:3px solid transparent;transition:.2s;text-transform:uppercase;letter-spacing:.5px;}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
 .tab-btn:hover:not(.active){color:var(--text);}
@@ -40,7 +40,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 table{width:100%;border-collapse:collapse;font-size:12px;}
 thead th{background:var(--bg3);padding:9px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);position:sticky;top:0;white-space:nowrap;border-bottom:1px solid var(--border);}
 tbody tr{border-bottom:1px solid rgba(46,49,80,.5);transition:.15s;}
-.tot-row td{position:sticky;z-index:2;background:#202340;}
+.tot-row td{position:sticky;top:32px;z-index:2;background:#202340;}
 tbody tr:hover{background:rgba(108,99,255,.07);}
 tbody td{padding:7px 10px;}
 .bar-wrap{display:flex;align-items:center;gap:5px;}
@@ -76,7 +76,8 @@ input[type=file]{display:none;}
 
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 <div class="header" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
-  <h1>&#x1F4CA; Dashboard Prime &mdash; Julio 2026</h1>
+  <img src="./logo.png" alt="PRIMEmx" style="height:40px;object-fit:contain;margin-right:8px" onerror="this.style.display='none'">
+  <h1>Dashboard Prime &mdash; Julio 2026</h1>
   <span>Datos: Semana 27 &bull; Región Prime</span>
   <span id="update-badge" style="display:none;margin-left:auto;align-items:center;gap:8px;font-size:11px;color:#a0a0b8;background:rgba(255,255,255,.06);padding:4px 12px;border-radius:20px">📅 <span id="update-ts"></span> <button onclick="autoLoadExcel()" title="Actualizar datos" style="background:none;border:none;cursor:pointer;color:#6c63ff;font-size:13px;padding:0;line-height:1">🔄</button></span>
 </div>
@@ -113,7 +114,7 @@ input[type=file]{display:none;}
       <div><label>Riesgo</label><select id="f1k" onchange="rt1()"><option value="">Todos</option><option>Sin riesgo</option><option>Con riesgo</option></select></div>
       <div><label>Buscar tienda</label><input type="text" id="f1q" placeholder="Nombre o clave..." oninput="rt1()" style="width:200px"></div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(1,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="sub_region" onclick="toggleSort(1,'sub_region')" style="cursor:pointer;user-select:none">Sub-región<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(1,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cuota" onclick="toggleSort(1,'cuota')" style="cursor:pointer;user-select:none">Cuota<span class="sarr"> ⇅</span></th><th data-col="ventas" onclick="toggleSort(1,'ventas')" style="cursor:pointer;user-select:none">Acumulado ventas Jul<span class="sarr"> ⇅</span></th><th data-col="proy" onclick="toggleSort(1,'proy')" style="cursor:pointer;user-select:none;color:#e1556a">Proyección Cierre<span class="sarr"> ⇅</span></th><th data-col="alcance" onclick="toggleSort(1,'alcance')" style="cursor:pointer;user-select:none">Alcance<span class="sarr"> ⇅</span></th><th data-col="oh" onclick="toggleSort(1,'oh')" style="cursor:pointer;user-select:none">OH<span class="sarr"> ⇅</span></th><th data-col="resurtido" onclick="toggleSort(1,'resurtido')" style="cursor:pointer;user-select:none">Resurtido<span class="sarr"> ⇅</span></th><th data-col="faltante" onclick="toggleSort(1,'faltante')" style="cursor:pointer;user-select:none">Faltante<span class="sarr"> ⇅</span></th><th data-col="riesgo" onclick="toggleSort(1,'riesgo')" style="cursor:pointer;user-select:none">Riesgo<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb1"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(1,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="sub_region" onclick="toggleSort(1,'sub_region')" style="cursor:pointer;user-select:none">Sub-región<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(1,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cuota" onclick="toggleSort(1,'cuota')" style="cursor:pointer;user-select:none">Cuota<span class="sarr"> ⇅</span></th><th data-col="ventas" onclick="toggleSort(1,'ventas')" style="cursor:pointer;user-select:none">Acumulado ventas Jul<span class="sarr"> ⇅</span></th><th data-col="proy" onclick="toggleSort(1,'proy')" style="cursor:pointer;user-select:none;color:#e1556a">Proyección Cierre<span class="sarr"> ⇅</span></th><th data-col="alcance" onclick="toggleSort(1,'alcance')" style="cursor:pointer;user-select:none">Alcance<span class="sarr"> ⇅</span></th><th data-col="oh" onclick="toggleSort(1,'oh')" style="cursor:pointer;user-select:none">OH Total<span class="sarr"> ⇅</span></th><th data-col="c_cases" onclick="toggleSort(1,'c_cases')" style="cursor:pointer;user-select:none;color:#ff6b6b">Cases<span class="sarr"> ⇅</span></th><th data-col="c_cables" onclick="toggleSort(1,'c_cables')" style="cursor:pointer;user-select:none;color:#3498db">Cables<span class="sarr"> ⇅</span></th><th data-col="c_chargers" onclick="toggleSort(1,'c_chargers')" style="cursor:pointer;user-select:none;color:#f39c12">Chargers<span class="sarr"> ⇅</span></th><th data-col="c_lg" onclick="toggleSort(1,'c_lg')" style="cursor:pointer;user-select:none;color:#4ecdc4">Liquid Glass<span class="sarr"> ⇅</span></th><th data-col="c_screen" onclick="toggleSort(1,'c_screen')" style="cursor:pointer;user-select:none;color:#a29bfe">Screen Prot.<span class="sarr"> ⇅</span></th><th data-col="resurtido" onclick="toggleSort(1,'resurtido')" style="cursor:pointer;user-select:none">Resurtido<span class="sarr"> ⇅</span></th><th data-col="faltante" onclick="toggleSort(1,'faltante')" style="cursor:pointer;user-select:none">Faltante<span class="sarr"> ⇅</span></th><th data-col="riesgo" onclick="toggleSort(1,'riesgo')" style="cursor:pointer;user-select:none">Riesgo<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb1"></tbody></table></div>
     <div class="pag" id="pg1"></div>
   </div>
 </div>
@@ -350,12 +351,13 @@ function rT1p(){
   // Totales (sobre todos los datos filtrados, no solo la página)
   const _tc1=t1d.reduce((a,r)=>({cuota:a.cuota+(r.cuota||0),ventas:a.ventas+(r.ventas||0),oh:a.oh+(r.oh||0),resurtido:a.resurtido+(r.resurtido||0),faltante:a.faltante+(r.faltante||0)}),{cuota:0,ventas:0,oh:0,resurtido:0,faltante:0});
   const _proy1=Math.round(_tc1.ventas*_pf1),_ta1=_tc1.cuota?Math.round(_tc1.ventas/_tc1.cuota*1000)/10:0,_tc1c=_ta1>=80?'green':_ta1>=40?'yellow':'red';
-  const _totRow1=`<tr class="tot-row" style="font-weight:700;color:#fff;border-bottom:2px solid rgba(108,99,255,.5)"><td colspan="3" style="color:var(--accent);font-size:11px">TOTAL (${t1d.length} tiendas)</td><td style="text-align:right">${_tc1.cuota.toLocaleString()}</td><td style="text-align:right">${_tc1.ventas.toLocaleString()}</td><td style="text-align:right;color:#e1556a;font-weight:700">${_proy1.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_ta1,100)}%;background:var(--${_tc1c})"></div></div><span>${_ta1}%</span></div></td><td style="text-align:right">${_tc1.oh.toLocaleString()}</td><td style="text-align:right">${_tc1.resurtido.toLocaleString()}</td><td style="text-align:right">${_tc1.faltante.toLocaleString()}</td><td></td></tr>`;
+  const _tc1c_oh=t1d.reduce((a,r)=>({cs:a.cs+(r.c_cases||0),cb:a.cb+(r.c_cables||0),ch:a.ch+(r.c_chargers||0),lg:a.lg+(r.c_lg||0),sc:a.sc+(r.c_screen||0)}),{cs:0,cb:0,ch:0,lg:0,sc:0});
+  const _totRow1=`<tr class="tot-row" style="font-weight:700;color:#fff;border-bottom:2px solid rgba(108,99,255,.5)"><td colspan="3" style="color:var(--accent);font-size:11px">TOTAL (${t1d.length} tiendas)</td><td style="text-align:right">${_tc1.cuota.toLocaleString()}</td><td style="text-align:right">${_tc1.ventas.toLocaleString()}</td><td style="text-align:right;color:#e1556a;font-weight:700">${_proy1.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_ta1,100)}%;background:var(--${_tc1c})"></div></div><span>${_ta1}%</span></div></td><td style="text-align:right">${_tc1.oh.toLocaleString()}</td><td style="text-align:right;color:#ff6b6b">${_tc1c_oh.cs.toLocaleString()}</td><td style="text-align:right;color:#3498db">${_tc1c_oh.cb.toLocaleString()}</td><td style="text-align:right;color:#f39c12">${_tc1c_oh.ch.toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${_tc1c_oh.lg.toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${_tc1c_oh.sc.toLocaleString()}</td><td style="text-align:right">${_tc1.resurtido.toLocaleString()}</td><td style="text-align:right">${_tc1.faltante.toLocaleString()}</td><td></td></tr>`;
   tbody.innerHTML=_totRow1+sl.map(r=>{
     const p=Math.min(r.alcance,100),c=r.alcance>=80?'green':r.alcance>=40?'yellow':'red';
     const rc=r.riesgo==='Sin riesgo'?'#2ecc71':'#e74c3c';
     const rp=Math.round((r.ventas||0)*_pf1);
-    return `<tr><td>${r.region}</td><td style="color:#a0a0b8;font-size:11px">${r.sub_region}</td><td>${r.tienda}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${r.ventas.toLocaleString()}</td><td style="text-align:right;color:#e1556a">${rp.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:var(--${c})"></div></div><span>${r.alcance}%</span></div></td><td style="text-align:right">${r.oh.toLocaleString()}</td><td style="text-align:right">${r.resurtido.toLocaleString()}</td><td style="text-align:right">${r.faltante.toLocaleString()}</td><td style="color:${rc};font-size:11px">${r.riesgo}</td></tr>`;
+    return `<tr><td>${r.region}</td><td style="color:#a0a0b8;font-size:11px">${r.sub_region}</td><td>${r.tienda}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${r.ventas.toLocaleString()}</td><td style="text-align:right;color:#e1556a">${rp.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:var(--${c})"></div></div><span>${r.alcance}%</span></div></td><td style="text-align:right">${r.oh.toLocaleString()}</td><td style="text-align:right;color:#ff6b6b">${(r.c_cases||0).toLocaleString()}</td><td style="text-align:right;color:#3498db">${(r.c_cables||0).toLocaleString()}</td><td style="text-align:right;color:#f39c12">${(r.c_chargers||0).toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${(r.c_lg||0).toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${(r.c_screen||0).toLocaleString()}</td><td style="text-align:right">${r.resurtido.toLocaleString()}</td><td style="text-align:right">${r.faltante.toLocaleString()}</td><td style="color:${rc};font-size:11px">${r.riesgo}</td></tr>`;
   }).join('');
   // Limpiar tfoot anterior si existe
   const _tbl1=tbody.closest('table');const _ft1=_tbl1.querySelector('tfoot');if(_ft1)_ft1.innerHTML='';
@@ -484,6 +486,17 @@ enrichAR(); // run on startup
   (D.cuota_jul||[]).forEach(r=>{ vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0); });
   (D.oh_tienda||[]).forEach(r=>{ r.ventas_mes=vm[r.clave]||0; });
 })();
+// Enrich cuota_jul con OH por categoría (join oh_tienda by clave)
+function enrichCatOH(){
+  const ohMap={};
+  (D.oh_tienda||[]).forEach(r=>{ ohMap[r.clave]=r; });
+  (D.cuota_jul||[]).forEach(r=>{
+    const o=ohMap[r.clave]||{};
+    r.c_cases=o.cat_cases||0; r.c_cables=o.cat_cables||0; r.c_chargers=o.cat_chargers||0;
+    r.c_lg=o.cat_liquid_glass||0; r.c_screen=o['cat_screen_prot']||0; r.c_otros=o.cat_otros||0;
+  });
+}
+enrichCatOH(); // run on startup
 function gT4(){
   const reg=document.getElementById('f4r').value,ger=document.getElementById('f4g').value,q=document.getElementById('f4q').value.toLowerCase(),s=document.getElementById('f4s').value;
   let rows=D.oh_tienda.filter(r=>(!reg||r.region===reg)&&(!ger||r.gerente===ger)&&(!q||r.tienda.toLowerCase().includes(q)||(r.clave||'').toLowerCase().includes(q)));
@@ -1024,8 +1037,10 @@ async function autoLoadExcel() {
     if(badge&&tsEl){const d=new Date();tsEl.textContent='Datos al '+d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});badge.style.display='inline-flex';}
     // Re-enrich cuota_jul with equipo/gerente from ar_clean after auto-load
     enrichAR();
+    enrichCatOH(); // categorías OH → cuota_jul
     rebuildReg2(); renderTab2Charts();
     if(typeof rt2==='function'){t2p=0;t2d=gT2();rT2p();}
+    if(typeof rt1==='function'){t1p=0;t1d=gT1();rT1p();}
     // Re-enrich oh_tienda con ventas_mes actualizadas
     (function enrichOH(){const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});})();
     if(typeof rt4==='function'){t4p=0;t4d=gT4();rT4p();}
