@@ -112,7 +112,7 @@ input[type=file]{display:none;}
       <div><label>Riesgo</label><select id="f1k" onchange="rt1()"><option value="">Todos</option><option>Sin riesgo</option><option>Con riesgo</option></select></div>
       <div><label>Buscar tienda</label><input type="text" id="f1q" placeholder="Nombre o clave..." oninput="rt1()" style="width:200px"></div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(1,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="sub_region" onclick="toggleSort(1,'sub_region')" style="cursor:pointer;user-select:none">Sub-región<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(1,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cuota" onclick="toggleSort(1,'cuota')" style="cursor:pointer;user-select:none">Cuota<span class="sarr"> ⇅</span></th><th data-col="ventas" onclick="toggleSort(1,'ventas')" style="cursor:pointer;user-select:none">Acumulado ventas Jul<span class="sarr"> ⇅</span></th><th data-col="alcance" onclick="toggleSort(1,'alcance')" style="cursor:pointer;user-select:none">Alcance<span class="sarr"> ⇅</span></th><th data-col="oh" onclick="toggleSort(1,'oh')" style="cursor:pointer;user-select:none">OH<span class="sarr"> ⇅</span></th><th data-col="resurtido" onclick="toggleSort(1,'resurtido')" style="cursor:pointer;user-select:none">Resurtido<span class="sarr"> ⇅</span></th><th data-col="faltante" onclick="toggleSort(1,'faltante')" style="cursor:pointer;user-select:none">Faltante<span class="sarr"> ⇅</span></th><th data-col="riesgo" onclick="toggleSort(1,'riesgo')" style="cursor:pointer;user-select:none">Riesgo<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb1"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(1,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="sub_region" onclick="toggleSort(1,'sub_region')" style="cursor:pointer;user-select:none">Sub-región<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(1,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cuota" onclick="toggleSort(1,'cuota')" style="cursor:pointer;user-select:none">Cuota<span class="sarr"> ⇅</span></th><th data-col="ventas" onclick="toggleSort(1,'ventas')" style="cursor:pointer;user-select:none">Acumulado ventas Jul<span class="sarr"> ⇅</span></th><th data-col="proy" onclick="toggleSort(1,'proy')" style="cursor:pointer;user-select:none;color:#e1556a">Proyección Cierre<span class="sarr"> ⇅</span></th><th data-col="alcance" onclick="toggleSort(1,'alcance')" style="cursor:pointer;user-select:none">Alcance<span class="sarr"> ⇅</span></th><th data-col="oh" onclick="toggleSort(1,'oh')" style="cursor:pointer;user-select:none">OH<span class="sarr"> ⇅</span></th><th data-col="resurtido" onclick="toggleSort(1,'resurtido')" style="cursor:pointer;user-select:none">Resurtido<span class="sarr"> ⇅</span></th><th data-col="faltante" onclick="toggleSort(1,'faltante')" style="cursor:pointer;user-select:none">Faltante<span class="sarr"> ⇅</span></th><th data-col="riesgo" onclick="toggleSort(1,'riesgo')" style="cursor:pointer;user-select:none">Riesgo<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb1"></tbody></table></div>
     <div class="pag" id="pg1"></div>
   </div>
 </div>
@@ -331,17 +331,21 @@ function gT1(){
 function rt1(){t1p=0;t1d=gT1();rT1p();}
 function rT1p(){
   const tbody=document.getElementById('tb1'),sl=t1d.slice(t1p*PG,(t1p+1)*PG);
-  tbody.innerHTML=sl.map(r=>{
+  const _now1=new Date(),_dim1=new Date(_now1.getFullYear(),_now1.getMonth()+1,0).getDate(),_dom1=_now1.getDate();
+  const _pf1=_dim1/_dom1;
+  // Totales (sobre todos los datos filtrados, no solo la página)
+  const _tc1=t1d.reduce((a,r)=>({cuota:a.cuota+(r.cuota||0),ventas:a.ventas+(r.ventas||0),oh:a.oh+(r.oh||0),resurtido:a.resurtido+(r.resurtido||0),faltante:a.faltante+(r.faltante||0)}),{cuota:0,ventas:0,oh:0,resurtido:0,faltante:0});
+  const _proy1=Math.round(_tc1.ventas*_pf1),_ta1=_tc1.cuota?Math.round(_tc1.ventas/_tc1.cuota*1000)/10:0,_tc1c=_ta1>=80?'green':_ta1>=40?'yellow':'red';
+  const _totRow1=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-bottom:2px solid rgba(108,99,255,.5)"><td colspan="3" style="color:var(--accent);font-size:11px">TOTAL (${t1d.length} tiendas)</td><td style="text-align:right">${_tc1.cuota.toLocaleString()}</td><td style="text-align:right">${_tc1.ventas.toLocaleString()}</td><td style="text-align:right;color:#e1556a;font-weight:700">${_proy1.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_ta1,100)}%;background:var(--${_tc1c})"></div></div><span>${_ta1}%</span></div></td><td style="text-align:right">${_tc1.oh.toLocaleString()}</td><td style="text-align:right">${_tc1.resurtido.toLocaleString()}</td><td style="text-align:right">${_tc1.faltante.toLocaleString()}</td><td></td></tr>`;
+  tbody.innerHTML=_totRow1+sl.map(r=>{
     const p=Math.min(r.alcance,100),c=r.alcance>=80?'green':r.alcance>=40?'yellow':'red';
     const rc=r.riesgo==='Sin riesgo'?'#2ecc71':'#e74c3c';
-    return `<tr><td>${r.region}</td><td style="color:#a0a0b8;font-size:11px">${r.sub_region}</td><td>${r.tienda}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${r.ventas.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:var(--${c})"></div></div><span>${r.alcance}%</span></div></td><td style="text-align:right">${r.oh.toLocaleString()}</td><td style="text-align:right">${r.resurtido.toLocaleString()}</td><td style="text-align:right">${r.faltante.toLocaleString()}</td><td style="color:${rc};font-size:11px">${r.riesgo}</td></tr>`;
+    const rp=Math.round((r.ventas||0)*_pf1);
+    return `<tr><td>${r.region}</td><td style="color:#a0a0b8;font-size:11px">${r.sub_region}</td><td>${r.tienda}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${r.ventas.toLocaleString()}</td><td style="text-align:right;color:#e1556a">${rp.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:var(--${c})"></div></div><span>${r.alcance}%</span></div></td><td style="text-align:right">${r.oh.toLocaleString()}</td><td style="text-align:right">${r.resurtido.toLocaleString()}</td><td style="text-align:right">${r.faltante.toLocaleString()}</td><td style="color:${rc};font-size:11px">${r.riesgo}</td></tr>`;
   }).join('');
+  // Limpiar tfoot anterior si existe
+  const _tbl1=tbody.closest('table');const _ft1=_tbl1.querySelector('tfoot');if(_ft1)_ft1.innerHTML='';
   mkPag('pg1',t1d.length,t1p,n=>{t1p=n;rT1p();});
-  // Fila de totales
-  const _tbl1=tbody.closest('table');let _ft1=_tbl1.querySelector('tfoot');if(!_ft1){_ft1=document.createElement('tfoot');_tbl1.appendChild(_ft1);}
-  const _tc1=t1d.reduce((a,r)=>({cuota:a.cuota+(r.cuota||0),ventas:a.ventas+(r.ventas||0),oh:a.oh+(r.oh||0),resurtido:a.resurtido+(r.resurtido||0),faltante:a.faltante+(r.faltante||0)}),{cuota:0,ventas:0,oh:0,resurtido:0,faltante:0});
-  const _ta1=_tc1.cuota?Math.round(_tc1.ventas/_tc1.cuota*1000)/10:0,_tc1c=_ta1>=80?'green':_ta1>=40?'yellow':'red';
-  _ft1.innerHTML=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-top:2px solid rgba(108,99,255,.5)"><td colspan="3" style="color:var(--accent);font-size:11px">TOTAL (${t1d.length} tiendas)</td><td style="text-align:right">${_tc1.cuota.toLocaleString()}</td><td style="text-align:right">${_tc1.ventas.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_ta1,100)}%;background:var(--${_tc1c})"></div></div><span>${_ta1}%</span></div></td><td style="text-align:right">${_tc1.oh.toLocaleString()}</td><td style="text-align:right">${_tc1.resurtido.toLocaleString()}</td><td style="text-align:right">${_tc1.faltante.toLocaleString()}</td><td></td></tr>`;
 }
 rt1();
 
@@ -363,17 +367,16 @@ function gT2(){
 function rt2(){t2p=0;t2d=gT2();rT2p();}
 function rT2p(){
   const tbody=document.getElementById('tb2'),sl=t2d.slice(t2p*PG,(t2p+1)*PG);
-  tbody.innerHTML=sl.map(r=>{
-    // ar% calculated inline below
-    const eq=r.equipo_ar||0; const arPct=eq>0?Math.round(r.ventas/eq*1000)/10:0; const ap2=Math.min(arPct,100),cp2=arPct>=50?'green':arPct>=35?'yellow':'red';
-      return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.sub_region||'')}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente_ar||r.gerente||'').split(' ').slice(0,3).join(' ')}</td><td>${r.tienda}</td><td style="text-align:right;font-weight:600">${r.ventas.toLocaleString()}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${eq>0?eq.toLocaleString():'-'}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${ap2}%;background:var(--${cp2})"></div></div><span>${eq>0?arPct+'%':'-'}</span></div></td></tr>`;
-  }).join('');
-  mkPag('pg2',t2d.length,t2p,n=>{t2p=n;rT2p();});
-  // Fila de totales
-  const _tbl2=tbody.closest('table');let _ft2=_tbl2.querySelector('tfoot');if(!_ft2){_ft2=document.createElement('tfoot');_tbl2.appendChild(_ft2);}
+  // Totales primero
   const _tc2=t2d.reduce((a,r)=>({ventas:a.ventas+(r.ventas||0),cuota:a.cuota+(r.cuota||0),equipo:a.equipo+(r.equipo_ar||0)}),{ventas:0,cuota:0,equipo:0});
   const _tar2=_tc2.equipo?Math.round(_tc2.ventas/_tc2.equipo*1000)/10:0,_tc2c=_tar2>=50?'green':_tar2>=35?'yellow':'red';
-  _ft2.innerHTML=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-top:2px solid rgba(108,99,255,.5)"><td colspan="4" style="color:var(--accent);font-size:11px">TOTAL (${t2d.length} tiendas)</td><td style="text-align:right;font-weight:700">${_tc2.ventas.toLocaleString()}</td><td style="text-align:right">${_tc2.cuota.toLocaleString()}</td><td style="text-align:right">${_tc2.equipo>0?_tc2.equipo.toLocaleString():'-'}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_tar2,100)}%;background:var(--${_tc2c})"></div></div><span>${_tc2.equipo>0?_tar2+'%':'-'}</span></div></td></tr>`;
+  const _totRow2=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-bottom:2px solid rgba(108,99,255,.5)"><td colspan="4" style="color:var(--accent);font-size:11px">TOTAL (${t2d.length} tiendas)</td><td style="text-align:right;font-weight:700">${_tc2.ventas.toLocaleString()}</td><td style="text-align:right">${_tc2.cuota.toLocaleString()}</td><td style="text-align:right">${_tc2.equipo>0?_tc2.equipo.toLocaleString():'-'}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_tar2,100)}%;background:var(--${_tc2c})"></div></div><span>${_tc2.equipo>0?_tar2+'%':'-'}</span></div></td></tr>`;
+  tbody.innerHTML=_totRow2+sl.map(r=>{
+    const eq=r.equipo_ar||0; const arPct=eq>0?Math.round(r.ventas/eq*1000)/10:0; const ap2=Math.min(arPct,100),cp2=arPct>=50?'green':arPct>=35?'yellow':'red';
+    return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.sub_region||'')}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente_ar||r.gerente||'').split(' ').slice(0,3).join(' ')}</td><td>${r.tienda}</td><td style="text-align:right;font-weight:600">${r.ventas.toLocaleString()}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${eq>0?eq.toLocaleString():'-'}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${ap2}%;background:var(--${cp2})"></div></div><span>${eq>0?arPct+'%':'-'}</span></div></td></tr>`;
+  }).join('');
+  const _tbl2=tbody.closest('table');const _ft2=_tbl2.querySelector('tfoot');if(_ft2)_ft2.innerHTML='';
+  mkPag('pg2',t2d.length,t2p,n=>{t2p=n;rT2p();});
 }
 // Init Tab2 KPIs from embedded data
 enrichAR();
@@ -402,19 +405,19 @@ function gT3(){
 function rt3(){t3p=0;t3d=gT3();rT3p();}
 function rT3p(){
   const tbody=document.getElementById('tb3'),sl=t3d.slice(t3p*PG,(t3p+1)*PG);
-  tbody.innerHTML=sl.map(r=>{
+  // Totales primero
+  const _tc3=t3d.reduce((a,r)=>({lgv:a.lgv+(r.lg_v||0),lgc:a.lgc+(r.lg_cuota||0),ohlg:a.ohlg+(r.oh_lg||0),csv:a.csv+(r.cases_v||0),csc:a.csc+(r.cases_cuota||0),ohcs:a.ohcs+(r.oh_cases||0)}),{lgv:0,lgc:0,ohlg:0,csv:0,csc:0,ohcs:0});
+  const _lga3=_tc3.lgc?Math.round(_tc3.lgv/_tc3.lgc*1000)/10:0,_csa3=_tc3.csc?Math.round(_tc3.csv/_tc3.csc*1000)/10:0;
+  const _lc3=_lga3>=80?'green':_lga3>=40?'yellow':'red',_cc3=_csa3>=80?'green':_csa3>=40?'yellow':'red';
+  const _totRow3=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-bottom:2px solid rgba(108,99,255,.5)"><td colspan="2" style="color:var(--accent);font-size:11px">TOTAL (${t3d.length} tiendas)</td><td style="text-align:right;color:#4ecdc4">${_tc3.lgv}</td><td style="text-align:right">${Math.round(_tc3.lgc)}</td><td style="text-align:right;color:#4ecdc4"><b>${_tc3.ohlg}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_lga3,100)}%;background:var(--${_lc3})"></div></div><span>${_lga3}%</span></div></td><td style="text-align:right;color:#ff6b6b">${_tc3.csv}</td><td style="text-align:right">${Math.round(_tc3.csc)}</td><td style="text-align:right;color:#ff6b6b"><b>${_tc3.ohcs}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_csa3,100)}%;background:var(--${_cc3})"></div></div><span>${_csa3}%</span></div></td></tr>`;
+  tbody.innerHTML=_totRow3+sl.map(r=>{
     const lp=Math.min(r.lg_alc||0,100),cp=Math.min(r.cases_alc||0,100);
     const lc=(r.lg_alc||0)>=80?'green':(r.lg_alc||0)>=40?'yellow':'red';
     const cc=(r.cases_alc||0)>=80?'green':(r.cases_alc||0)>=40?'yellow':'red';
     return `<tr><td>${r.region}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#4ecdc4">${r.lg_v||0}</td><td style="text-align:right">${Math.round(r.lg_cuota||0)}</td><td style="text-align:right;color:#4ecdc4"><b>${r.oh_lg||0}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${lp}%;background:var(--${lc})"></div></div><span>${r.lg_alc||0}%</span></div></td><td style="text-align:right;color:#ff6b6b">${r.cases_v||0}</td><td style="text-align:right">${Math.round(r.cases_cuota||0)}</td><td style="text-align:right;color:#ff6b6b"><b>${r.oh_cases||0}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${cp}%;background:var(--${cc})"></div></div><span>${r.cases_alc||0}%</span></div></td></tr>`;
   }).join('');
+  const _tbl3=tbody.closest('table');const _ft3=_tbl3.querySelector('tfoot');if(_ft3)_ft3.innerHTML='';
   mkPag('pg3',t3d.length,t3p,n=>{t3p=n;rT3p();});
-  // Fila de totales
-  const _tbl3=tbody.closest('table');let _ft3=_tbl3.querySelector('tfoot');if(!_ft3){_ft3=document.createElement('tfoot');_tbl3.appendChild(_ft3);}
-  const _tc3=t3d.reduce((a,r)=>({lgv:a.lgv+(r.lg_v||0),lgc:a.lgc+(r.lg_cuota||0),ohlg:a.ohlg+(r.oh_lg||0),csv:a.csv+(r.cases_v||0),csc:a.csc+(r.cases_cuota||0),ohcs:a.ohcs+(r.oh_cases||0)}),{lgv:0,lgc:0,ohlg:0,csv:0,csc:0,ohcs:0});
-  const _lga3=_tc3.lgc?Math.round(_tc3.lgv/_tc3.lgc*1000)/10:0,_csa3=_tc3.csc?Math.round(_tc3.csv/_tc3.csc*1000)/10:0;
-  const _lc3=_lga3>=80?'green':_lga3>=40?'yellow':'red',_cc3=_csa3>=80?'green':_csa3>=40?'yellow':'red';
-  _ft3.innerHTML=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-top:2px solid rgba(108,99,255,.5)"><td colspan="2" style="color:var(--accent);font-size:11px">TOTAL (${t3d.length} tiendas)</td><td style="text-align:right;color:#4ecdc4">${_tc3.lgv}</td><td style="text-align:right">${Math.round(_tc3.lgc)}</td><td style="text-align:right;color:#4ecdc4"><b>${_tc3.ohlg}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_lga3,100)}%;background:var(--${_lc3})"></div></div><span>${_lga3}%</span></div></td><td style="text-align:right;color:#ff6b6b">${_tc3.csv}</td><td style="text-align:right">${Math.round(_tc3.csc)}</td><td style="text-align:right;color:#ff6b6b"><b>${_tc3.ohcs}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_csa3,100)}%;background:var(--${_cc3})"></div></div><span>${_csa3}%</span></div></td></tr>`;
   // Totals bar — sólo si hay filtro activo
   const reg=document.getElementById('f3r').value, q=document.getElementById('f3q').value;
   const bar=document.getElementById('t3_totals');
@@ -472,20 +475,18 @@ function gT4(){
 function rt4(){t4p=0;t4d=gT4();rT4p();}
 function rT4p(){
   const tbody=document.getElementById('tb4'),sl=t4d.slice(t4p*PG,(t4p+1)*PG);
-  tbody.innerHTML=sl.map(r=>{
-    return (()=>{
-      const vm=r.ventas_mes||0;
-      const moi=vm>0?Math.round(r.cantidad/vm*10)/10:0;
-      const moiColor=moi===0?'#a0a0b8':moi<2?'#ff6b6b':moi<4?'#f39c12':'#2ecc71';
-      return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente||'').split(' ').slice(0,3).join(' ')}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#ff6b6b">${(r.cat_cases||0).toLocaleString()}</td><td style="text-align:right;color:#3498db">${(r.cat_cables||0).toLocaleString()}</td><td style="text-align:right;color:#f39c12">${(r.cat_chargers||0).toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${(r.cat_liquid_glass||0).toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${(r['cat_screen_prot']||0).toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${(r.cat_otros||0).toLocaleString()}</td><td style="text-align:right;font-weight:700">${r.cantidad.toLocaleString()}</td><td style="text-align:right;color:#e0b0ff;font-weight:600">${vm>0?vm.toLocaleString():'-'}</td><td style="text-align:right;font-weight:700;color:${moiColor}">${vm>0?moi+' sem':'-'}</td></tr>`;
-    })();
-  }).join('');
-  mkPag('pg4',t4d.length,t4p,n=>{t4p=n;rT4p();});
-  // Fila de totales
-  const _tbl4=tbody.closest('table');let _ft4=_tbl4.querySelector('tfoot');if(!_ft4){_ft4=document.createElement('tfoot');_tbl4.appendChild(_ft4);}
+  // Totales primero
   const _tc4=t4d.reduce((a,r)=>({cs:a.cs+(r.cat_cases||0),cb:a.cb+(r.cat_cables||0),ch:a.ch+(r.cat_chargers||0),lg:a.lg+(r.cat_liquid_glass||0),sp:a.sp+(r['cat_screen_prot']||0),ot:a.ot+(r.cat_otros||0),tot:a.tot+(r.cantidad||0),vm:a.vm+(r.ventas_mes||0)}),{cs:0,cb:0,ch:0,lg:0,sp:0,ot:0,tot:0,vm:0});
   const _moi4=_tc4.vm>0?Math.round(_tc4.tot/_tc4.vm*10)/10:0,_mc4=_moi4===0?'#a0a0b8':_moi4<2?'#ff6b6b':_moi4<4?'#f39c12':'#2ecc71';
-  _ft4.innerHTML=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-top:2px solid rgba(108,99,255,.5)"><td colspan="3" style="color:var(--accent);font-size:11px">TOTAL (${t4d.length} tiendas)</td><td style="text-align:right;color:#ff6b6b">${_tc4.cs.toLocaleString()}</td><td style="text-align:right;color:#3498db">${_tc4.cb.toLocaleString()}</td><td style="text-align:right;color:#f39c12">${_tc4.ch.toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${_tc4.lg.toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${_tc4.sp.toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${_tc4.ot.toLocaleString()}</td><td style="text-align:right;font-weight:700">${_tc4.tot.toLocaleString()}</td><td style="text-align:right;color:#e0b0ff">${_tc4.vm>0?_tc4.vm.toLocaleString():'-'}</td><td style="text-align:right;font-weight:700;color:${_mc4}">${_tc4.vm>0?_moi4+' sem':'-'}</td></tr>`;
+  const _totRow4=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-bottom:2px solid rgba(108,99,255,.5)"><td colspan="3" style="color:var(--accent);font-size:11px">TOTAL (${t4d.length} tiendas)</td><td style="text-align:right;color:#ff6b6b">${_tc4.cs.toLocaleString()}</td><td style="text-align:right;color:#3498db">${_tc4.cb.toLocaleString()}</td><td style="text-align:right;color:#f39c12">${_tc4.ch.toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${_tc4.lg.toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${_tc4.sp.toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${_tc4.ot.toLocaleString()}</td><td style="text-align:right;font-weight:700">${_tc4.tot.toLocaleString()}</td><td style="text-align:right;color:#e0b0ff">${_tc4.vm>0?_tc4.vm.toLocaleString():'-'}</td><td style="text-align:right;font-weight:700;color:${_mc4}">${_tc4.vm>0?_moi4+' sem':'-'}</td></tr>`;
+  tbody.innerHTML=_totRow4+sl.map(r=>{
+    const vm=r.ventas_mes||0;
+    const moi=vm>0?Math.round(r.cantidad/vm*10)/10:0;
+    const moiColor=moi===0?'#a0a0b8':moi<2?'#ff6b6b':moi<4?'#f39c12':'#2ecc71';
+    return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente||'').split(' ').slice(0,3).join(' ')}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#ff6b6b">${(r.cat_cases||0).toLocaleString()}</td><td style="text-align:right;color:#3498db">${(r.cat_cables||0).toLocaleString()}</td><td style="text-align:right;color:#f39c12">${(r.cat_chargers||0).toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${(r.cat_liquid_glass||0).toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${(r['cat_screen_prot']||0).toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${(r.cat_otros||0).toLocaleString()}</td><td style="text-align:right;font-weight:700">${r.cantidad.toLocaleString()}</td><td style="text-align:right;color:#e0b0ff;font-weight:600">${vm>0?vm.toLocaleString():'-'}</td><td style="text-align:right;font-weight:700;color:${moiColor}">${vm>0?moi+' sem':'-'}</td></tr>`;
+  }).join('');
+  const _tbl4=tbody.closest('table');const _ft4=_tbl4.querySelector('tfoot');if(_ft4)_ft4.innerHTML='';
+  mkPag('pg4',t4d.length,t4p,n=>{t4p=n;rT4p();});
 }
 rt4();
 
