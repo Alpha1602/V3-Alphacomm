@@ -337,6 +337,11 @@ function rT1p(){
     return `<tr><td>${r.region}</td><td style="color:#a0a0b8;font-size:11px">${r.sub_region}</td><td>${r.tienda}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${r.ventas.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:var(--${c})"></div></div><span>${r.alcance}%</span></div></td><td style="text-align:right">${r.oh.toLocaleString()}</td><td style="text-align:right">${r.resurtido.toLocaleString()}</td><td style="text-align:right">${r.faltante.toLocaleString()}</td><td style="color:${rc};font-size:11px">${r.riesgo}</td></tr>`;
   }).join('');
   mkPag('pg1',t1d.length,t1p,n=>{t1p=n;rT1p();});
+  // Fila de totales
+  const _tbl1=tbody.closest('table');let _ft1=_tbl1.querySelector('tfoot');if(!_ft1){_ft1=document.createElement('tfoot');_tbl1.appendChild(_ft1);}
+  const _tc1=t1d.reduce((a,r)=>({cuota:a.cuota+(r.cuota||0),ventas:a.ventas+(r.ventas||0),oh:a.oh+(r.oh||0),resurtido:a.resurtido+(r.resurtido||0),faltante:a.faltante+(r.faltante||0)}),{cuota:0,ventas:0,oh:0,resurtido:0,faltante:0});
+  const _ta1=_tc1.cuota?Math.round(_tc1.ventas/_tc1.cuota*1000)/10:0,_tc1c=_ta1>=80?'green':_ta1>=40?'yellow':'red';
+  _ft1.innerHTML=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-top:2px solid rgba(108,99,255,.5)"><td colspan="3" style="color:var(--accent);font-size:11px">TOTAL (${t1d.length} tiendas)</td><td style="text-align:right">${_tc1.cuota.toLocaleString()}</td><td style="text-align:right">${_tc1.ventas.toLocaleString()}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_ta1,100)}%;background:var(--${_tc1c})"></div></div><span>${_ta1}%</span></div></td><td style="text-align:right">${_tc1.oh.toLocaleString()}</td><td style="text-align:right">${_tc1.resurtido.toLocaleString()}</td><td style="text-align:right">${_tc1.faltante.toLocaleString()}</td><td></td></tr>`;
 }
 rt1();
 
@@ -364,6 +369,11 @@ function rT2p(){
       return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.sub_region||'')}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente_ar||r.gerente||'').split(' ').slice(0,3).join(' ')}</td><td>${r.tienda}</td><td style="text-align:right;font-weight:600">${r.ventas.toLocaleString()}</td><td style="text-align:right">${r.cuota.toLocaleString()}</td><td style="text-align:right">${eq>0?eq.toLocaleString():'-'}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${ap2}%;background:var(--${cp2})"></div></div><span>${eq>0?arPct+'%':'-'}</span></div></td></tr>`;
   }).join('');
   mkPag('pg2',t2d.length,t2p,n=>{t2p=n;rT2p();});
+  // Fila de totales
+  const _tbl2=tbody.closest('table');let _ft2=_tbl2.querySelector('tfoot');if(!_ft2){_ft2=document.createElement('tfoot');_tbl2.appendChild(_ft2);}
+  const _tc2=t2d.reduce((a,r)=>({ventas:a.ventas+(r.ventas||0),cuota:a.cuota+(r.cuota||0),equipo:a.equipo+(r.equipo_ar||0)}),{ventas:0,cuota:0,equipo:0});
+  const _tar2=_tc2.equipo?Math.round(_tc2.ventas/_tc2.equipo*1000)/10:0,_tc2c=_tar2>=50?'green':_tar2>=35?'yellow':'red';
+  _ft2.innerHTML=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-top:2px solid rgba(108,99,255,.5)"><td colspan="4" style="color:var(--accent);font-size:11px">TOTAL (${t2d.length} tiendas)</td><td style="text-align:right;font-weight:700">${_tc2.ventas.toLocaleString()}</td><td style="text-align:right">${_tc2.cuota.toLocaleString()}</td><td style="text-align:right">${_tc2.equipo>0?_tc2.equipo.toLocaleString():'-'}</td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_tar2,100)}%;background:var(--${_tc2c})"></div></div><span>${_tc2.equipo>0?_tar2+'%':'-'}</span></div></td></tr>`;
 }
 // Init Tab2 KPIs from embedded data
 enrichAR();
@@ -399,6 +409,12 @@ function rT3p(){
     return `<tr><td>${r.region}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#4ecdc4">${r.lg_v||0}</td><td style="text-align:right">${Math.round(r.lg_cuota||0)}</td><td style="text-align:right;color:#4ecdc4"><b>${r.oh_lg||0}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${lp}%;background:var(--${lc})"></div></div><span>${r.lg_alc||0}%</span></div></td><td style="text-align:right;color:#ff6b6b">${r.cases_v||0}</td><td style="text-align:right">${Math.round(r.cases_cuota||0)}</td><td style="text-align:right;color:#ff6b6b"><b>${r.oh_cases||0}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${cp}%;background:var(--${cc})"></div></div><span>${r.cases_alc||0}%</span></div></td></tr>`;
   }).join('');
   mkPag('pg3',t3d.length,t3p,n=>{t3p=n;rT3p();});
+  // Fila de totales
+  const _tbl3=tbody.closest('table');let _ft3=_tbl3.querySelector('tfoot');if(!_ft3){_ft3=document.createElement('tfoot');_tbl3.appendChild(_ft3);}
+  const _tc3=t3d.reduce((a,r)=>({lgv:a.lgv+(r.lg_v||0),lgc:a.lgc+(r.lg_cuota||0),ohlg:a.ohlg+(r.oh_lg||0),csv:a.csv+(r.cases_v||0),csc:a.csc+(r.cases_cuota||0),ohcs:a.ohcs+(r.oh_cases||0)}),{lgv:0,lgc:0,ohlg:0,csv:0,csc:0,ohcs:0});
+  const _lga3=_tc3.lgc?Math.round(_tc3.lgv/_tc3.lgc*1000)/10:0,_csa3=_tc3.csc?Math.round(_tc3.csv/_tc3.csc*1000)/10:0;
+  const _lc3=_lga3>=80?'green':_lga3>=40?'yellow':'red',_cc3=_csa3>=80?'green':_csa3>=40?'yellow':'red';
+  _ft3.innerHTML=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-top:2px solid rgba(108,99,255,.5)"><td colspan="2" style="color:var(--accent);font-size:11px">TOTAL (${t3d.length} tiendas)</td><td style="text-align:right;color:#4ecdc4">${_tc3.lgv}</td><td style="text-align:right">${Math.round(_tc3.lgc)}</td><td style="text-align:right;color:#4ecdc4"><b>${_tc3.ohlg}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_lga3,100)}%;background:var(--${_lc3})"></div></div><span>${_lga3}%</span></div></td><td style="text-align:right;color:#ff6b6b">${_tc3.csv}</td><td style="text-align:right">${Math.round(_tc3.csc)}</td><td style="text-align:right;color:#ff6b6b"><b>${_tc3.ohcs}</b></td><td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(_csa3,100)}%;background:var(--${_cc3})"></div></div><span>${_csa3}%</span></div></td></tr>`;
   // Totals bar — sólo si hay filtro activo
   const reg=document.getElementById('f3r').value, q=document.getElementById('f3q').value;
   const bar=document.getElementById('t3_totals');
@@ -465,6 +481,11 @@ function rT4p(){
     })();
   }).join('');
   mkPag('pg4',t4d.length,t4p,n=>{t4p=n;rT4p();});
+  // Fila de totales
+  const _tbl4=tbody.closest('table');let _ft4=_tbl4.querySelector('tfoot');if(!_ft4){_ft4=document.createElement('tfoot');_tbl4.appendChild(_ft4);}
+  const _tc4=t4d.reduce((a,r)=>({cs:a.cs+(r.cat_cases||0),cb:a.cb+(r.cat_cables||0),ch:a.ch+(r.cat_chargers||0),lg:a.lg+(r.cat_liquid_glass||0),sp:a.sp+(r['cat_screen_prot']||0),ot:a.ot+(r.cat_otros||0),tot:a.tot+(r.cantidad||0),vm:a.vm+(r.ventas_mes||0)}),{cs:0,cb:0,ch:0,lg:0,sp:0,ot:0,tot:0,vm:0});
+  const _moi4=_tc4.vm>0?Math.round(_tc4.tot/_tc4.vm*10)/10:0,_mc4=_moi4===0?'#a0a0b8':_moi4<2?'#ff6b6b':_moi4<4?'#f39c12':'#2ecc71';
+  _ft4.innerHTML=`<tr style="background:rgba(108,99,255,.15);font-weight:700;color:#fff;border-top:2px solid rgba(108,99,255,.5)"><td colspan="3" style="color:var(--accent);font-size:11px">TOTAL (${t4d.length} tiendas)</td><td style="text-align:right;color:#ff6b6b">${_tc4.cs.toLocaleString()}</td><td style="text-align:right;color:#3498db">${_tc4.cb.toLocaleString()}</td><td style="text-align:right;color:#f39c12">${_tc4.ch.toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${_tc4.lg.toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${_tc4.sp.toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${_tc4.ot.toLocaleString()}</td><td style="text-align:right;font-weight:700">${_tc4.tot.toLocaleString()}</td><td style="text-align:right;color:#e0b0ff">${_tc4.vm>0?_tc4.vm.toLocaleString():'-'}</td><td style="text-align:right;font-weight:700;color:${_mc4}">${_tc4.vm>0?_moi4+' sem':'-'}</td></tr>`;
 }
 rt4();
 
@@ -829,7 +850,9 @@ function updateGerentes4(){
 
 // ══ AUTO-LOAD EXCEL FROM REPO ════════════════════════════════════════════════
 async function autoLoadExcel() {
-  // (loading bar removed)
+  // Indicador de carga
+  const _badge=document.getElementById('update-badge'),_tsEl=document.getElementById('update-ts');
+  if(_badge&&_tsEl){_tsEl.textContent='⏳ Sincronizando datos...';_badge.style.display='inline-flex';}
 
   // Try to fetch the Excel file from the same directory (GitHub Pages)
   const filenames = ['Sales YoY .xlsx', 'Sales%20YoY%20.xlsx', 'sales_yoy.xlsx', 'Dashboard Prime.xlsx'];
@@ -848,6 +871,7 @@ async function autoLoadExcel() {
 
   if (!buf) {
     console.warn('Excel not found in repo — using embedded data');
+    if(_badge&&_tsEl){_tsEl.textContent='⚠️ Sin Excel en GitHub';_badge.style.display='inline-flex';}
     return;
   }
 
