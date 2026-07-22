@@ -77,7 +77,7 @@ input[type=file]{display:none;}
 <div class="header" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
   <h1>&#x1F4CA; Dashboard Prime &mdash; Julio 2026</h1>
   <span>Datos: Semana 27 &bull; Región Prime</span>
-  <span id="update-badge" style="display:none;margin-left:auto;font-size:11px;color:#a0a0b8;background:rgba(255,255,255,.06);padding:4px 12px;border-radius:20px">📅 <span id="update-ts"></span></span>
+  <span id="update-badge" style="display:none;margin-left:auto;align-items:center;gap:8px;font-size:11px;color:#a0a0b8;background:rgba(255,255,255,.06);padding:4px 12px;border-radius:20px">📅 <span id="update-ts"></span> <button onclick="autoLoadExcel()" title="Actualizar datos" style="background:none;border:none;cursor:pointer;color:#6c63ff;font-size:13px;padding:0;line-height:1">🔄</button></span>
 </div>
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab(0)">&#x1F4E6; Cuota Julio</button>
@@ -162,8 +162,8 @@ input[type=file]{display:none;}
     <div class="kpi" style="--kc:#3498db"><div class="lbl">OH Cases</div><div class="val" id="kpi_oh_cases">13,402</div><div class="sub">unidades inventario</div></div>
   </div>
   <div class="charts-row" style="grid-template-columns:1fr 1fr">
-    <div class="cbox"><h3>🏆 Top 10 Tiendas — Alcance Liquid Glass</h3><canvas id="c3lg"></canvas></div>
-    <div class="cbox"><h3>🏆 Top 10 Tiendas — Alcance Cases iPhone</h3><canvas id="c3cs"></canvas></div>
+    <div class="cbox"><h3>🟢 Liquid Glass por Región</h3><canvas id="c3lg"></canvas></div>
+    <div class="cbox"><h3>🔴 Cases iPhone por Región</h3><canvas id="c3cs"></canvas></div>
   </div>
   <div class="sec">
     <h3>Detalle por Tienda — Cases &amp; Liquid Glass + Inventario</h3>
@@ -757,19 +757,21 @@ function renderTab3Charts() {
   if(el('kpi_cases_alc')) el('kpi_cases_alc').textContent = csAlc + '%';
   if(el('kpi_oh_lg')) el('kpi_oh_lg').textContent = totalOhLg.toLocaleString();
   if(el('kpi_oh_cases')) el('kpi_oh_cases').textContent = totalOhCases.toLocaleString();
-  // Top 10 LG por alcance (tiendas con ventas > 0)
-  const lgTop = [...D.lg_tienda].filter(r=>r.lg_v>0).sort((a,b)=>b.lg_alc-a.lg_alc).slice(0,10);
-  mkChart('c3lg','bar',
-    lgTop.map(r=>r.tienda.replace('PRM TDA ','').substring(0,22)),
-    [{label:'Alcance %',data:lgTop.map(r=>r.lg_alc),backgroundColor:lgTop.map(r=>r.lg_alc>=100?'rgba(46,204,113,.9)':r.lg_alc>=50?'rgba(243,156,18,.9)':'rgba(255,107,107,.9)'),borderRadius:4}],
-    {plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y}% (${lgTop[ctx.dataIndex].lg_v} uds)`}}},scales:{y:{ticks:{callback:v=>v+'%'},color:'#a0a0b8'},x:{ticks:{color:'#a0a0b8',font:{size:9}}}}}
+  // Liquid Glass por Región
+  const lgR=D.lg_region;
+  mkChart('c3lg','bar',lgR.map(r=>r.region),
+    [{label:'Ventas',data:lgR.map(r=>r.lg_v||0),backgroundColor:'rgba(78,205,196,.9)',borderRadius:4},
+     {label:'Cuota',data:lgR.map(r=>Math.round(r.lg_cuota||0)),backgroundColor:'rgba(78,205,196,.25)',borderRadius:4}],
+    {plugins:{tooltip:{callbacks:{afterBody:ctx=>{const r=lgR[ctx[0].dataIndex];const alc=r.lg_cuota?Math.round(r.lg_v/r.lg_cuota*1000)/10:0;return['Alcance: '+alc+'%'];}}},legend:{labels:{color:'#a0a0b8'}}},
+     scales:{y:{ticks:{color:'#a0a0b8'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#a0a0b8',font:{size:10}}}}}
   );
-  // Top 10 Cases por alcance
-  const csTop = [...D.lg_tienda].filter(r=>r.cases_v>0).sort((a,b)=>b.cases_alc-a.cases_alc).slice(0,10);
-  mkChart('c3cs','bar',
-    csTop.map(r=>r.tienda.replace('PRM TDA ','').substring(0,22)),
-    [{label:'Alcance %',data:csTop.map(r=>r.cases_alc),backgroundColor:csTop.map(r=>r.cases_alc>=100?'rgba(46,204,113,.9)':r.cases_alc>=50?'rgba(243,156,18,.9)':'rgba(255,107,107,.9)'),borderRadius:4}],
-    {plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y}% (${csTop[ctx.dataIndex].cases_v} uds)`}}},scales:{y:{ticks:{callback:v=>v+'%'},color:'#a0a0b8'},x:{ticks:{color:'#a0a0b8',font:{size:9}}}}}
+  // Cases iPhone por Región
+  const csR=D.lg_region;
+  mkChart('c3cs','bar',csR.map(r=>r.region),
+    [{label:'Ventas',data:csR.map(r=>r.cases_v||0),backgroundColor:'rgba(255,107,107,.9)',borderRadius:4},
+     {label:'Cuota',data:csR.map(r=>Math.round(r.cases_cuota||0)),backgroundColor:'rgba(255,107,107,.25)',borderRadius:4}],
+    {plugins:{tooltip:{callbacks:{afterBody:ctx=>{const r=csR[ctx[0].dataIndex];const alc=r.cases_cuota?Math.round(r.cases_v/r.cases_cuota*1000)/10:0;return['Alcance: '+alc+'%'];}}},legend:{labels:{color:'#a0a0b8'}}},
+     scales:{y:{ticks:{color:'#a0a0b8'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#a0a0b8',font:{size:10}}}}}
   );
 }
 function renderTab4Charts() {
@@ -835,7 +837,7 @@ async function autoLoadExcel() {
 
   for (const fn of filenames) {
     try {
-      const res = await fetch('./' + fn + '?v=' + Date.now(), {cache: 'no-store'});
+      const res = await fetch('./' + fn + '?v=' + Date.now(), {cache: 'no-store', headers: {'Pragma': 'no-cache', 'Cache-Control': 'no-cache'}});
       if (res.ok) {
         buf = await res.arrayBuffer();
         fname = fn;
@@ -987,13 +989,8 @@ async function autoLoadExcel() {
   }
 }
 
-// Run on page load — wait for SheetJS to be available
-function waitForXLSX(retries) {
-  if (typeof XLSX !== 'undefined') { autoLoadExcel(); }
-  else if (retries > 0) { setTimeout(() => waitForXLSX(retries-1), 500); }
-  else { console.warn('SheetJS no cargó'); }
-}
-window.addEventListener('load', () => setTimeout(() => waitForXLSX(10), 300));
+// SheetJS carga de forma sincrónica (blocking script en <head>), ya está disponible aquí
+autoLoadExcel();
 
 </script>
 </body>
