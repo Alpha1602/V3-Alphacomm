@@ -476,8 +476,8 @@ let t4p=0,t4d=[];
 // Enrich cuota_jul with equipo+gerente from ar_clean (join by clave)
 function enrichAR(){
   const arMap={};
-  (D.ar_clean||[]).forEach(r=>{ arMap[r.clave]={equipo_ar:r.equipo, gerente_ar:r.gerente, director_ar:r.director}; });
-  (D.cuota_jul||[]).forEach(r=>{ const m=arMap[r.clave]||{}; r.equipo_ar=m.equipo_ar||0; r.gerente_ar=m.gerente_ar||''; });
+  (D.ar_clean||[]).forEach(r=>{ arMap[r.clave]={equipo_ar:r.equipo, gerente_ar:r.gerente, director_ar:r.director, alpha_ar:r.alphacomm||0}; });
+  (D.cuota_jul||[]).forEach(r=>{ const m=arMap[r.clave]||{}; r.equipo_ar=m.equipo_ar||0; r.gerente_ar=m.gerente_ar||''; r.alpha_ar=m.alpha_ar||0; });
 }
 enrichAR(); // run on startup
 // Pre-compute ventas_mes per tienda (join cuota_jul by clave)
@@ -722,8 +722,8 @@ function rebuildReg2() {
   const m = {};
   // Use cuota_jul as base (same stores as Tab 1)
   (D.cuota_jul||[]).forEach(r => {
-    if (!m[r.region]) m[r.region]={region:r.region,ventas:0,cuota:0,equipo:0};
-    const g=m[r.region]; g.ventas+=r.ventas||0; g.cuota+=r.cuota||0; g.equipo+=r.equipo_ar||0;
+    if (!m[r.region]) m[r.region]={region:r.region,ventas:0,cuota:0,equipo:0,alpha:0};
+    const g=m[r.region]; g.ventas+=r.ventas||0; g.cuota+=r.cuota||0; g.equipo+=r.equipo_ar||0; g.alpha+=r.alpha_ar||0;
   });
   D.reg2 = Object.values(m).map(r=>({...r, ar:r.equipo?Math.round(r.ventas/r.equipo*1000)/10:0})).sort((a,b)=>a.region.localeCompare(b.region));
 }
@@ -779,11 +779,19 @@ function renderTab2Charts() {
      {label:'Proyección Cierre',data:r2.map(proj),backgroundColor:'rgba(225,112,85,.75)',borderRadius:4,borderDash:[5,5]},
      {label:'Cuota',data:r2.map(r=>r.cuota),backgroundColor:'rgba(78,205,196,.3)',borderRadius:4},
      {label:'Equipos',data:r2.map(r=>r.equipo),backgroundColor:'rgba(249,202,36,.5)',borderRadius:4}]);
-  const arProjR=r2.map(r=>{const pe=projE(r);return pe?Math.round(proj(r)/pe*1000)/10:0;});
-  mkChart('c2b','bar',r2.map(r=>r.region),
-    [{label:'AR % Real',data:r2.map(r=>r.ar),backgroundColor:r2.map(r=>barColor(r.ar,50,35)),borderRadius:4},
-     {label:'AR % Proyectado',data:arProjR,backgroundColor:'rgba(225,112,85,.6)',borderRadius:4}],
-    {scales:{y:{max:100}}});
+  // Gráfica mixta: barras Alphacomm + Equipos (eje izq) y línea AR% (eje der)
+  mkChart('c2b','bar',r2.map(r=>r.region),[
+    {label:'Alphacomm',type:'bar',data:r2.map(r=>r.alpha||0),backgroundColor:'rgba(108,99,255,.85)',borderRadius:4,yAxisID:'y'},
+    {label:'Equipos',type:'bar',data:r2.map(r=>r.equipo||0),backgroundColor:'rgba(249,202,36,.4)',borderRadius:4,yAxisID:'y'},
+    {label:'AR %',type:'line',data:r2.map(r=>r.ar),borderColor:'rgba(78,205,196,1)',backgroundColor:'rgba(78,205,196,.1)',borderWidth:2,pointRadius:5,pointBackgroundColor:'rgba(78,205,196,1)',tension:0.3,fill:false,yAxisID:'y1'}
+  ],{
+    scales:{
+      x:{ticks:{color:'#a0a0b8',font:{size:10},maxRotation:30},grid:{color:'rgba(255,255,255,.04)'}},
+      y:{type:'linear',position:'left',ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'},title:{display:true,text:'Unidades',color:'#a0a0b8',font:{size:10}}},
+      y1:{type:'linear',position:'right',min:0,max:100,ticks:{color:'#4ecdc4',font:{size:10},callback:v=>v+'%'},grid:{drawOnChartArea:false},title:{display:true,text:'AR %',color:'#4ecdc4',font:{size:10}}}
+    },
+    plugins:{legend:{labels:{color:'#a0a0b8',font:{size:11}}},tooltip:{callbacks:{label:ctx=>{const v=ctx.raw;return ctx.dataset.yAxisID==='y1'?` AR%: ${v}%`:` ${ctx.dataset.label}: ${v.toLocaleString()}`;}}}}
+  });
   const tv=r2.reduce((a,r)=>a+r.ventas,0), te=r2.reduce((a,r)=>a+r.equipo,0);
   const tpv=Math.round(tv*pf), tpe=Math.round(te*pf);
   const arA=document.getElementById('ar_alpha'); if(arA) arA.textContent=tv.toLocaleString();
