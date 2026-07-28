@@ -204,6 +204,7 @@ input[type=file]{display:none;}
   <div class="improw">
     <button class="ibtn" onclick="exportImg(3)" title="Descarga imagen de esta pestaña">&#x1F4F7; Descargar Imagen</button>
     <button class="ibtn" onclick="exportCSV(3)" title="Descarga los datos en Excel">&#x1F4CA; Descargar Excel</button>
+    <button class="ibtn" onclick="showDesglose()" style="border-color:var(--accent);color:var(--accent)">&#x1F4E6; Desglose por Clase</button>
     <span id="importStatus3" style="font-size:11px;color:var(--accent3)"></span>
   </div>
   <div class="kpi-row">
@@ -1061,6 +1062,122 @@ async function autoLoadExcel() {
 // SheetJS carga de forma sincrónica (blocking script en <head>), ya está disponible aquí
 autoLoadExcel();
 
+// ─── DESGLOSE POR CLASE ────────────────────────────────────────────────────
+const _CATS=[
+  {key:'cat_cases',      name:'Cases iPhone',  color:'#ff6b6b', icon:'📱'},
+  {key:'cat_cables',     name:'Cables',         color:'#3498db', icon:'🔌'},
+  {key:'cat_chargers',   name:'Chargers',       color:'#f39c12', icon:'⚡'},
+  {key:'cat_liquid_glass',name:'Liquid Glass',  color:'#4ecdc4', icon:'🔵'},
+  {key:'cat_screen_prot',name:'Screen Prot.',   color:'#a29bfe', icon:'🛡️'},
+  {key:'cat_otros',      name:'Otros',          color:'#a0a0b8', icon:'📦'}
+];
+
+function showDesglose(){
+  const modal=document.getElementById('modal-desglose');
+  if(!modal)return;
+
+  const rows=D.oh_tienda||[];
+  const totalOH=rows.reduce((a,r)=>a+(r.cantidad||0),0);
+  const totalVentas=rows.reduce((a,r)=>a+(r.ventas_mes||0),0);
+  const dim=new Date(); const daysInMonth=new Date(dim.getFullYear(),dim.getMonth()+1,0).getDate();
+
+  // Totales por categoría
+  const catData=_CATS.map(c=>{
+    const qty=rows.reduce((a,r)=>a+(r[c.key]||0),0);
+    const pct=totalOH?Math.round(qty/totalOH*1000)/10:0;
+    // Semanas estimadas: proporcional a ventas totales
+    const ventasCat=totalOH?totalVentas*(qty/totalOH):0;
+    const semanas=ventasCat>0?Math.round(qty/(ventasCat/daysInMonth*7)*10)/10:0;
+    const sColor=semanas===0?'#a0a0b8':semanas<2?'#e74c3c':semanas<4?'#f39c12':'#2ecc71';
+    return{...c,qty,pct,semanas,sColor};
+  });
+
+  // Totales por región
+  const regMap={};
+  rows.forEach(r=>{
+    if(!regMap[r.region])regMap[r.region]={region:r.region,total:0};
+    _CATS.forEach(c=>{regMap[r.region][c.key]=(regMap[r.region][c.key]||0)+(r[c.key]||0);});
+    regMap[r.region].total+=(r.cantidad||0);
+  });
+  const regArr=Object.values(regMap).sort((a,b)=>a.region.localeCompare(b.region));
+  const totReg={region:'TOTAL',total:totalOH};
+  _CATS.forEach(c=>{totReg[c.key]=catData.find(x=>x.key===c.key).qty;});
+
+  // Render cards
+  document.getElementById('desglose-cards').innerHTML=catData.map(c=>`
+    <div style="background:rgba(255,255,255,.04);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:10px;color:#a0a0b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${c.icon} ${c.name}</div>
+          <div style="font-size:26px;font-weight:800;color:#fff;line-height:1">${c.qty.toLocaleString()}</div>
+          <div style="font-size:11px;color:#a0a0b8;margin-top:2px">piezas on-hand</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:20px;font-weight:700;color:${c.color}">${c.pct}%</div>
+          <div style="font-size:11px;color:${c.sColor};margin-top:4px">${c.semanas>0?c.semanas+' sem.':'—'}</div>
+        </div>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">
+        <div style="width:${Math.min(c.pct,100)}%;height:100%;background:${c.color};border-radius:3px;transition:width .5s ease"></div>
+      </div>
+    </div>`).join('');
+
+  // Render region table
+  const thStyle='padding:8px 10px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;position:sticky;top:0;background:#252840;z-index:1';
+  const renderRow=(r,isTot=false)=>{
+    const bg=isTot?'background:rgba(108,99,255,.15);font-weight:700':'';
+    return`<tr style="border-bottom:1px solid rgba(46,49,80,.4);${bg}">
+      <td style="padding:8px 10px;font-weight:${isTot?700:400};color:${isTot?'var(--accent)':'#e8e8f0'}">${r.region}</td>
+      ${_CATS.map(c=>`<td style="padding:8px 10px;text-align:right;color:${c.color}">${(r[c.key]||0).toLocaleString()}</td>`).join('')}
+      <td style="padding:8px 10px;text-align:right;font-weight:700;color:#fff">${(r.total||0).toLocaleString()}</td>
+    </tr>`;
+  };
+  document.getElementById('desglose-reg').innerHTML=`
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="${thStyle};text-align:left;color:#a0a0b8">Región</th>
+        ${_CATS.map(c=>`<th style="${thStyle};color:${c.color}">${c.icon} ${c.name}</th>`).join('')}
+        <th style="${thStyle};color:#fff">Total</th>
+      </tr></thead>
+      <tbody>${regArr.map(r=>renderRow(r)).join('')}${renderRow(totReg,true)}</tbody>
+    </table>`;
+
+  modal.style.display='flex';
+  // Animate bars
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    modal.querySelectorAll('[data-pct]').forEach(el=>{el.style.width=el.dataset.pct+'%';});
+  }));
+}
+
+function closeDesglose(){
+  const m=document.getElementById('modal-desglose');if(m)m.style.display='none';
+}
+
 </script>
+
+<!-- Modal Desglose por Clase -->
+<div id="modal-desglose" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeDesglose()">
+  <div style="background:#1a1d2e;border:1px solid #2e3150;border-radius:16px;width:100%;max-width:960px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <!-- Header del modal -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid #2e3150;background:linear-gradient(135deg,#1a1d2e,#252840)">
+      <div>
+        <h2 style="font-size:16px;font-weight:700;color:#fff">📦 Desglose por Clase de Inventario</h2>
+        <p style="font-size:11px;color:#a0a0b8;margin-top:3px">OH on-hand por categoría · Semanas estimadas de inventario</p>
+      </div>
+      <button onclick="closeDesglose()" style="background:rgba(255,255,255,.08);border:none;border-radius:8px;color:#a0a0b8;font-size:18px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center" title="Cerrar">&times;</button>
+    </div>
+    <!-- Body scrollable -->
+    <div style="overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px">
+      <!-- Cards por categoría -->
+      <div id="desglose-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px"></div>
+      <!-- Tabla por región -->
+      <div style="background:rgba(255,255,255,.03);border-radius:10px;border:1px solid #2e3150;overflow:auto;max-height:300px">
+        <div style="padding:10px 14px;font-size:10px;color:#a0a0b8;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #2e3150">Distribución por Región</div>
+        <div id="desglose-reg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
