@@ -208,11 +208,11 @@ input[type=file]{display:none;}
   </div>
   <div class="kpi-row">
     <div class="kpi" style="--kc:#6c63ff"><div class="lbl">OH Total</div><div class="val" id="kpi_oh_total">48,604</div><div class="sub">unidades totales</div></div>
-    <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Cases iPhone</div><div class="val" id="kpi_cat_cases">13,402</div><div class="sub">unidades</div></div>
-    <div class="kpi" style="--kc:#3498db"><div class="lbl">Cables</div><div class="val" id="kpi_cat_cables">13,196</div><div class="sub">unidades</div></div>
-    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Chargers</div><div class="val" id="kpi_cat_chargers">10,800</div><div class="sub">unidades</div></div>
-    <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Liquid Glass</div><div class="val" id="kpi_cat_lg">7,741</div><div class="sub">unidades</div></div>
-    <div class="kpi" style="--kc:#a29bfe"><div class="lbl">Screen Prot.</div><div class="val" id="kpi_cat_screen">3,465</div><div class="sub">unidades</div></div>
+    <div class="kpi" style="--kc:#ff6b6b"><div class="lbl">Cases iPhone</div><div class="val" id="kpi_cat_cases">—</div><div class="sub">unidades</div></div>
+    <div class="kpi" style="--kc:#3498db"><div class="lbl">Cables</div><div class="val" id="kpi_cat_cables">—</div><div class="sub">unidades</div></div>
+    <div class="kpi" style="--kc:#f39c12"><div class="lbl">Charger</div><div class="val" id="kpi_cat_chargers">—</div><div class="sub">unidades</div></div>
+    <div class="kpi" style="--kc:#4ecdc4"><div class="lbl">Liquid Glass</div><div class="val" id="kpi_cat_lg">—</div><div class="sub">unidades</div></div>
+    <div class="kpi" style="--kc:#a29bfe"><div class="lbl">Micas</div><div class="val" id="kpi_cat_screen">—</div><div class="sub">unidades</div></div>
   </div>
   <div class="charts-row">
     <div class="cbox"><h3>Distribución por Categoría</h3><canvas id="c4a"></canvas></div>
@@ -228,12 +228,12 @@ input[type=file]{display:none;}
         <select id="f4s" onchange="rt4()">
           <option value="t_d">Total &#x2193;</option>
           <option value="t_a">Total &#x2191;</option>
-          <option value="c_d">Cases &#x2193;</option>
-          <option value="l_d">Liquid Glass &#x2193;</option>
+          <option value="c_d">Cases iPhone &#x2193;</option>
+          <option value="l_d">Liquid &#x2193;</option>
         </select>
       </div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(4,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="gerente" onclick="toggleSort(4,'gerente')" style="cursor:pointer;user-select:none">Gerente<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(4,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cat_cases" onclick="toggleSort(4,'cat_cases')" style="cursor:pointer;user-select:none">Cases<span class="sarr"> ⇅</span></th><th data-col="cat_cables" onclick="toggleSort(4,'cat_cables')" style="cursor:pointer;user-select:none">Cables<span class="sarr"> ⇅</span></th><th data-col="cat_chargers" onclick="toggleSort(4,'cat_chargers')" style="cursor:pointer;user-select:none">Chargers<span class="sarr"> ⇅</span></th><th data-col="cat_liquid_glass" onclick="toggleSort(4,'cat_liquid_glass')" style="cursor:pointer;user-select:none">Liquid Glass<span class="sarr"> ⇅</span></th><th data-col="cat_screen_prot" onclick="toggleSort(4,'cat_screen_prot')" style="cursor:pointer;user-select:none">Screen Prot.<span class="sarr"> ⇅</span></th><th data-col="cat_otros" onclick="toggleSort(4,'cat_otros')" style="cursor:pointer;user-select:none">Otros<span class="sarr"> ⇅</span></th><th data-col="cantidad" onclick="toggleSort(4,'cantidad')" style="cursor:pointer;user-select:none">TTL OH<span class="sarr"> ⇅</span></th><th data-col="ventas_mes" onclick="toggleSort(4,'ventas_mes')" style="cursor:pointer;user-select:none">Ventas Jul<span class="sarr"> ⇅</span></th><th data-col="moi" onclick="toggleSort(4,'moi')" style="cursor:pointer;user-select:none">Semanas Inv.<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb4"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th data-col="region" onclick="toggleSort(4,'region')" style="cursor:pointer;user-select:none">Región<span class="sarr"> ⇅</span></th><th data-col="gerente" onclick="toggleSort(4,'gerente')" style="cursor:pointer;user-select:none">Gerente<span class="sarr"> ⇅</span></th><th data-col="tienda" onclick="toggleSort(4,'tienda')" style="cursor:pointer;user-select:none">Tienda<span class="sarr"> ⇅</span></th><th data-col="cat_cases_iphone" onclick="toggleSort(4,'cat_cases_iphone')" style="cursor:pointer;user-select:none">Cases iPhone<span class="sarr"> ⇅</span></th><th data-col="cat_cables" onclick="toggleSort(4,'cat_cables')" style="cursor:pointer;user-select:none">Cables<span class="sarr"> ⇅</span></th><th data-col="cat_charger" onclick="toggleSort(4,'cat_charger')" style="cursor:pointer;user-select:none">Charger<span class="sarr"> ⇅</span></th><th data-col="cat_liquid" onclick="toggleSort(4,'cat_liquid')" style="cursor:pointer;user-select:none">Liquid<span class="sarr"> ⇅</span></th><th data-col="cat_micas" onclick="toggleSort(4,'cat_micas')" style="cursor:pointer;user-select:none">Micas<span class="sarr"> ⇅</span></th><th data-col="cat_accesories" onclick="toggleSort(4,'cat_accesories')" style="cursor:pointer;user-select:none">Accesories<span class="sarr"> ⇅</span></th><th data-col="cantidad" onclick="toggleSort(4,'cantidad')" style="cursor:pointer;user-select:none">TTL OH<span class="sarr"> ⇅</span></th><th data-col="ventas_mes" onclick="toggleSort(4,'ventas_mes')" style="cursor:pointer;user-select:none">Ventas Jul<span class="sarr"> ⇅</span></th><th data-col="moi" onclick="toggleSort(4,'moi')" style="cursor:pointer;user-select:none">Semanas Inv.<span class="sarr"> ⇅</span></th></tr></thead><tbody id="tb4"></tbody></table></div>
     <div class="pag" id="pg4"></div>
   </div>
   <div class="sec" style="margin-top:20px">
@@ -511,15 +511,15 @@ function enrichCatOH(){
   (D.oh_tienda||[]).forEach(r=>{ ohMap[r.clave]=r; });
   (D.cuota_jul||[]).forEach(r=>{
     const o=ohMap[r.clave]||{};
-    r.c_cases=o.cat_cases||0; r.c_cables=o.cat_cables||0; r.c_chargers=o.cat_chargers||0;
-    r.c_lg=o.cat_liquid_glass||0; r.c_screen=o['cat_screen_prot']||0; r.c_otros=o.cat_otros||0;
+    r.c_cases=o.cat_cases_iphone||0; r.c_cables=o.cat_cables||0; r.c_chargers=o.cat_charger||0;
+    r.c_lg=o.cat_liquid||0; r.c_screen=o.cat_micas||0; r.c_otros=o.cat_accesories||0;
   });
 }
 enrichCatOH(); // run on startup
 function gT4(){
   const reg=document.getElementById('f4r').value,ger=document.getElementById('f4g').value,q=document.getElementById('f4q').value.toLowerCase(),s=document.getElementById('f4s').value;
   let rows=D.oh_tienda.filter(r=>(!reg||r.region===reg)&&(!ger||r.gerente===ger)&&(!q||r.tienda.toLowerCase().includes(q)||(r.clave||'').toLowerCase().includes(q)));
-  const sk=s==='c_d'?'cat_cases':s==='l_d'?'cat_liquid_glass':'cantidad';
+  const sk=s==='c_d'?'cat_cases_iphone':s==='l_d'?'cat_liquid':'cantidad';
   const dir=s==='t_a'?1:-1;
   rows.sort((a,b)=>((b[sk]||0)-(a[sk]||0))*dir);
   return rows;
@@ -528,14 +528,14 @@ function rt4(){t4p=0;t4d=gT4();rT4p();}
 function rT4p(){
   const tbody=document.getElementById('tb4'),sl=t4d.slice(t4p*PG,(t4p+1)*PG);
   // Totales primero
-  const _tc4=t4d.reduce((a,r)=>({cs:a.cs+(r.cat_cases||0),cb:a.cb+(r.cat_cables||0),ch:a.ch+(r.cat_chargers||0),lg:a.lg+(r.cat_liquid_glass||0),sp:a.sp+(r['cat_screen_prot']||0),ot:a.ot+(r.cat_otros||0),tot:a.tot+(r.cantidad||0),vm:a.vm+(r.ventas_mes||0)}),{cs:0,cb:0,ch:0,lg:0,sp:0,ot:0,tot:0,vm:0});
+  const _tc4=t4d.reduce((a,r)=>({cs:a.cs+(r.cat_cases_iphone||0),cb:a.cb+(r.cat_cables||0),ch:a.ch+(r.cat_charger||0),lg:a.lg+(r.cat_liquid||0),sp:a.sp+(r.cat_micas||0),ot:a.ot+(r.cat_accesories||0),tot:a.tot+(r.cantidad||0),vm:a.vm+(r.ventas_mes||0)}),{cs:0,cb:0,ch:0,lg:0,sp:0,ot:0,tot:0,vm:0});
   const _moi4=_tc4.vm>0?Math.round(_tc4.tot/_tc4.vm*10)/10:0,_mc4=_moi4===0?'#a0a0b8':_moi4<2?'#ff6b6b':_moi4<4?'#f39c12':'#2ecc71';
   const _totRow4=`<tr class="tot-row" style="font-weight:700;color:#fff;border-bottom:2px solid rgba(108,99,255,.5)"><td colspan="3" style="color:var(--accent);font-size:11px">TOTAL (${t4d.length} tiendas)</td><td style="text-align:right;color:#ff6b6b">${_tc4.cs.toLocaleString()}</td><td style="text-align:right;color:#3498db">${_tc4.cb.toLocaleString()}</td><td style="text-align:right;color:#f39c12">${_tc4.ch.toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${_tc4.lg.toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${_tc4.sp.toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${_tc4.ot.toLocaleString()}</td><td style="text-align:right;font-weight:700">${_tc4.tot.toLocaleString()}</td><td style="text-align:right;color:#e0b0ff">${_tc4.vm>0?_tc4.vm.toLocaleString():'-'}</td><td style="text-align:right;font-weight:700;color:${_mc4}">${_tc4.vm>0?_moi4+' sem':'-'}</td></tr>`;
   tbody.innerHTML=_totRow4+sl.map(r=>{
     const vm=r.ventas_mes||0;
     const moi=vm>0?Math.round(r.cantidad/vm*10)/10:0;
     const moiColor=moi===0?'#a0a0b8':moi<2?'#ff6b6b':moi<4?'#f39c12':'#2ecc71';
-    return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente||'').split(' ').slice(0,3).join(' ')}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#ff6b6b">${(r.cat_cases||0).toLocaleString()}</td><td style="text-align:right;color:#3498db">${(r.cat_cables||0).toLocaleString()}</td><td style="text-align:right;color:#f39c12">${(r.cat_chargers||0).toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${(r.cat_liquid_glass||0).toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${(r['cat_screen_prot']||0).toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${(r.cat_otros||0).toLocaleString()}</td><td style="text-align:right;font-weight:700">${r.cantidad.toLocaleString()}</td><td style="text-align:right;color:#e0b0ff;font-weight:600">${vm>0?vm.toLocaleString():'-'}</td><td style="text-align:right;font-weight:700;color:${moiColor}">${vm>0?moi+' sem':'-'}</td></tr>`;
+    return `<tr><td>${r.region}</td><td style="font-size:10px;color:#a0a0b8">${(r.gerente||''}).split(' ').slice(0,3).join(' ')}</td><td style="font-size:11px">${r.tienda}</td><td style="text-align:right;color:#ff6b6b">${(r.cat_cases_iphone||0).toLocaleString()}</td><td style="text-align:right;color:#3498db">${(r.cat_cables||0).toLocaleString()}</td><td style="text-align:right;color:#f39c12">${(r.cat_charger||0).toLocaleString()}</td><td style="text-align:right;color:#4ecdc4">${(r.cat_liquid||0).toLocaleString()}</td><td style="text-align:right;color:#a29bfe">${(r.cat_micas||0).toLocaleString()}</td><td style="text-align:right;color:#a0a0b8">${(r.cat_accesories||0).toLocaleString()}</td><td style="text-align:right;font-weight:700">${r.cantidad.toLocaleString()}</td><td style="text-align:right;color:#e0b0ff;font-weight:600">${vm>0?vm.toLocaleString():'-'}</td><td style="text-align:right;font-weight:700;color:${moiColor}">${vm>0?moi+' sem':'-'}</td></tr>`lor:${moiColor}">${vm>0?moi+' sem':'-'}</td></tr>`;
   }).join('');
   const _tbl4=tbody.closest('table');const _ft4=_tbl4.querySelector('tfoot');if(_ft4)_ft4.innerHTML='';
   mkPag('pg4',t4d.length,t4p,n=>{t4p=n;rT4p();});
@@ -586,8 +586,8 @@ function exportCSV(tabIdx) {
     headers = ['Región','Clave','Tienda','LG Ventas','LG Cuota','OH LG','LG Alc%','Cases Ventas','Cases Cuota','OH Cases','Cases Alc%'];
     rows = gT3().map(r => [r.region,r.clave,r.tienda,r.lg_v||0,Math.round(r.lg_cuota||0),r.oh_lg||0,r.lg_alc||0,r.cases_v||0,Math.round(r.cases_cuota||0),r.oh_cases||0,r.cases_alc||0]);
   } else {
-    headers = ['Región','Gerente','Tienda','Cases','Cables','Chargers','Liquid Glass','Screen Prot.','Otros','Total'];
-    rows = gT4().map(r => [r.region,r.gerente,r.tienda,r.cat_cases||0,r.cat_cables||0,r.cat_chargers||0,r.cat_liquid_glass||0,r['cat_screen_prot']||0,r.cat_otros||0,r.cantidad]);
+    headers = ['Región','Gerente','Tienda','Cases iPhone','Cables','Charger','Liquid','Micas','Accesories','Total'];
+    rows = gT4().map(r => [r.region,r.gerente,r.tienda,r.cat_cases_iphone||0,r.cat_cables||0,r.cat_charger||0,r.cat_liquid||0,r.cat_micas||0,r.cat_accesories||0,r.cantidad]);
   }
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   // Auto column width
@@ -674,13 +674,13 @@ function importExcel(input) {
         const rows = XLSX.utils.sheet_to_json(wb.Sheets['OH detalle'], {header:1, defval:null});
         const ohMap = {}, lgRegOH = {}, catTotals = {}, prodMap = {};
         rows.slice(3).filter(r => r[0] && r[10]).forEach(r => {
-          const cat = categorizaOH(r[6]);
+          const cat = (r[5]||'').toString().trim() || 'Accesories';
           const rg = r[3]||'N/A', k = r[1]||'', cant = Math.round(+r[10]||0);
           const desc = (r[6]||'').toString().trim();
           catTotals[cat] = (catTotals[cat]||0) + cant;
           if (!lgRegOH[rg]) lgRegOH[rg]={lg:0,cases:0,otros:0};
-          if (cat==='Liquid Glass') lgRegOH[rg].lg+=cant;
-          else if (cat==='Cases') lgRegOH[rg].cases+=cant;
+          if (cat==='Liquid') lgRegOH[rg].lg+=cant;
+          else if (cat==='Cases iPhone') lgRegOH[rg].cases+=cant;
           else lgRegOH[rg].otros+=cant;
           if (k) {
             if (!ohMap[k]) ohMap[k]={clave:k,tienda:r[0]||'',region:rg,gerente:r[2]||'',cantidad:0,cats:{}};
@@ -759,7 +759,7 @@ function rebuildReg2() {
 function rebuildLgFull() {
   const lgMap = {}; D.lg_tienda.forEach(r => { lgMap[r.clave]=r; });
   const ohMap = {}; (D.oh_tienda||[]).forEach(r => {
-    if (!ohMap[r.clave]) ohMap[r.clave]={oh_lg:r.cat_liquid_glass||0, oh_cases:r.cat_cases||0, gerente:r.gerente};
+    if (!ohMap[r.clave]) ohMap[r.clave]={oh_lg:r.cat_liquid||0, oh_cases:r.cat_cases_iphone||0, gerente:r.gerente};
   });
   const merged = {};
   [...Object.keys(lgMap), ...Object.keys(ohMap)].forEach(k => {
@@ -872,19 +872,19 @@ function renderTab4Charts() {
   const el4=id=>document.getElementById(id);
   const ohTotal=D.oh_tienda.reduce((a,r)=>a+(r.cantidad||0),0);
   if(el4('kpi_oh_total')) el4('kpi_oh_total').textContent=ohTotal.toLocaleString();
-  if(el4('kpi_cat_cases')) el4('kpi_cat_cases').textContent=(ct['Cases']||0).toLocaleString();
+  if(el4('kpi_cat_cases')) el4('kpi_cat_cases').textContent=(ct['Cases iPhone']||0).toLocaleString();
   if(el4('kpi_cat_cables')) el4('kpi_cat_cables').textContent=(ct['Cables']||0).toLocaleString();
-  if(el4('kpi_cat_chargers')) el4('kpi_cat_chargers').textContent=(ct['Chargers']||0).toLocaleString();
-  if(el4('kpi_cat_lg')) el4('kpi_cat_lg').textContent=(ct['Liquid Glass']||0).toLocaleString();
-  if(el4('kpi_cat_screen')) el4('kpi_cat_screen').textContent=(ct['Screen Prot.']||0).toLocaleString();
+  if(el4('kpi_cat_chargers')) el4('kpi_cat_chargers').textContent=(ct['Charger']||0).toLocaleString();
+  if(el4('kpi_cat_lg')) el4('kpi_cat_lg').textContent=(ct['Liquid']||0).toLocaleString();
+  if(el4('kpi_cat_screen')) el4('kpi_cat_screen').textContent=(ct['Micas']||0).toLocaleString();
   mkChart('c4a','doughnut',Object.keys(ct),
     [{data:Object.values(ct),backgroundColor:CL,borderColor:'rgba(0,0,0,.4)',borderWidth:2}],
     {scales:undefined,plugins:{legend:{position:'right',labels:{color:'#a0a0b8'}}}});
   const ohr=D.oh_lg_region;const ohrK=Object.keys(ohr).sort();
   mkChart('c4b','bar',ohrK,
-    [{label:'Cases',data:ohrK.map(k=>ohr[k].cases||0),backgroundColor:'rgba(255,107,107,.85)',borderRadius:4,stack:'s'},
-     {label:'Cables+Chargers+Otros',data:ohrK.map(k=>ohr[k].otros||0),backgroundColor:'rgba(249,202,36,.7)',borderRadius:4,stack:'s'},
-     {label:'Liquid Glass',data:ohrK.map(k=>ohr[k].lg||0),backgroundColor:'rgba(78,205,196,.85)',borderRadius:4,stack:'s'}],
+    [{label:'Cases iPhone',data:ohrK.map(k=>ohr[k].cases||0),backgroundColor:'rgba(255,107,107,.85)',borderRadius:4,stack:'s'},
+     {label:'Charger+Cables+Micas',data:ohrK.map(k=>ohr[k].otros||0),backgroundColor:'rgba(249,202,36,.7)',borderRadius:4,stack:'s'},
+     {label:'Liquid',data:ohrK.map(k=>ohr[k].lg||0),backgroundColor:'rgba(78,205,196,.85)',borderRadius:4,stack:'s'}],
     {scales:{x:{stacked:true},y:{stacked:true}}});
 }
 
@@ -1041,13 +1041,13 @@ async function autoLoadExcel() {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetOH], {header:1, defval:null});
       const ohMap = {}, lgRegOH = {}, catTotals = {}, prodMap = {};
       rows.slice(3).filter(r => r[0] && r[10]).forEach(r => {
-        const cat = categorizaOH(r[6]);
+        const cat = (r[5]||'').toString().trim() || 'Accesories';
         const rg = r[3]||'N/A', k = r[1]||'', cant = Math.round(+r[10]||0);
         const desc = (r[6]||'').toString().trim();
         catTotals[cat] = (catTotals[cat]||0) + cant;
         if (!lgRegOH[rg]) lgRegOH[rg]={lg:0,cases:0,otros:0};
-        if (cat==='Liquid Glass') lgRegOH[rg].lg+=cant;
-        else if (cat==='Cases') lgRegOH[rg].cases+=cant;
+        if (cat==='Liquid') lgRegOH[rg].lg+=cant;
+        else if (cat==='Cases iPhone') lgRegOH[rg].cases+=cant;
         else lgRegOH[rg].otros+=cant;
         if (k) {
           if (!ohMap[k]) ohMap[k]={clave:k,tienda:r[0]||'',region:rg,gerente:r[2]||'',cantidad:0,cats:{}};
