@@ -782,24 +782,6 @@ function enrichCatOH(){
   });
 }
 
-// ── Render inmediato desde datos embebidos (sin esperar Excel) ────────────────
-(function initRender(){
-  try{
-    enrichAR();
-    enrichCatOH();
-    rebuildReg1();
-    rebuildReg2();
-    (function enrichOH(){const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});})();
-    rebuildLgFull();
-    repopulateFilters();
-    renderTab1Charts(); rt1();
-    renderTab2Charts(); rt2();
-    renderTab3Charts(); rt3();
-    renderTab4Charts(); rt4();
-    renderPivot();
-  }catch(e){console.warn('initRender error:',e);}
-})();
-
 // SheetJS carga de forma sincrónica (blocking script en <head>), ya está disponible aquí
 autoLoadExcel();
 
@@ -1141,6 +1123,25 @@ function rT4p(){
   mkPag('pg4',t4d.length,t4p,'n=>{t4p=n;rT4p()}');
   requestAnimationFrame(()=>fixTotSticky(3));
 }
+
+
+// ── Render inmediato desde datos embebidos (ejecuta después de todos los let/const) ──
+(function initRender(){
+  try{
+    enrichAR();
+    enrichCatOH();
+    rebuildReg1();
+    rebuildReg2();
+    (function enrichOH(){const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});})();
+    rebuildLgFull();
+    repopulateFilters();
+    renderTab1Charts(); rt1();
+    renderTab2Charts(); rt2();
+    renderTab3Charts(); rt3();
+    renderTab4Charts(); rt4();
+    renderPivot();
+  }catch(e){console.warn('initRender error:',e);}
+})();
 
 </script>
 
