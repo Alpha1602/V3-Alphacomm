@@ -1125,22 +1125,34 @@ function rT4p(){
 }
 
 
-// ── Render inmediato desde datos embebidos (ejecuta después de todos los let/const) ──
+// ── Render inmediato — cada paso independiente con error visible ──────────────
 (function initRender(){
-  try{
-    enrichAR();
-    enrichCatOH();
-    rebuildReg1();
-    rebuildReg2();
-    (function enrichOH(){const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});})();
-    rebuildLgFull();
-    repopulateFilters();
-    renderTab1Charts(); rt1();
-    renderTab2Charts(); rt2();
-    renderTab3Charts(); rt3();
-    renderTab4Charts(); rt4();
-    renderPivot();
-  }catch(e){console.warn('initRender error:',e);}
+  const _errs=[];
+  function _s(fn,name){try{fn();}catch(e){_errs.push(name+': '+e.message);console.error('['+name+']',e);}}
+  _s(()=>enrichAR(),'enrichAR');
+  _s(()=>enrichCatOH(),'enrichCatOH');
+  _s(()=>rebuildReg1(),'rebuildReg1');
+  _s(()=>rebuildReg2(),'rebuildReg2');
+  _s(()=>{const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});},'enrichOH');
+  _s(()=>rebuildLgFull(),'rebuildLgFull');
+  _s(()=>repopulateFilters(),'repopulateFilters');
+  _s(()=>renderTab1Charts(),'renderTab1Charts');
+  _s(()=>rt1(),'rt1');
+  _s(()=>renderTab2Charts(),'renderTab2Charts');
+  _s(()=>rt2(),'rt2');
+  _s(()=>renderTab3Charts(),'renderTab3Charts');
+  _s(()=>rt3(),'rt3');
+  _s(()=>renderTab4Charts(),'renderTab4Charts');
+  _s(()=>rt4(),'rt4');
+  _s(()=>renderPivot(),'renderPivot');
+  if(_errs.length){
+    const dbg=document.createElement('div');
+    dbg.style.cssText='position:fixed;bottom:12px;right:12px;background:rgba(220,50,50,.95);color:#fff;padding:14px 18px;border-radius:10px;font-size:11px;z-index:9999;max-width:480px;font-family:monospace;white-space:pre-wrap;box-shadow:0 4px 20px rgba(0,0,0,.5)';
+    dbg.textContent='⚠️ Dashboard errors:
+'+_errs.join('
+');
+    document.body.appendChild(dbg);
+  }
 })();
 
 </script>
