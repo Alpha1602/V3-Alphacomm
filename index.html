@@ -766,6 +766,40 @@ async function autoLoadExcel() {
   }
 }
 
+// ── Missing enrich functions ─────────────────────────────────────────────────
+function enrichAR(){
+  const arMap={};
+  (D.ar_clean||[]).forEach(r=>{arMap[r.clave]={equipo_ar:r.equipo,gerente_ar:r.gerente,alpha_ar:r.alphacomm||0};});
+  (D.cuota_jul||[]).forEach(r=>{const m=arMap[r.clave]||{};r.equipo_ar=m.equipo_ar||0;r.gerente_ar=m.gerente_ar||'';r.alpha_ar=m.alpha_ar||0;});
+}
+function enrichCatOH(){
+  const ohMap={};
+  (D.oh_tienda||[]).forEach(r=>{ohMap[r.clave]=r;});
+  (D.cuota_jul||[]).forEach(r=>{
+    const o=ohMap[r.clave]||{};
+    r.c_cases=o.cat_cases_iphone||0;r.c_cables=o.cat_cables||0;r.c_chargers=o.cat_charger||0;
+    r.c_lg=o.cat_liquid||0;r.c_screen=o.cat_micas||0;r.c_otros=o.cat_accesories||0;
+  });
+}
+
+// ── Render inmediato desde datos embebidos (sin esperar Excel) ────────────────
+(function initRender(){
+  try{
+    enrichAR();
+    enrichCatOH();
+    rebuildReg1();
+    rebuildReg2();
+    (function enrichOH(){const vm={};(D.cuota_jul||[]).forEach(r=>{vm[r.clave]=(vm[r.clave]||0)+(r.ventas||0);});(D.oh_tienda||[]).forEach(r=>{r.ventas_mes=vm[r.clave]||0;});})();
+    rebuildLgFull();
+    repopulateFilters();
+    renderTab1Charts(); rt1();
+    renderTab2Charts(); rt2();
+    renderTab3Charts(); rt3();
+    renderTab4Charts(); rt4();
+    renderPivot();
+  }catch(e){console.warn('initRender error:',e);}
+})();
+
 // SheetJS carga de forma sincrónica (blocking script en <head>), ya está disponible aquí
 autoLoadExcel();
 
