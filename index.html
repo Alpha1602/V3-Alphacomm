@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Prime — Julio 2026</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{--bg:#0f1117;--bg2:#1a1d2e;--bg3:#252840;--accent:#6c63ff;--accent2:#ff6b6b;--accent3:#4ecdc4;--accent4:#f9ca24;--text:#e8e8f0;--text2:#a0a0b8;--border:#2e3150;--green:#2ecc71;--red:#e74c3c;--yellow:#f39c12;--blue:#3498db;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -1153,6 +1153,25 @@ function rT4p(){
 ');
     document.body.appendChild(dbg);
   }
+  // Debug: direct DOM write to verify table is writable
+  setTimeout(function(){
+    const _tb=document.getElementById('tb1');
+    const _cj=(D.cuota_jul||[]);
+    const _t1len=t1d?t1d.length:-1;
+    if(_tb){
+      const existingRows=_tb.querySelectorAll('tr').length;
+      if(existingRows===0){
+        // Force write a test row + first 3 real rows
+        let html=`<tr><td colspan="16" style="background:#1a3a1a;color:#2ecc71;padding:10px;text-align:center;font-family:monospace">
+          🔍 DEBUG — cuota_jul:${_cj.length} | t1d:${_t1len} | DOM ok | errores:${_errs.length}
+        </td></tr>`;
+        _cj.slice(0,3).forEach(function(r){
+          html+=`<tr style="background:#1a1d2e"><td>${r.region||''}</td><td>${r.sub_region||''}</td><td>${r.tienda||''}</td><td>${r.cuota||0}</td><td>${r.ventas||0}</td><td colspan="11" style="color:#a0a0b8">...</td></tr>`;
+        });
+        _tb.innerHTML=html;
+      }
+    }
+  }, 500);
 })();
 
 </script>
