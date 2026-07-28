@@ -242,12 +242,12 @@ input[type=file]{display:none;}
       <input type="text" placeholder="Buscar modelo..." oninput="filterPivot(this.value)" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:12px;width:200px">
       <select onchange="filterPivotCat(this.value)" style="background:#252840;border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12px">
         <option value="">Todas las categorías</option>
-        <option value="Cases">&#x1F4F1; Cases</option>
-        <option value="Liquid Glass">&#x1F535; Liquid Glass</option>
+        <option value="Cases iPhone">&#x1F4F1; Cases iPhone</option>
+        <option value="Liquid">&#x1F535; Liquid Glass</option>
+        <option value="Charger">&#x26A1; Chargers</option>
         <option value="Cables">&#x1F50C; Cables</option>
-        <option value="Chargers">&#x26A1; Chargers</option>
-        <option value="Screen Prot.">&#x1F6E1;&#xFE0F; Screen Prot.</option>
-        <option value="Otros">&#x1F4E6; Otros</option>
+        <option value="Micas">&#x1F6E1;&#xFE0F; Micas</option>
+        <option value="Accesories">&#x1F4E6; Accesories</option>
       </select>
       <span style="font-size:11px;color:#a0a0b8">Clic en categoría para expandir modelos</span>
     </div>
@@ -688,7 +688,8 @@ function importExcel(input) {
             ohMap[k].cats[cat]=(ohMap[k].cats[cat]||0)+cant;
           }
           if (desc) {
-            if (!prodMap[desc]) prodMap[desc]={producto:desc,categoria:cat,cantidad:0,regiones:{}};
+            const skuAlpha = (r[5]||'').toString().trim() || cat;
+            if (!prodMap[desc]) prodMap[desc]={producto:desc,categoria:skuAlpha,cantidad:0,regiones:{}};
             prodMap[desc].cantidad+=cant;
             prodMap[desc].regiones[rg]=(prodMap[desc].regiones[rg]||0)+cant;
           }
@@ -1053,7 +1054,8 @@ async function autoLoadExcel() {
           ohMap[k].cantidad+=cant; ohMap[k].cats[cat]=(ohMap[k].cats[cat]||0)+cant;
         }
         if (desc) {
-          if (!prodMap[desc]) prodMap[desc]={producto:desc,categoria:cat,cantidad:0,regiones:{}};
+          const skuAlpha = (r[5]||'').toString().trim() || cat;
+          if (!prodMap[desc]) prodMap[desc]={producto:desc,categoria:skuAlpha,cantidad:0,regiones:{}};
           prodMap[desc].cantidad+=cant;
           prodMap[desc].regiones[rg]=(prodMap[desc].regiones[rg]||0)+cant;
         }
@@ -1098,12 +1100,12 @@ autoLoadExcel();
 
 // ─── PIVOT DE INVENTARIO ────────────────────────────────────────────────────
 const _CAT_CFG={
-  'Cases':       {color:'#ff6b6b',icon:'📱'},
+  'Cases iPhone':{color:'#ff6b6b',icon:'📱'},
   'Cables':      {color:'#3498db',icon:'🔌'},
-  'Chargers':    {color:'#f39c12',icon:'⚡'},
-  'Liquid Glass':{color:'#4ecdc4',icon:'🔵'},
-  'Screen Prot.':{color:'#a29bfe',icon:'🛡️'},
-  'Otros':       {color:'#a0a0b8',icon:'📦'}
+  'Charger':     {color:'#f39c12',icon:'⚡'},
+  'Liquid':      {color:'#4ecdc4',icon:'🔵'},
+  'Micas':       {color:'#a29bfe',icon:'🛡️'},
+  'Accesories':  {color:'#a0a0b8',icon:'📦'}
 };
 
 let _pivotQ='', _pivotCat='', _pivotOpen={};
@@ -1127,7 +1129,7 @@ function renderPivot(){
   });
 
   const totalGlobal=Object.values(grupos).reduce((a,g)=>a+g.total,0);
-  const catOrder=['Cases','Liquid Glass','Cables','Chargers','Screen Prot.','Otros'];
+  const catOrder=['Cases iPhone','Liquid','Charger','Cables','Micas','Accesories'];
 
   container.innerHTML=catOrder.filter(c=>grupos[c]).map(cat=>{
     const g=grupos[cat]; const cfg=_CAT_CFG[cat]||{color:'#a0a0b8',icon:'📦'};
