@@ -875,9 +875,9 @@ async function autoLoad(){
       if(colGer<0)   colGer=2;
       if(colTda3<0)  colTda3=0;
       if(colProd<0)  colProd=6;
-      if(colCat<0)   colCat=5;
-      if(colSub<0)   colSub=7;
-      if(colCla<0)   colCla=8;
+      if(colCat<0)   colCat=12;  // Columna M
+      if(colSub<0)   colSub=13;  // Columna N
+      if(colCla<0)   colCla=14;  // Columna O
       if(colCant<0)  colCant=10;
       console.log('OH cols – Clave:'+colClave+' Reg:'+colReg3+' Tda:'+colTda3+' Cat:'+colCat+' Prod:'+colProd+' Cant:'+colCant);
       // Build oh_tienda (by clave) AND oh_productos (by product name)
@@ -934,7 +934,7 @@ window.addEventListener('load',function(){
   rT0(); rT1(); rT2(); rT3();
   renderPivot();
   renderCharts();
-  // Datos embebidos - sin fetch
+  autoLoad(); // Fetch Excel desde GitHub al abrir la página
 });
 </script>
 </body>
