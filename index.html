@@ -444,17 +444,36 @@ function rT1(){
 }
 
 // ── TAB 2 ──
+// FIX: use D.lg_tienda (175 records, correct cuota) + join OH from oh_tienda
+// D.lg_full doubles cuota because it distributes region totals to all 617 OH tiendas
 function rT2(){
   var reg=document.getElementById('f2r').value;
   var q=(document.getElementById('f2q').value||'').toLowerCase();
-  var rows=(D.lg_full||[]).filter(function(r){
+  // Build OH map for quick lookup
+  var ohMap={};
+  D.oh_tienda.forEach(function(r){ohMap[r.clave]=r;});
+  // Use lg_tienda as canonical source (has correct per-tienda cuota)
+  var rows=(D.lg_tienda||[]).filter(function(r){
     return (!reg||r.region===reg)&&(!q||r.tienda.toLowerCase().indexOf(q)>=0);
+  }).map(function(r){
+    var oh=ohMap[r.clave]||{};
+    return {region:r.region,tienda:r.tienda,clave:r.clave,
+      gerente:oh.gerente||'',
+      lg_v:r.lg_v||0, lg_cuota:r.lg_cuota||0, lg_alc:r.lg_alc||0,
+      oh_lg:oh.cat_liquid||0,
+      cases_v:r.cases_v||0, cases_cuota:r.cases_cuota||0, cases_alc:r.cases_alc||0,
+      oh_cases:oh.cat_cases_iphone||0};
   });
   rows=doSort(rows,_sd[2]);
-  var tc={lgv:0,lgc:0,lgoh:0,csv:0,csc:0,csoh:0};
-  rows.forEach(function(r){tc.lgv+=r.lg_v||0;tc.lgc+=r.lg_cuota||0;tc.lgoh+=r.oh_lg||0;tc.csv+=r.cases_v||0;tc.csc+=r.cases_cuota||0;tc.csoh+=r.oh_cases||0;});
+  // KPI totals: cuota from lg_region (authoritative), sales from table
+  var lgReg=D.lg_region||[];
+  var regF=reg?lgReg.filter(function(r){return r.region===reg;}):lgReg;
+  var totLgC=regF.reduce(function(a,r){return a+(r.lg_cuota||0);},0);
+  var totCsC=regF.reduce(function(a,r){return a+(r.cases_cuota||0);},0);
+  var tc={lgv:0,lgc:Math.round(totLgC),lgoh:0,csv:0,csc:Math.round(totCsC),csoh:0};
+  rows.forEach(function(r){tc.lgv+=r.lg_v;tc.lgoh+=r.oh_lg;tc.csv+=r.cases_v;tc.csoh+=r.oh_cases;});
   var la=tc.lgc?Math.round(tc.lgv/tc.lgc*1000)/10:0, ca=tc.csc?Math.round(tc.csv/tc.csc*1000)/10:0;
-  var html='<tr class="tot"><td colspan="2" style="color:var(--acc);font-size:10px">TOTAL ('+rows.length+')</td>'+
+  var html='<tr class="tot"><td colspan="2" style="color:var(--acc);font-size:10px">TOTAL ('+rows.length+' tiendas)</td>'+
     '<td style="text-align:right;color:#4ecdc4">'+n(tc.lgv)+'</td><td style="text-align:right;color:#4ecdc4">'+n(tc.lgc)+'</td>'+
     '<td style="text-align:right;color:#4ecdc4">'+n(tc.lgoh)+'</td><td style="text-align:right;color:#4ecdc4">'+la+'%</td>'+
     '<td style="text-align:right;color:#ff6b6b">'+n(tc.csv)+'</td><td style="text-align:right;color:#ff6b6b">'+n(tc.csc)+'</td>'+
@@ -538,8 +557,8 @@ function renderPivot(){
     var g=tree[cat], cfg=CATCFG[cat]||{c:'#a0a0b8',i:'📦'};
     var pctCat=grandTotal?Math.round(g.total/grandTotal*1000)/10:0;
     var catKey='cat_'+cat;
-    var catOpen=!!_pvOpen[catKey];
-    html+='<div class="pcat"><div class="pcat-hdr" onclick="_pvOpen[\''+catKey+'\']=!_pvOpen[\''+catKey+'\'];renderPivot()">'+
+    var catOpen=(_pvOpen[catKey]!==false); // open by default, close only if explicitly toggled off
+    html+='<div class="pcat"><div class="pcat-hdr" onclick="_pvOpen[\''+catKey+'\']=!catOpen;renderPivot()">'+
       '<span style="font-size:16px">'+cfg.i+'</span>'+
       '<span style="font-weight:700;color:'+cfg.c+';min-width:140px">'+cat+'</span>'+
       '<span class="badge" style="background:rgba(255,255,255,.06);color:var(--tx2)">'+n(g.total)+' uds</span>'+
@@ -550,10 +569,10 @@ function renderPivot(){
       Object.keys(g.subs).sort().forEach(function(sub){
         var sg=g.subs[sub];
         var subKey='sub_'+cat+'_'+sub;
-        var subOpen=!!_pvOpen[subKey];
+        var subOpen=(_pvOpen[subKey]!==false); // open by default
         var pctSub=g.total?Math.round(sg.total/g.total*1000)/10:0;
         html+='<div style="margin:6px 0;border-left:2px solid rgba(255,255,255,.08);padding-left:10px">'+
-          '<div onclick="_pvOpen[\''+subKey+'\']=!_pvOpen[\''+subKey+'\'];renderPivot()" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:5px 0">'+
+          '<div onclick="_pvOpen[\''+subKey+'\']=!subOpen;renderPivot()" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:5px 0">'+
           '<span style="font-size:11px;font-weight:600;color:'+cfg.c+';min-width:150px">'+sub+'</span>'+
           '<span style="font-size:10px;color:var(--tx2)">'+n(sg.total)+' uds &middot; '+pctSub+'%</span>'+
           '<span style="margin-left:auto;font-size:10px;color:var(--tx2)">'+(subOpen?'▲':'▼')+'</span></div>';
