@@ -64,6 +64,11 @@ tbody td{padding:7px 10px;font-size:11px;color:var(--tx);}
     <h1>Dashboard Prime &mdash; Julio 2026</h1>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
+    <label id="xlsxLabel" style="background:linear-gradient(135deg,#6c63ff,#a29bfe);color:#fff;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;white-space:nowrap">
+      <span>&#x1F4C2; Cargar Excel</span>
+      <input type="file" id="xlsxInput" accept=".xlsx,.xls" style="display:none" onchange="loadFromFile(this.files[0])">
+    </label>
+    <span id="xlsxStatus" style="font-size:10px;color:var(--tx2)"></span>
     <button onclick="exportCSV()" style="background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px">&#x1F4CA; CSV</button>
     <button onclick="exportImg()" style="background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px">&#x1F4F7; Imagen</button>
   </div>
@@ -706,7 +711,197 @@ function exportCSV(){
   a.download='cuota_julio.csv';a.click();
 }
 
-// ── AUTO-LOAD FROM EXCEL ──
+// ── LOAD FROM FILE (file picker) ──
+function loadFromFile(file){
+  if(!file) return;
+  var st=document.getElementById('xlsxStatus');
+  if(st) st.innerHTML='<span class="spin">⏳</span> Cargando...';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      parseWorkbook(wb);
+      if(st) st.textContent='✅ '+file.name+' — '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    }catch(err){
+      if(st) st.textContent='❌ Error: '+err.message;
+      console.error('loadFromFile:',err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── PARSE WORKBOOK (shared logic for file picker and URL fetch) ──
+function parseWorkbook(wb){
+  // ── Cuota Jul ──
+  var shCQ=wb.SheetNames.find(function(x){return x.trim()==='Cuota Jul';});
+  if(shCQ){
+    var rows=XLSX.utils.sheet_to_json(wb.Sheets[shCQ],{header:1,defval:null});
+    D.cuota_jul=rows.slice(3).filter(function(r){return r[0]&&r[2];}).map(function(r){
+      return {region:String(r[0]||'').trim(),sub_region:String(r[1]||'').trim(),clave:String(r[2]||'').trim(),
+        tienda:String(r[3]||'').trim(),cuota:Math.round(+r[4]||0),ventas:Math.round(+r[5]||0),
+        alcance:Math.round((+r[6]||0)*1000)/10,oh:Math.round(+r[7]||0),
+        resurtido:Math.round(+r[8]||0),faltante:Math.round(+r[9]||0),
+        riesgo:String(r[10]||'Sin riesgo'),piezas_sem:Math.round(+r[11]||0),proy:0};
+    });
+  }
+  // ── 1.AR — proy por tienda ──
+  var shAR=wb.SheetNames.find(function(x){return x.trim()==='1.AR';});
+  if(shAR){
+    var rows2=XLSX.utils.sheet_to_json(wb.Sheets[shAR],{header:1,defval:null});
+    var proyMap={};
+    D.ar_clean=rows2.slice(3).filter(function(r){return r[3]&&!String(r[0]||'').toUpperCase().includes('TOTAL');}).map(function(r){
+      var clave=String(r[3]||'').trim();
+      var proy=Math.round((+r[10]||0)*10)/10;  // col K = Alphacomm proy. cierre
+      proyMap[clave]=proy;
+      return {region:String(r[0]||'').trim(),gerente:String(r[2]||'').trim(),clave:clave,
+        tienda:String(r[4]||'').trim(),alphacomm:Math.round(+r[5]||0),equipo:Math.round(+r[8]||0),proy:proy};
+    });
+    // Join proy into cuota_jul
+    D.cuota_jul.forEach(function(r){r.proy=proyMap[r.clave]||0;});
+  }
+  // ── LG & Cases ──
+  var shLG=wb.SheetNames.find(function(x){
+    var lx=x.trim().toLowerCase();
+    return lx==='liquid & cases'||lx==='liquid and cases'||lx==='liquid&cases';
+  })||wb.SheetNames.find(function(x){
+    var lx=x.trim().toLowerCase();
+    return lx.includes('liquid')&&lx.includes('case');
+  })||wb.SheetNames.find(function(x){
+    var lx=x.trim().toLowerCase();
+    return (lx.includes('lg')||lx.includes('liquid'))&&(lx.includes('case')||lx.includes('cases'));
+  });
+  if(shLG){
+    var rowsLG=XLSX.utils.sheet_to_json(wb.Sheets[shLG],{header:1,defval:null});
+    var hdrLG=[],startLG=-1;
+    for(var ri=0;ri<Math.min(30,rowsLG.length);ri++){
+      var rv=rowsLG[ri]||[];
+      var rvs=rv.map(function(c){return String(c||'').toLowerCase().trim();});
+      var hasClave=rvs.some(function(v){return v.includes('clave')||v==='tienda'||v.includes('nombre')||v.includes('pdv');});
+      var hasLGcol=rvs.some(function(v){return v.includes('lg')||v.includes('liquid');});
+      if(hasClave&&hasLGcol){hdrLG=rvs;startLG=ri+1;break;}
+    }
+    if(startLG<0)startLG=1;
+    var cR=-1,cClv=-1,cTda=-1,cLGv=-1,cLGq=-1,cLGa=-1,cLGoh=-1,cCSv=-1,cCSq=-1,cCSa=-1,cCSoh=-1;
+    hdrLG.forEach(function(h,i){
+      var v=h.replace(/[áàâ]/g,'a').replace(/[éèê]/g,'e').replace(/[íìî]/g,'i').replace(/[óòô]/g,'o').replace(/[úùû]/g,'u').replace(/\s+/g,' ').trim();
+      if(v.startsWith('region')){if(cR<0)cR=i;}
+      else if(v.startsWith('clave')){if(cClv<0)cClv=i;}
+      else if(v==='tienda'||v.includes('nombre')||v==='pdv'){if(cTda<0)cTda=i;}
+      else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('venta')||v.includes('real'))){if(cLGv<0)cLGv=i;}
+      else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('cuota')||v.includes('meta'))){if(cLGq<0)cLGq=i;}
+      else if((v.includes('lg')||v.includes('liquid'))&&v.includes('alc')){if(cLGa<0)cLGa=i;}
+      else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('oh')||v.includes('inv')||v.includes('stock'))){if(cLGoh<0)cLGoh=i;}
+      else if(v.includes('case')&&(v.includes('venta')||v.includes('real'))){if(cCSv<0)cCSv=i;}
+      else if(v.includes('case')&&(v.includes('cuota')||v.includes('meta'))){if(cCSq<0)cCSq=i;}
+      else if(v.includes('case')&&v.includes('alc')){if(cCSa<0)cCSa=i;}
+      else if(v.includes('case')&&(v.includes('oh')||v.includes('inv')||v.includes('stock'))){if(cCSoh<0)cCSoh=i;}
+    });
+    if(cR<0)cR=0;if(cClv<0)cClv=1;if(cTda<0)cTda=2;if(cLGv<0)cLGv=3;if(cLGq<0)cLGq=5;if(cLGa<0)cLGa=6;
+    if(cCSv<0)cCSv=(cLGoh>=0)?8:7;if(cCSq<0)cCSq=9;if(cCSa<0)cCSa=10;
+    if(cCSoh<0&&cLGoh>=0)cCSoh=11;
+    var alcFactor=100;
+    for(var ai=startLG;ai<Math.min(startLG+10,rowsLG.length);ai++){
+      var aval=+(rowsLG[ai]||[])[cLGa]||0;
+      if(aval>2){alcFactor=1;break;}
+    }
+    var newLgTienda=[];
+    rowsLG.slice(startLG).forEach(function(r){
+      var clv=String(r[cClv]||'').trim(),tda=String(r[cTda]||'').trim(),reg=String(r[cR]||'').trim();
+      if(!clv||!tda||!reg)return;
+      var ru=reg.toUpperCase();
+      if(ru==='REGIÓN'||ru==='REGION'||ru.includes('TOTAL')||ru.includes('GRAND'))return;
+      newLgTienda.push({region:reg,clave:clv,tienda:tda,
+        lg_v:Math.round(+(r[cLGv]||0)),lg_cuota:+(r[cLGq]||0),lg_alc:Math.round(+(r[cLGa]||0)*alcFactor*10)/10,
+        oh_lg:cLGoh>=0?Math.round(+(r[cLGoh]||0)):0,
+        cases_v:Math.round(+(r[cCSv]||0)),cases_cuota:+(r[cCSq]||0),cases_alc:Math.round(+(r[cCSa]||0)*alcFactor*10)/10,
+        oh_cases:cCSoh>=0?Math.round(+(r[cCSoh]||0)):0});
+    });
+    if(newLgTienda.length>0){
+      D.lg_tienda=newLgTienda;
+      var regMap={};
+      newLgTienda.forEach(function(r){
+        if(!regMap[r.region])regMap[r.region]={region:r.region,lg_v:0,lg_cuota:0,oh_lg:0,cases_v:0,cases_cuota:0,oh_cases:0};
+        regMap[r.region].lg_v+=r.lg_v;regMap[r.region].lg_cuota+=r.lg_cuota;regMap[r.region].oh_lg+=r.oh_lg;
+        regMap[r.region].cases_v+=r.cases_v;regMap[r.region].cases_cuota+=r.cases_cuota;regMap[r.region].oh_cases+=r.oh_cases;
+      });
+      D.lg_region=Object.values(regMap).map(function(r){
+        r.lg_alc=r.lg_cuota?Math.round(r.lg_v/r.lg_cuota*1000)/10:0;
+        r.cases_alc=r.cases_cuota?Math.round(r.cases_v/r.cases_cuota*1000)/10:0;
+        return r;
+      });
+    }
+  }
+  // ── OH Detalle ──
+  // Cols reales: A(0)=Tienda, B(1)=Clave, C(2)=Gerente, D(3)=Region, F(5)=SkuAlpha/Cat, G(6)=Desc, H(7)=Modelo/Sub, I(8)=Subinv/Clase, K(10)=Cantidad
+  var shOH=wb.SheetNames.find(function(x){return x.toLowerCase().includes('oh detalle')||x.toLowerCase().includes('oh det');});
+  if(shOH){
+    var rows3=XLSX.utils.sheet_to_json(wb.Sheets[shOH],{header:1,defval:null});
+    var hdrIdx3=0;
+    for(var hi3=0;hi3<Math.min(5,rows3.length);hi3++){
+      var tr3=rows3[hi3]||[];
+      var ts3=tr3.map(function(c){return String(c||'').toLowerCase().trim();});
+      if(ts3.some(function(v3){return v3.includes('clave')||v3.includes('descripcion')||v3.includes('cantidad');})){hdrIdx3=hi3;break;}
+    }
+    var hdr3=rows3[hdrIdx3]||[];
+    var colCat=-1,colSub=-1,colCla=-1,colProd=-1,colCant=-1,colClave=-1,colReg3=-1,colGer=-1,colTda3=-1;
+    hdr3.forEach(function(h,i){
+      var v=String(h||'').toLowerCase().replace(/[áàâ]/g,'a').replace(/[éèê]/g,'e').replace(/[íìî]/g,'i').replace(/[óòô]/g,'o').replace(/[úùû]/g,'u').trim();
+      if(v==='region'){if(colReg3<0)colReg3=i;}
+      else if(v.includes('gerente')){if(colGer<0)colGer=i;}
+      else if(v==='tienda'||v.startsWith('nombre')){if(colTda3<0)colTda3=i;}
+      else if(v==='clave'||v.startsWith('clave')){if(colClave<0)colClave=i;}
+      else if(v.includes('descripcion')||v.includes('producto')){if(colProd<0)colProd=i;}
+      else if(v.includes('sub')&&v.includes('cat')){if(colSub<0)colSub=i;}
+      else if(v.includes('clase')||v==='class'){if(colCla<0)colCla=i;}
+      else if(v.includes('sku')||v.includes('categoria')){if(colCat<0)colCat=i;}  // 'sku alpha' detectado aquí
+      else if(v.includes('cantidad')||v==='cant'||v==='qty'){if(colCant<0)colCant=i;}
+    });
+    // Fallbacks basados en layout real: A(0)Tienda B(1)Clave C(2)Gerente D(3)Region F(5)SkuAlpha G(6)Desc H(7)Modelo I(8)Subinv K(10)Cant
+    if(colClave<0)colClave=1;
+    if(colReg3<0) colReg3=3;
+    if(colGer<0)  colGer=2;
+    if(colTda3<0) colTda3=0;
+    if(colProd<0) colProd=6;
+    if(colCat<0)  colCat=5;   // Col F = Sku alpha = Categoría
+    if(colSub<0)  colSub=7;   // Col H = Modelo = Sub Categoría
+    if(colCla<0)  colCla=8;   // Col I = Subinventario = Clase
+    if(colCant<0) colCant=10;
+    var tiendaMap={},prodMap={};
+    rows3.slice(hdrIdx3+1).filter(function(r){return r[colClave]&&r[colProd];}).forEach(function(r){
+      var clave=String(r[colClave]||'').trim();
+      var prod=String(r[colProd]||'').trim();
+      var cat=String(r[colCat]||'Accesories').trim();
+      var sub=String(r[colSub]||'').trim()||cat;
+      var cla=String(r[colCla]||'').trim()||'General';
+      var cant=Math.round(+r[colCant]||0);
+      if(!clave||cant<=0)return;
+      if(!tiendaMap[clave])tiendaMap[clave]={clave:clave,tienda:String(r[colTda3]||'').trim(),
+        region:String(r[colReg3]||'').trim(),gerente:String(r[colGer]||'').trim(),
+        cantidad:0,cat_cases_iphone:0,cat_cables:0,cat_charger:0,cat_liquid:0,cat_micas:0,cat_accesories:0};
+      tiendaMap[clave].cantidad+=cant;
+      var catL=cat.toLowerCase();
+      if(catL.includes('case'))tiendaMap[clave].cat_cases_iphone+=cant;
+      else if(catL.includes('cable'))tiendaMap[clave].cat_cables+=cant;
+      else if(catL.includes('charger')||catL.includes('cargador'))tiendaMap[clave].cat_charger+=cant;
+      else if(catL.includes('liquid')||catL==='lg')tiendaMap[clave].cat_liquid+=cant;
+      else if(catL.includes('mica'))tiendaMap[clave].cat_micas+=cant;
+      else tiendaMap[clave].cat_accesories+=cant;
+      if(!prodMap[prod])prodMap[prod]={producto:prod,categoria:cat,sub_categoria:sub,clase:cla,cantidad:0};
+      prodMap[prod].cantidad+=cant;
+    });
+    var newOH=Object.values(tiendaMap).filter(function(t){return t.cantidad>0;});
+    var newProds=Object.values(prodMap).filter(function(p){return p.cantidad>0;});
+    if(newOH.length>0)D.oh_tienda=newOH;
+    if(newProds.length>0)D.oh_productos=newProds;
+    var newCT={};
+    newProds.forEach(function(p){newCT[p.categoria]=(newCT[p.categoria]||0)+p.cantidad;});
+    if(Object.keys(newCT).length>0)D.cat_totals=newCT;
+  }
+  D.regiones=Array.from(new Set(D.cuota_jul.map(function(r){return r.region;}).filter(Boolean))).sort();
+  enrich(); initFilters(); rT0(); rT1(); rT2(); rT3(); renderPivot(); renderCharts();
+}
+
+// ── AUTO-LOAD FROM EXCEL (legacy URL fetch, ya no se usa al startup) ──
 async function autoLoad(){
   var ts=document.getElementById('ts');
   if(ts)ts.innerHTML='<span class="spin">&#x23F3;</span> Sincronizando con Excel...';
@@ -716,215 +911,12 @@ async function autoLoad(){
     if(!res.ok)throw new Error('HTTP '+res.status);
     var buf=await res.arrayBuffer();
     var wb=XLSX.read(new Uint8Array(buf),{type:'array'});
-    // ── Cuota Jul
-    var shCQ=wb.SheetNames.find(function(x){return x.trim()==='Cuota Jul';});
-    if(shCQ){
-      var rows=XLSX.utils.sheet_to_json(wb.Sheets[shCQ],{header:1,defval:null});
-      var now=new Date(), pf=new Date(now.getFullYear(),now.getMonth()+1,0).getDate()/now.getDate();
-      D.cuota_jul=rows.slice(3).filter(function(r){return r[0]&&r[2];}).map(function(r){
-        var proy=r[12]!=null?Math.round(+r[12]):Math.round((+r[5]||0)*pf);
-        return {region:String(r[0]||'').trim(),sub_region:String(r[1]||'').trim(),clave:String(r[2]||'').trim(),
-          tienda:String(r[3]||'').trim(),cuota:Math.round(+r[4]||0),ventas:Math.round(+r[5]||0),
-          alcance:Math.round((+r[6]||0)*1000)/10,oh:Math.round(+r[7]||0),
-          resurtido:Math.round(+r[8]||0),faltante:Math.round(+r[9]||0),
-          riesgo:String(r[10]||''),piezas_sem:Math.round(+r[11]||0),proy:proy};
-      });
-    }
-    // ── AR
-    var shAR=wb.SheetNames.find(function(x){return x.trim()==='1.AR';});
-    if(shAR){
-      var rows2=XLSX.utils.sheet_to_json(wb.Sheets[shAR],{header:1,defval:null});
-      D.ar_clean=rows2.slice(3).filter(function(r){return r[3]&&!String(r[0]||'').toUpperCase().includes('TOTAL');}).map(function(r){
-        return {region:String(r[0]||'').trim(),gerente:String(r[2]||'').trim(),clave:String(r[3]||'').trim(),
-          tienda:String(r[4]||'').trim(),alphacomm:Math.round(+r[5]||0),equipo:Math.round(+r[8]||0)};
-      });
-    }
-    // ── LG & Cases: buscar hoja de datos por tienda
-    // Prioridad: "Liquid & Cases" (si existe) → "Cuota LG-Cases Jul" (sección detalle)
-    var shLG = wb.SheetNames.find(function(x){
-      var lx = x.trim().toLowerCase();
-      return lx === 'liquid & cases' || lx === 'liquid and cases' || lx === 'liquid&cases';
-    }) || wb.SheetNames.find(function(x){
-      var lx = x.trim().toLowerCase();
-      return lx.includes('liquid') && lx.includes('case');
-    }) || wb.SheetNames.find(function(x){
-      var lx = x.trim().toLowerCase();
-      return (lx.includes('lg') || lx.includes('liquid')) && (lx.includes('case') || lx.includes('cases'));
-    });
-    if(shLG){
-      var rowsLG = XLSX.utils.sheet_to_json(wb.Sheets[shLG], {header:1, defval:null});
-      // Buscar fila de encabezado hasta fila 30 — requiere columna de clave/tienda Y columna LG
-      var hdrLG = [], startLG = -1;
-      for(var ri = 0; ri < Math.min(30, rowsLG.length); ri++){
-        var rv = rowsLG[ri] || [];
-        var rvs = rv.map(function(c){ return String(c||'').toLowerCase().trim(); });
-        var hasClave = rvs.some(function(v){ return v.includes('clave') || v === 'tienda' || v.includes('nombre') || v.includes('pdv'); });
-        var hasLGcol = rvs.some(function(v){ return v.includes('lg') || v.includes('liquid'); });
-        if(hasClave && hasLGcol){ hdrLG = rvs; startLG = ri + 1; break; }
-      }
-      if(startLG < 0) startLG = 1;
-      console.log('Hoja LG "'+shLG+'" – header en fila '+startLG+': '+hdrLG.join(' | '));
-      // Mapear columnas por nombre (acepta variantes como "Clave PDV", "Nombre PDV")
-      var cR=-1,cClv=-1,cTda=-1,cLGv=-1,cLGq=-1,cLGa=-1,cLGoh=-1,cCSv=-1,cCSq=-1,cCSa=-1,cCSoh=-1;
-      hdrLG.forEach(function(h,i){
-        var v=h.replace(/[áàâ]/g,'a').replace(/[éèê]/g,'e').replace(/[íìî]/g,'i').replace(/[óòô]/g,'o').replace(/[úùû]/g,'u').replace(/\s+/g,' ').trim();
-        if(v.startsWith('region'))                                                           { if(cR<0)   cR=i; }
-        else if(v.startsWith('clave'))                                                       { if(cClv<0) cClv=i; }
-        else if(v==='tienda'||v.includes('nombre')||v==='pdv')                              { if(cTda<0) cTda=i; }
-        else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('venta')||v.includes('real'))) { if(cLGv<0) cLGv=i; }
-        else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('cuota')||v.includes('meta'))){ if(cLGq<0) cLGq=i; }
-        else if((v.includes('lg')||v.includes('liquid'))&&v.includes('alc'))                { if(cLGa<0) cLGa=i; }
-        else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('oh')||v.includes('inv')||v.includes('stock'))) { if(cLGoh<0) cLGoh=i; }
-        else if(v.includes('case')&&(v.includes('venta')||v.includes('real')))              { if(cCSv<0) cCSv=i; }
-        else if(v.includes('case')&&(v.includes('cuota')||v.includes('meta')))              { if(cCSq<0) cCSq=i; }
-        else if(v.includes('case')&&v.includes('alc'))                                      { if(cCSa<0) cCSa=i; }
-        else if(v.includes('case')&&(v.includes('oh')||v.includes('inv')||v.includes('stock'))) { if(cCSoh<0) cCSoh=i; }
-      });
-      // Fallback por posición (layout Cuota LG-Cases Jul: reg,clave,nombre,LGv,LGshr,LGq,LGalc,CSv,CSshr,CSq,CSalc)
-      if(cR<0)   cR=0;
-      if(cClv<0) cClv=1;
-      if(cTda<0) cTda=2;
-      if(cLGv<0) cLGv=3;
-      if(cLGq<0) cLGq=5;
-      if(cLGa<0) cLGa=6;
-      // cCSv fallback: si cLGoh no fue detectado en header, NO asignar fallback 7 (colisiona con CSv)
-      if(cCSv<0) cCSv = (cLGoh>=0) ? 8 : 7;
-      if(cCSq<0) cCSq = (cLGoh>=0) ? 9 : 9;
-      if(cCSa<0) cCSa = (cLGoh>=0) ? 10 : 10;
-      // OH solo con fallback si hay cols suficientes (>11)
-      if(cCSoh<0 && cLGoh>=0) cCSoh=11;
-      // cLGoh queda -1 si no fue detectado → OH = 0 → rT2() usa cat_liquid de oh_tienda
-      console.log('Col map – Clv:'+cClv+' Tda:'+cTda+' LGv:'+cLGv+' LGq:'+cLGq+' LGoh:'+cLGoh+' CSv:'+cCSv+' CSq:'+cCSq+' CSoh:'+cCSoh);
-      // Detectar si el alcance es decimal (0.04) o porcentaje (4.4)
-      var alcFactor = 100;
-      for(var ai=startLG; ai<Math.min(startLG+10, rowsLG.length); ai++){
-        var aval = +(rowsLG[ai]||[])[cLGa] || 0;
-        if(aval > 2){ alcFactor = 1; break; } // ya es porcentaje
-      }
-      var newLgTienda = [];
-      rowsLG.slice(startLG).forEach(function(r){
-        var clv = String(r[cClv]||'').trim();
-        var tda = String(r[cTda]||'').trim();
-        var reg = String(r[cR]||'').trim();
-        if(!clv || !tda || !reg) return;
-        var ru = reg.toUpperCase();
-        if(ru==='REGIÓN'||ru==='REGION'||ru.includes('TOTAL')||ru.includes('GRAND')) return;
-        newLgTienda.push({
-          region: reg, clave: clv, tienda: tda,
-          lg_v:        Math.round(+(r[cLGv]||0)),
-          lg_cuota:    +(r[cLGq]||0),
-          lg_alc:      Math.round(+(r[cLGa]||0)*alcFactor*10)/10,
-          oh_lg:       cLGoh>=0 ? Math.round(+(r[cLGoh]||0)) : 0,
-          cases_v:     Math.round(+(r[cCSv]||0)),
-          cases_cuota: +(r[cCSq]||0),
-          cases_alc:   Math.round(+(r[cCSa]||0)*alcFactor*10)/10,
-          oh_cases:    cCSoh>=0 ? Math.round(+(r[cCSoh]||0)) : 0
-        });
-      });
-      console.log('Registros LG parseados: '+newLgTienda.length+
-        ' | LGv_total:'+newLgTienda.reduce(function(a,r){return a+r.lg_v;},0)+
-        ' | CSv_total:'+newLgTienda.reduce(function(a,r){return a+r.cases_v;},0));
-      if(newLgTienda.length > 0){
-        D.lg_tienda = newLgTienda;
-        var regMap = {};
-        newLgTienda.forEach(function(r){
-          if(!regMap[r.region]) regMap[r.region]={region:r.region,lg_v:0,lg_cuota:0,oh_lg:0,cases_v:0,cases_cuota:0,oh_cases:0};
-          regMap[r.region].lg_v+=r.lg_v; regMap[r.region].lg_cuota+=r.lg_cuota; regMap[r.region].oh_lg+=r.oh_lg;
-          regMap[r.region].cases_v+=r.cases_v; regMap[r.region].cases_cuota+=r.cases_cuota; regMap[r.region].oh_cases+=r.oh_cases;
-        });
-        D.lg_region = Object.values(regMap).map(function(r){
-          r.lg_alc    = r.lg_cuota    ? Math.round(r.lg_v/r.lg_cuota*1000)/10    : 0;
-          r.cases_alc = r.cases_cuota ? Math.round(r.cases_v/r.cases_cuota*1000)/10 : 0;
-          return r;
-        });
-      }
-    } else {
-      console.warn('No se encontró hoja LG/Cases. Hojas: '+wb.SheetNames.join(' | '));
-    }
-    // ── OH Detalle: actualiza oh_tienda + oh_productos
-    var shOH=wb.SheetNames.find(function(x){return x.toLowerCase().includes('oh detalle')||x.toLowerCase().includes('oh det');});
-    if(shOH){
-      var rows3=XLSX.utils.sheet_to_json(wb.Sheets[shOH],{header:1,defval:null});
-      // Buscar fila de encabezado real (primeras 5 filas)
-      var hdrIdx3=0;
-      for(var hi3=0;hi3<Math.min(5,rows3.length);hi3++){
-        var tr3=rows3[hi3]||[];
-        var ts3=tr3.map(function(c){return String(c||'').toLowerCase().trim();});
-        if(ts3.some(function(v3){return v3.includes('clave')||v3.includes('descripcion')||v3.includes('cantidad');})){
-          hdrIdx3=hi3; break;
-        }
-      }
-      var hdr=rows3[hdrIdx3]||[];
-      var colCat=-1,colSub=-1,colCla=-1,colProd=-1,colCant=-1,colClave=-1,colReg3=-1,colGer=-1,colTda3=-1;
-      hdr.forEach(function(h,i){
-        var v=String(h||'').toLowerCase().replace(/[áàâ]/g,'a').replace(/[éèê]/g,'e').replace(/[íìî]/g,'i').replace(/[óòô]/g,'o').replace(/[úùû]/g,'u').trim();
-        if(v==='region'||v==='region')                                  { if(colReg3<0) colReg3=i; }
-        else if(v.includes('gerente'))                                   { if(colGer<0)  colGer=i; }
-        else if(v==='tienda'||v.startsWith('nombre'))                    { if(colTda3<0) colTda3=i; }
-        else if(v==='clave'||v.startsWith('clave'))                      { if(colClave<0) colClave=i; }
-        else if(v.includes('descripcion')||v.includes('producto'))       { if(colProd<0)  colProd=i; }
-        else if(v.includes('sub')&&v.includes('cat'))                    { if(colSub<0)   colSub=i; }
-        else if(v.includes('clase')||v==='class')                        { if(colCla<0)   colCla=i; }
-        else if(v.includes('categoria')&&!v.includes('sub'))             { if(colCat<0)   colCat=i; }
-        else if(v.includes('cantidad')||v==='cant'||v==='qty')           { if(colCant<0)  colCant=i; }
-      });
-      // Fallbacks para layout estándar OH detalle:
-      // Col0=Tienda, Col1=Clave, Col2=Gerente, Col3=Región, Col4=Codigo, Col5=SkuAlpha/Cat, Col6=Descripcion, Col10=Cantidad
-      if(colClave<0) colClave=1;
-      if(colReg3<0)  colReg3=3;
-      if(colGer<0)   colGer=2;
-      if(colTda3<0)  colTda3=0;
-      if(colProd<0)  colProd=6;
-      if(colCat<0)   colCat=12;  // Columna M
-      if(colSub<0)   colSub=13;  // Columna N
-      if(colCla<0)   colCla=14;  // Columna O
-      if(colCant<0)  colCant=10;
-      console.log('OH cols – Clave:'+colClave+' Reg:'+colReg3+' Tda:'+colTda3+' Cat:'+colCat+' Prod:'+colProd+' Cant:'+colCant);
-      // Build oh_tienda (by clave) AND oh_productos (by product name)
-      var tiendaMap={};
-      var prodMap={};
-      rows3.slice(hdrIdx3+1).filter(function(r){return r[colClave]&&r[colProd];}).forEach(function(r){
-        var clave=String(r[colClave]||'').trim();
-        var tienda=String(r[colTda3]||'').trim();
-        var region=String(r[colReg3]||'').trim();
-        var gerente=String(r[colGer]||'').trim();
-        var prod=String(r[colProd]||'').trim();
-        var cat=String(r[colCat]||'Accesories').trim();
-        var sub=String(r[colSub]||'').trim()||inferSubcat(prod,cat);
-        var cla=String(r[colCla]||'').trim()||inferClase(prod,cat);
-        var cant=Math.round(+r[colCant]||0);
-        if(!clave||isNaN(cant)||cant<0) return;
-        // oh_tienda
-        if(!tiendaMap[clave]) tiendaMap[clave]={clave:clave,tienda:tienda,region:region,gerente:gerente,
-          cantidad:0,cat_cases_iphone:0,cat_cables:0,cat_charger:0,cat_liquid:0,cat_micas:0,cat_accesories:0};
-        tiendaMap[clave].cantidad+=cant;
-        var catL=cat.toLowerCase();
-        if(catL.includes('case')||catL.includes('cases')) tiendaMap[clave].cat_cases_iphone+=cant;
-        else if(catL.includes('cable')) tiendaMap[clave].cat_cables+=cant;
-        else if(catL.includes('charger')||catL.includes('cargador')) tiendaMap[clave].cat_charger+=cant;
-        else if(catL.includes('liquid')||catL.includes('lg')) tiendaMap[clave].cat_liquid+=cant;
-        else if(catL.includes('mica')) tiendaMap[clave].cat_micas+=cant;
-        else tiendaMap[clave].cat_accesories+=cant;
-        // oh_productos
-        if(!prodMap[prod]) prodMap[prod]={producto:prod,categoria:cat,sub_categoria:sub,clase:cla,cantidad:0};
-        prodMap[prod].cantidad+=cant;
-      });
-      var newOH=Object.values(tiendaMap).filter(function(t){return t.cantidad>0;});
-      var newProds=Object.values(prodMap).filter(function(p){return p.cantidad>0;});
-      if(newOH.length>0) D.oh_tienda=newOH;
-      if(newProds.length>0) D.oh_productos=newProds;
-      // Rebuild cat_totals
-      var newCT={};
-      newProds.forEach(function(p){newCT[p.categoria]=(newCT[p.categoria]||0)+p.cantidad;});
-      if(Object.keys(newCT).length>0) D.cat_totals=newCT;
-      console.log('OH sheet parsed: '+newOH.length+' tiendas, '+newProds.length+' productos');
-    }
-    if(ts)ts.textContent='✅ Datos actualizados — '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+' | Hojas: '+wb.SheetNames.join(', ');
+    parseWorkbook(wb);
+    if(ts)ts.textContent='✅ Datos actualizados — '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
   }catch(e){
     console.warn('autoLoad:',e);
-    if(ts)ts.textContent='📦 Datos embebidos (Excel no disponible)';
+    if(ts)ts.textContent='📦 Datos embebidos';
   }
-  enrich(); initFilters(); rT0(); rT1(); rT2(); rT3(); renderPivot(); renderCharts();
 }
 
 // ── STARTUP ──
