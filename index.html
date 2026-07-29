@@ -64,11 +64,6 @@ tbody td{padding:7px 10px;font-size:11px;color:var(--tx);}
     <h1>Dashboard Prime &mdash; Julio 2026</h1>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
-    <label id="xlsxLabel" style="background:linear-gradient(135deg,#6c63ff,#a29bfe);color:#fff;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px;border:none;white-space:nowrap">
-      <span>&#x1F4C2; Cargar Excel</span>
-      <input type="file" id="xlsxInput" accept=".xlsx,.xls" style="display:none" onchange="loadFromFile(this.files[0])">
-    </label>
-    <span id="xlsxStatus" style="font-size:10px;color:var(--tx2)"></span>
     <button onclick="exportCSV()" style="background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px">&#x1F4CA; CSV</button>
     <button onclick="exportImg()" style="background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px">&#x1F4F7; Imagen</button>
   </div>
