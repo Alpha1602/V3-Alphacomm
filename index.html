@@ -150,12 +150,12 @@ tbody td{padding:7px 10px;font-size:11px;color:var(--tx);}
 <!-- TAB 2 -->
 <div class="tc" id="t2">
   <div class="krow">
-    <div class="kpi" style="--kc:#4ecdc4"><div class="lb">Ventas LG</div><div class="vl" id="k_lgv">153</div><div class="sb">alcance 4.4%</div></div>
+    <div class="kpi" style="--kc:#4ecdc4"><div class="lb">Ventas LG</div><div class="vl" id="k_lgv">153</div><div class="sb" id="k_lgv_sub">piezas julio</div></div>
     <div class="kpi" style="--kc:#4ecdc4"><div class="lb">Cuota LG Julio</div><div class="vl" id="k_lgc">3,500</div><div class="sb">piezas</div></div>
-    <div class="kpi" style="--kc:#4ecdc4"><div class="lb">OH Liquid Glass</div><div class="vl" id="k_lgoh">7,741</div><div class="sb">unidades</div></div>
-    <div class="kpi" style="--kc:#ff6b6b"><div class="lb">Ventas Cases</div><div class="vl" id="k_csv">182</div><div class="sb">alcance 5.2%</div></div>
-    <div class="kpi" style="--kc:#ff6b6b"><div class="lb">Cuota Cases</div><div class="vl" id="k_csc">3,499</div><div class="sb">piezas</div></div>
-    <div class="kpi" style="--kc:#ff6b6b"><div class="lb">OH Cases</div><div class="vl" id="k_csoh">13,151</div><div class="sb">unidades</div></div>
+    <div class="kpi" style="--kc:#4ecdc4"><div class="lb">OH Liquid Glass</div><div class="vl" id="k_lgoh">7,741</div><div class="sb">unidades inventario</div></div>
+    <div class="kpi" style="--kc:#ff6b6b"><div class="lb">Ventas Cases</div><div class="vl" id="k_csv">182</div><div class="sb" id="k_csv_sub">piezas julio</div></div>
+    <div class="kpi" style="--kc:#ff6b6b"><div class="lb">Cuota Cases iPhone</div><div class="vl" id="k_csc">3,500</div><div class="sb">piezas julio</div></div>
+    <div class="kpi" style="--kc:#ff6b6b"><div class="lb">OH Cases</div><div class="vl" id="k_csoh">13,151</div><div class="sb">unidades inventario</div></div>
   </div>
   <div class="crow">
     <div class="cbox"><h3>Liquid Glass por Regi&oacute;n</h3><canvas id="c3a"></canvas></div>
@@ -165,12 +165,20 @@ tbody td{padding:7px 10px;font-size:11px;color:var(--tx);}
     <label>Regi&oacute;n</label><select id="f2r" onchange="rT2()"><option value="">Todas</option></select>
     <label>Buscar</label><input id="f2q" placeholder="Tienda..." oninput="rT2()" style="width:180px">
   </div>
+  <div style="font-size:11px;font-weight:700;color:var(--tx);padding:12px 0 6px;letter-spacing:.5px">DETALLE POR TIENDA &mdash; CASES &amp; LIQUID GLASS</div>
   <div class="tw"><table>
-    <thead><tr>
-      <th>Regi&oacute;n</th><th>Tienda</th>
-      <th style="color:#4ecdc4;text-align:right">LG Ventas</th><th style="color:#4ecdc4;text-align:right">LG Cuota</th><th style="color:#4ecdc4;text-align:right">OH LG</th><th style="color:#4ecdc4;text-align:right">LG Alc%</th>
-      <th style="color:#ff6b6b;text-align:right">Cases Ventas</th><th style="color:#ff6b6b;text-align:right">Cases Cuota</th><th style="color:#ff6b6b;text-align:right">OH Cases</th><th style="color:#ff6b6b;text-align:right">Cases Alc%</th>
-    </tr></thead>
+    <thead>
+      <tr>
+        <th rowspan="2" style="vertical-align:middle">Regi&oacute;n</th>
+        <th rowspan="2" style="vertical-align:middle">Tienda</th>
+        <th colspan="4" style="text-align:center;color:#4ecdc4;border-bottom:2px solid #4ecdc4;padding-bottom:4px">&#x1F7E2; LIQUID GLASS</th>
+        <th colspan="4" style="text-align:center;color:#ff6b6b;border-bottom:2px solid #ff6b6b;padding-bottom:4px">&#x1F534; CASES iPHONE</th>
+      </tr>
+      <tr>
+        <th style="color:#4ecdc4;text-align:right">Ventas</th><th style="color:#4ecdc4;text-align:right">Cuota</th><th style="color:#4ecdc4;text-align:right">OH</th><th style="color:#4ecdc4;text-align:right">Alc%</th>
+        <th style="color:#ff6b6b;text-align:right">Ventas</th><th style="color:#ff6b6b;text-align:right">Cuota</th><th style="color:#ff6b6b;text-align:right">OH</th><th style="color:#ff6b6b;text-align:right">Alc%</th>
+      </tr>
+    </thead>
     <tbody id="tb2"></tbody>
   </table></div>
 </div>
@@ -449,54 +457,68 @@ function rT1(){
 function rT2(){
   var reg=document.getElementById('f2r').value;
   var q=(document.getElementById('f2q').value||'').toLowerCase();
-  // Build OH map for quick lookup
+  // OH lookup desde oh_tienda
   var ohMap={};
   D.oh_tienda.forEach(function(r){ohMap[r.clave]=r;});
-  // Use lg_tienda as canonical source (has correct per-tienda cuota)
-  // OH: prefer value from lg_tienda (parsed from "Cuota LG-Cases Jul"), fallback to oh_tienda categories
+  // Datos por tienda desde lg_tienda
   var rows=(D.lg_tienda||[]).filter(function(r){
-    return (!reg||r.region===reg)&&(!q||r.tienda.toLowerCase().indexOf(q)>=0);
+    return (!reg||r.region===reg)&&(!q||r.tienda.toLowerCase().indexOf(q)>=0||(r.clave||'').toLowerCase().indexOf(q)>=0);
   }).map(function(r){
     var oh=ohMap[r.clave]||{};
     return {region:r.region,tienda:r.tienda,clave:r.clave,
-      gerente:oh.gerente||'',
       lg_v:r.lg_v||0, lg_cuota:r.lg_cuota||0, lg_alc:r.lg_alc||0,
-      oh_lg: (r.oh_lg!=null&&r.oh_lg>0) ? r.oh_lg : (oh.cat_liquid||0),
+      oh_lg:  (r.oh_lg>0) ? r.oh_lg : (oh.cat_liquid||0),
       cases_v:r.cases_v||0, cases_cuota:r.cases_cuota||0, cases_alc:r.cases_alc||0,
-      oh_cases: (r.oh_cases!=null&&r.oh_cases>0) ? r.oh_cases : (oh.cat_cases_iphone||0)};
+      oh_cases:(r.oh_cases>0) ? r.oh_cases : (oh.cat_cases_iphone||0)};
   });
   rows=doSort(rows,_sd[2]);
-  // KPI totals: cuota from lg_region (authoritative), sales from table
+  // KPI cuota desde lg_region (autorizado)
   var lgReg=D.lg_region||[];
   var regF=reg?lgReg.filter(function(r){return r.region===reg;}):lgReg;
-  var totLgC  = regF.reduce(function(a,r){return a+(r.lg_cuota||0);},0);
-  var totCsC  = regF.reduce(function(a,r){return a+(r.cases_cuota||0);},0);
-  var totLgOH = regF.reduce(function(a,r){return a+(r.oh_lg||0);},0);
-  var totCsOH = regF.reduce(function(a,r){return a+(r.oh_cases||0);},0);
+  var totLgC = regF.reduce(function(a,r){return a+(r.lg_cuota||0);},0);
+  var totCsC = regF.reduce(function(a,r){return a+(r.cases_cuota||0);},0);
+  // KPI OH: si hay filtro de región → suma oh_tienda de esa región; si no → cat_totals global
+  var totLgOH, totCsOH;
+  if(reg){
+    var ohReg=D.oh_tienda.filter(function(r){return r.region===reg;});
+    totLgOH=ohReg.reduce(function(a,r){return a+(r.cat_liquid||0);},0);
+    totCsOH=ohReg.reduce(function(a,r){return a+(r.cat_cases_iphone||0);},0);
+  } else {
+    totLgOH=(D.cat_totals&&D.cat_totals['Liquid']!=null) ? D.cat_totals['Liquid']
+            : D.oh_tienda.reduce(function(a,r){return a+(r.cat_liquid||0);},0);
+    totCsOH=(D.cat_totals&&D.cat_totals['Cases iPhone']!=null) ? D.cat_totals['Cases iPhone']
+            : D.oh_tienda.reduce(function(a,r){return a+(r.cat_cases_iphone||0);},0);
+  }
+  // Totales de tabla
   var tc={lgv:0,lgc:Math.round(totLgC),lgoh:Math.round(totLgOH),csv:0,csc:Math.round(totCsC),csoh:Math.round(totCsOH)};
-  rows.forEach(function(r){tc.lgv+=r.lg_v;tc.csv+=r.cases_v;
-    // If lg_region OH already populated from Excel, don't double-add from rows
-    if(!totLgOH){tc.lgoh+=r.oh_lg;} if(!totCsOH){tc.csoh+=r.oh_cases;}
-  });
+  rows.forEach(function(r){tc.lgv+=r.lg_v; tc.csv+=r.cases_v;});
   var la=tc.lgc?Math.round(tc.lgv/tc.lgc*1000)/10:0, ca=tc.csc?Math.round(tc.csv/tc.csc*1000)/10:0;
+  // TOTAL row: OH muestra el total global (no solo suma de tiendas subset)
   var html='<tr class="tot"><td colspan="2" style="color:var(--acc);font-size:10px">TOTAL ('+rows.length+' tiendas)</td>'+
-    '<td style="text-align:right;color:#4ecdc4">'+n(tc.lgv)+'</td><td style="text-align:right;color:#4ecdc4">'+n(tc.lgc)+'</td>'+
+    '<td style="text-align:right;color:#4ecdc4">'+n(tc.lgv)+'</td><td style="text-align:right;color:#4ecdc4">'+n(Math.round(tc.lgc))+'</td>'+
     '<td style="text-align:right;color:#4ecdc4">'+n(tc.lgoh)+'</td><td style="text-align:right;color:#4ecdc4">'+la+'%</td>'+
-    '<td style="text-align:right;color:#ff6b6b">'+n(tc.csv)+'</td><td style="text-align:right;color:#ff6b6b">'+n(tc.csc)+'</td>'+
+    '<td style="text-align:right;color:#ff6b6b">'+n(tc.csv)+'</td><td style="text-align:right;color:#ff6b6b">'+n(Math.round(tc.csc))+'</td>'+
     '<td style="text-align:right;color:#ff6b6b">'+n(tc.csoh)+'</td><td style="text-align:right;color:#ff6b6b">'+ca+'%</td></tr>';
   rows.forEach(function(r){
     var la2=r.lg_alc||0, ca2=r.cases_alc||0;
     var lc=la2>=80?'#2ecc71':la2>=40?'#f39c12':'#e74c3c', cc=ca2>=80?'#2ecc71':ca2>=40?'#f39c12':'#e74c3c';
     html+='<tr><td>'+r.region+'</td><td>'+r.tienda+'</td>'+
-      '<td style="text-align:right;color:#4ecdc4">'+n(r.lg_v)+'</td><td style="text-align:right;color:#4ecdc4">'+n(r.lg_cuota)+'</td>'+
+      '<td style="text-align:right;color:#4ecdc4">'+n(r.lg_v)+'</td><td style="text-align:right;color:#4ecdc4">'+n(Math.round(r.lg_cuota))+'</td>'+
       '<td style="text-align:right;color:#4ecdc4">'+n(r.oh_lg)+'</td><td style="text-align:right;color:'+lc+'">'+la2+'%</td>'+
-      '<td style="text-align:right;color:#ff6b6b">'+n(r.cases_v)+'</td><td style="text-align:right;color:#ff6b6b">'+n(r.cases_cuota)+'</td>'+
+      '<td style="text-align:right;color:#ff6b6b">'+n(r.cases_v)+'</td><td style="text-align:right;color:#ff6b6b">'+n(Math.round(r.cases_cuota))+'</td>'+
       '<td style="text-align:right;color:#ff6b6b">'+n(r.oh_cases)+'</td><td style="text-align:right;color:'+cc+'">'+ca2+'%</td></tr>';
   });
   var tb=document.getElementById('tb2'); if(tb)tb.innerHTML=html;
   function se(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
-  se('k_lgv',n(tc.lgv)); se('k_lgc',n(tc.lgc)); se('k_lgoh',n(tc.lgoh));
-  se('k_csv',n(tc.csv)); se('k_csc',n(tc.csc)); se('k_csoh',n(tc.csoh));
+  se('k_lgv',n(tc.lgv));
+  se('k_lgc',n(Math.round(totLgC)));
+  se('k_lgoh',n(Math.round(totLgOH)));
+  se('k_csv',n(tc.csv));
+  se('k_csc',n(Math.round(totCsC)));
+  se('k_csoh',n(Math.round(totCsOH)));
+  // Actualizar subtítulo de alcance en KPIs
+  var ela=document.getElementById('k_lgv_sub'); if(ela)ela.textContent='alcance '+la+'%';
+  var eca=document.getElementById('k_csv_sub'); if(eca)eca.textContent='alcance '+ca+'%';
 }
 
 // ── TAB 3 ──
@@ -719,75 +741,86 @@ async function autoLoad(){
           tienda:String(r[4]||'').trim(),alphacomm:Math.round(+r[5]||0),equipo:Math.round(+r[8]||0)};
       });
     }
-    // ── LG & Cases: usar "Liquid & Cases" (datos por tienda) o "Cuota LG-Cases Jul"
-    // NOTA: "Cuota LG-Cases Jul" es tabla pivot por mes — no sirve para tienda.
-    // "Liquid & Cases" tiene los datos por tienda con columnas planas.
+    // ── LG & Cases: buscar hoja de datos por tienda
+    // Prioridad: "Liquid & Cases" (si existe) → "Cuota LG-Cases Jul" (sección detalle)
     var shLG = wb.SheetNames.find(function(x){
       var lx = x.trim().toLowerCase();
       return lx === 'liquid & cases' || lx === 'liquid and cases' || lx === 'liquid&cases';
     }) || wb.SheetNames.find(function(x){
       var lx = x.trim().toLowerCase();
       return lx.includes('liquid') && lx.includes('case');
+    }) || wb.SheetNames.find(function(x){
+      var lx = x.trim().toLowerCase();
+      return (lx.includes('lg') || lx.includes('liquid')) && (lx.includes('case') || lx.includes('cases'));
     });
     if(shLG){
       var rowsLG = XLSX.utils.sheet_to_json(wb.Sheets[shLG], {header:1, defval:null});
-      // Encontrar fila de encabezado (tiene 'clave' o 'tienda')
-      var hdrLG = [], startLG = 1;
-      for(var ri = 0; ri < Math.min(8, rowsLG.length); ri++){
+      // Buscar fila de encabezado hasta fila 30 — requiere columna de clave/tienda Y columna LG
+      var hdrLG = [], startLG = -1;
+      for(var ri = 0; ri < Math.min(30, rowsLG.length); ri++){
         var rv = rowsLG[ri] || [];
         var rvs = rv.map(function(c){ return String(c||'').toLowerCase().trim(); });
-        if(rvs.indexOf('clave') >= 0 || rvs.indexOf('tienda') >= 0){
-          hdrLG = rvs; startLG = ri + 1; break;
-        }
+        var hasClave = rvs.some(function(v){ return v.includes('clave') || v === 'tienda' || v.includes('nombre') || v.includes('pdv'); });
+        var hasLGcol = rvs.some(function(v){ return v.includes('lg') || v.includes('liquid'); });
+        if(hasClave && hasLGcol){ hdrLG = rvs; startLG = ri + 1; break; }
       }
-      // Log encabezados para debug
-      console.log('Hoja LG "'+shLG+'" – encabezados (fila '+startLG+'): '+hdrLG.join(' | '));
-      // Mapear columnas
+      if(startLG < 0) startLG = 1;
+      console.log('Hoja LG "'+shLG+'" – header en fila '+startLG+': '+hdrLG.join(' | '));
+      // Mapear columnas por nombre (acepta variantes como "Clave PDV", "Nombre PDV")
       var cR=-1,cClv=-1,cTda=-1,cLGv=-1,cLGq=-1,cLGa=-1,cLGoh=-1,cCSv=-1,cCSq=-1,cCSa=-1,cCSoh=-1;
       hdrLG.forEach(function(h,i){
-        var v=h.replace(/[áà]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i').replace(/[óò]/g,'o').replace(/[úù]/g,'u').replace(/\s+/g,' ');
-        if(v==='region'||v==='region') cR=i;
-        else if(v==='clave') cClv=i;
-        else if(v==='tienda') cTda=i;
-        else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('venta')||v.includes('real')||v==='lg')) cLGv=i;
-        else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('cuota')||v.includes('meta'))) cLGq=i;
-        else if((v.includes('lg')||v.includes('liquid'))&&v.includes('alc')) cLGa=i;
-        else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('oh')||v.includes('inv')||v.includes('stock'))) cLGoh=i;
-        else if(v.includes('case')&&(v.includes('venta')||v.includes('real')||v==='cases')) cCSv=i;
-        else if(v.includes('case')&&(v.includes('cuota')||v.includes('meta'))) cCSq=i;
-        else if(v.includes('case')&&v.includes('alc')) cCSa=i;
-        else if(v.includes('case')&&(v.includes('oh')||v.includes('inv')||v.includes('stock'))) cCSoh=i;
+        var v=h.replace(/[áàâ]/g,'a').replace(/[éèê]/g,'e').replace(/[íìî]/g,'i').replace(/[óòô]/g,'o').replace(/[úùû]/g,'u').replace(/\s+/g,' ').trim();
+        if(v.startsWith('region'))                                                           { if(cR<0)   cR=i; }
+        else if(v.startsWith('clave'))                                                       { if(cClv<0) cClv=i; }
+        else if(v==='tienda'||v.includes('nombre')||v==='pdv')                              { if(cTda<0) cTda=i; }
+        else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('venta')||v.includes('real'))) { if(cLGv<0) cLGv=i; }
+        else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('cuota')||v.includes('meta'))){ if(cLGq<0) cLGq=i; }
+        else if((v.includes('lg')||v.includes('liquid'))&&v.includes('alc'))                { if(cLGa<0) cLGa=i; }
+        else if((v.includes('lg')||v.includes('liquid'))&&(v.includes('oh')||v.includes('inv')||v.includes('stock'))) { if(cLGoh<0) cLGoh=i; }
+        else if(v.includes('case')&&(v.includes('venta')||v.includes('real')))              { if(cCSv<0) cCSv=i; }
+        else if(v.includes('case')&&(v.includes('cuota')||v.includes('meta')))              { if(cCSq<0) cCSq=i; }
+        else if(v.includes('case')&&v.includes('alc'))                                      { if(cCSa<0) cCSa=i; }
+        else if(v.includes('case')&&(v.includes('oh')||v.includes('inv')||v.includes('stock'))) { if(cCSoh<0) cCSoh=i; }
       });
-      // Posiciones fallback (layout típico: región,sub,clave,tienda,LGv,LGq,LGalc,LGoh,CSv,CSq,CSalc,CSoh)
-      if(cR<0)    cR=0;
-      if(cClv<0)  cClv=2;
-      if(cTda<0)  cTda=3;
-      if(cLGv<0)  cLGv=4;
-      if(cLGq<0)  cLGq=5;
-      if(cLGa<0)  cLGa=6;
-      if(cLGoh<0) cLGoh=7;
-      if(cCSv<0)  cCSv=8;
-      if(cCSq<0)  cCSq=9;
-      if(cCSa<0)  cCSa=10;
-      if(cCSoh<0) cCSoh=11;
-      console.log('Col map – LGv:'+cLGv+' LGq:'+cLGq+' LGoh:'+cLGoh+' CSv:'+cCSv+' CSq:'+cCSq+' CSoh:'+cCSoh);
+      // Fallback por posición (layout Cuota LG-Cases Jul: reg,clave,nombre,LGv,LGshr,LGq,LGalc,CSv,CSshr,CSq,CSalc)
+      if(cR<0)   cR=0;
+      if(cClv<0) cClv=1;
+      if(cTda<0) cTda=2;
+      if(cLGv<0) cLGv=3;
+      if(cLGq<0) cLGq=5;
+      if(cLGa<0) cLGa=6;
+      // cCSv fallback: si cLGoh no fue detectado en header, NO asignar fallback 7 (colisiona con CSv)
+      if(cCSv<0) cCSv = (cLGoh>=0) ? 8 : 7;
+      if(cCSq<0) cCSq = (cLGoh>=0) ? 9 : 9;
+      if(cCSa<0) cCSa = (cLGoh>=0) ? 10 : 10;
+      // OH solo con fallback si hay cols suficientes (>11)
+      if(cCSoh<0 && cLGoh>=0) cCSoh=11;
+      // cLGoh queda -1 si no fue detectado → OH = 0 → rT2() usa cat_liquid de oh_tienda
+      console.log('Col map – Clv:'+cClv+' Tda:'+cTda+' LGv:'+cLGv+' LGq:'+cLGq+' LGoh:'+cLGoh+' CSv:'+cCSv+' CSq:'+cCSq+' CSoh:'+cCSoh);
+      // Detectar si el alcance es decimal (0.04) o porcentaje (4.4)
+      var alcFactor = 100;
+      for(var ai=startLG; ai<Math.min(startLG+10, rowsLG.length); ai++){
+        var aval = +(rowsLG[ai]||[])[cLGa] || 0;
+        if(aval > 2){ alcFactor = 1; break; } // ya es porcentaje
+      }
       var newLgTienda = [];
       rowsLG.slice(startLG).forEach(function(r){
         var clv = String(r[cClv]||'').trim();
         var tda = String(r[cTda]||'').trim();
         var reg = String(r[cR]||'').trim();
         if(!clv || !tda || !reg) return;
-        if(reg.toUpperCase().includes('TOTAL') || reg.toUpperCase().includes('GRAND')) return;
+        var ru = reg.toUpperCase();
+        if(ru==='REGIÓN'||ru==='REGION'||ru.includes('TOTAL')||ru.includes('GRAND')) return;
         newLgTienda.push({
           region: reg, clave: clv, tienda: tda,
           lg_v:        Math.round(+(r[cLGv]||0)),
           lg_cuota:    +(r[cLGq]||0),
-          lg_alc:      Math.round(+(r[cLGa]||0)*10)/10,
-          oh_lg:       Math.round(+(r[cLGoh]||0)),
+          lg_alc:      Math.round(+(r[cLGa]||0)*alcFactor*10)/10,
+          oh_lg:       cLGoh>=0 ? Math.round(+(r[cLGoh]||0)) : 0,
           cases_v:     Math.round(+(r[cCSv]||0)),
           cases_cuota: +(r[cCSq]||0),
-          cases_alc:   Math.round(+(r[cCSa]||0)*10)/10,
-          oh_cases:    Math.round(+(r[cCSoh]||0))
+          cases_alc:   Math.round(+(r[cCSa]||0)*alcFactor*10)/10,
+          oh_cases:    cCSoh>=0 ? Math.round(+(r[cCSoh]||0)) : 0
         });
       });
       console.log('Registros LG parseados: '+newLgTienda.length+
@@ -808,33 +841,51 @@ async function autoLoad(){
         });
       }
     } else {
-      console.warn('No se encontró hoja "Liquid & Cases". Hojas: '+wb.SheetNames.join(' | '));
+      console.warn('No se encontró hoja LG/Cases. Hojas: '+wb.SheetNames.join(' | '));
     }
     // ── OH Detalle: actualiza oh_tienda + oh_productos
     var shOH=wb.SheetNames.find(function(x){return x.toLowerCase().includes('oh detalle')||x.toLowerCase().includes('oh det');});
     if(shOH){
       var rows3=XLSX.utils.sheet_to_json(wb.Sheets[shOH],{header:1,defval:null});
-      var hdr=rows3[0]||[];
+      // Buscar fila de encabezado real (primeras 5 filas)
+      var hdrIdx3=0;
+      for(var hi3=0;hi3<Math.min(5,rows3.length);hi3++){
+        var tr3=rows3[hi3]||[];
+        var ts3=tr3.map(function(c){return String(c||'').toLowerCase().trim();});
+        if(ts3.some(function(v3){return v3.includes('clave')||v3.includes('descripcion')||v3.includes('cantidad');})){
+          hdrIdx3=hi3; break;
+        }
+      }
+      var hdr=rows3[hdrIdx3]||[];
       var colCat=-1,colSub=-1,colCla=-1,colProd=-1,colCant=-1,colClave=-1,colReg3=-1,colGer=-1,colTda3=-1;
       hdr.forEach(function(h,i){
-        var v=String(h||'').toLowerCase().trim();
-        if(v==='region'||v==='región') colReg3=i;
-        else if(v.includes('gerente')) colGer=i;
-        else if(v==='tienda') colTda3=i;
-        else if(v==='clave') colClave=i;
-        else if(v.includes('producto')||v.includes('descripcion')) colProd=i;
-        else if(v.includes('sub')&&v.includes('cat')) colSub=i;
-        else if(v.includes('clase')||v==='class') colCla=i;
-        else if(v.includes('categoria')&&!v.includes('sub')) colCat=i;
-        else if(v.includes('cantidad')||v==='cant'||v==='qty') colCant=i;
+        var v=String(h||'').toLowerCase().replace(/[áàâ]/g,'a').replace(/[éèê]/g,'e').replace(/[íìî]/g,'i').replace(/[óòô]/g,'o').replace(/[úùû]/g,'u').trim();
+        if(v==='region'||v==='region')                                  { if(colReg3<0) colReg3=i; }
+        else if(v.includes('gerente'))                                   { if(colGer<0)  colGer=i; }
+        else if(v==='tienda'||v.startsWith('nombre'))                    { if(colTda3<0) colTda3=i; }
+        else if(v==='clave'||v.startsWith('clave'))                      { if(colClave<0) colClave=i; }
+        else if(v.includes('descripcion')||v.includes('producto'))       { if(colProd<0)  colProd=i; }
+        else if(v.includes('sub')&&v.includes('cat'))                    { if(colSub<0)   colSub=i; }
+        else if(v.includes('clase')||v==='class')                        { if(colCla<0)   colCla=i; }
+        else if(v.includes('categoria')&&!v.includes('sub'))             { if(colCat<0)   colCat=i; }
+        else if(v.includes('cantidad')||v==='cant'||v==='qty')           { if(colCant<0)  colCant=i; }
       });
-      if(colClave<0)colClave=1; if(colReg3<0)colReg3=0; if(colGer<0)colGer=2;
-      if(colTda3<0)colTda3=3; if(colProd<0)colProd=4; if(colCat<0)colCat=5;
-      if(colSub<0)colSub=6; if(colCla<0)colCla=7; if(colCant<0)colCant=10;
+      // Fallbacks para layout estándar OH detalle:
+      // Col0=Tienda, Col1=Clave, Col2=Gerente, Col3=Región, Col4=Codigo, Col5=SkuAlpha/Cat, Col6=Descripcion, Col10=Cantidad
+      if(colClave<0) colClave=1;
+      if(colReg3<0)  colReg3=3;
+      if(colGer<0)   colGer=2;
+      if(colTda3<0)  colTda3=0;
+      if(colProd<0)  colProd=6;
+      if(colCat<0)   colCat=5;
+      if(colSub<0)   colSub=7;
+      if(colCla<0)   colCla=8;
+      if(colCant<0)  colCant=10;
+      console.log('OH cols – Clave:'+colClave+' Reg:'+colReg3+' Tda:'+colTda3+' Cat:'+colCat+' Prod:'+colProd+' Cant:'+colCant);
       // Build oh_tienda (by clave) AND oh_productos (by product name)
       var tiendaMap={};
       var prodMap={};
-      rows3.slice(1).filter(function(r){return r[colClave]&&r[colProd];}).forEach(function(r){
+      rows3.slice(hdrIdx3+1).filter(function(r){return r[colClave]&&r[colProd];}).forEach(function(r){
         var clave=String(r[colClave]||'').trim();
         var tienda=String(r[colTda3]||'').trim();
         var region=String(r[colReg3]||'').trim();
