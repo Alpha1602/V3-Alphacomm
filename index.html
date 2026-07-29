@@ -713,40 +713,134 @@ async function autoLoad(){
           tienda:String(r[4]||'').trim(),alphacomm:Math.round(+r[5]||0),equipo:Math.round(+r[8]||0)};
       });
     }
-    // ── OH Detalle (for pivot with sub_categoria / clase)
+    // ── LG & Cases ventas por tienda
+    // Busca hojas con nombre que incluya LG, liquid, cases o similar
+    var LG_NAMES=['LG','lg','Liquid Glass','LG Cases','LG y Cases','2.LG','LG Jul','Cases LG','LG_Cases'];
+    var shLG=wb.SheetNames.find(function(x){
+      var lx=x.toLowerCase().trim();
+      return lx==='lg'||lx.includes('liquid')||lx.includes('lg y cases')||lx.includes('lg cases')||lx==='2.lg'||lx.startsWith('lg ');
+    });
+    if(shLG){
+      var rowsLG=XLSX.utils.sheet_to_json(wb.Sheets[shLG],{header:1,defval:null});
+      // Detect header row: look for 'clave' or 'tienda' in first few rows
+      var hdrLG=rowsLG[0]||[];
+      var startLG=1;
+      for(var ri=0;ri<Math.min(5,rowsLG.length);ri++){
+        var rv=rowsLG[ri];
+        if(rv&&rv.some(function(c){return String(c||'').toLowerCase().includes('clave');})){
+          startLG=ri+1; break;
+        }
+      }
+      // Identify columns: try header first, fallback to positions
+      // Expected: region(0), clave(1or2), tienda(2or3), lg_v(3or4), lg_cuota(4or5), lg_alc(5or6), cases_v(6or7), cases_cuota(7or8), cases_alc(8or9)
+      var colReg=-1,colClv=-1,colTda=-1,colLGv=-1,colLGc=-1,colLGa=-1,colCSv=-1,colCSc=-1,colCSa=-1;
+      hdrLG.forEach(function(h,i){
+        var v=String(h||'').toLowerCase().trim();
+        if(v==='region'||v==='región') colReg=i;
+        else if(v==='clave') colClv=i;
+        else if(v==='tienda') colTda=i;
+        else if((v.includes('lg')||v.includes('liquid'))&&v.includes('venta')) colLGv=i;
+        else if((v.includes('lg')||v.includes('liquid'))&&v.includes('cuota')) colLGc=i;
+        else if((v.includes('lg')||v.includes('liquid'))&&v.includes('alc')) colLGa=i;
+        else if(v.includes('case')&&v.includes('venta')) colCSv=i;
+        else if(v.includes('case')&&v.includes('cuota')) colCSc=i;
+        else if(v.includes('case')&&v.includes('alc')) colCSa=i;
+      });
+      // Fallback positions (common layout)
+      if(colReg<0) colReg=0;
+      if(colClv<0) colClv=2;
+      if(colTda<0) colTda=3;
+      if(colLGv<0) colLGv=4;
+      if(colLGc<0) colLGc=5;
+      if(colLGa<0) colLGa=6;
+      if(colCSv<0) colCSv=7;
+      if(colCSc<0) colCSc=8;
+      if(colCSa<0) colCSa=9;
+      var newLgTienda=rowsLG.slice(startLG).filter(function(r){return r[colClv]&&r[colTda];}).map(function(r){
+        return {region:String(r[colReg]||'').trim(),clave:String(r[colClv]||'').trim(),tienda:String(r[colTda]||'').trim(),
+          lg_v:Math.round(+r[colLGv]||0),lg_cuota:+(r[colLGc]||0),lg_alc:+(r[colLGa]||0),
+          cases_v:Math.round(+r[colCSv]||0),cases_cuota:+(r[colCSc]||0),cases_alc:+(r[colCSa]||0)};
+      });
+      if(newLgTienda.length>0){
+        D.lg_tienda=newLgTienda;
+        // Rebuild lg_region from tienda data
+        var regMap={};
+        newLgTienda.forEach(function(r){
+          if(!regMap[r.region])regMap[r.region]={region:r.region,lg_v:0,lg_cuota:0,lg_alc:0,cases_v:0,cases_cuota:0,cases_alc:0,oh_lg:0,oh_cases:0};
+          regMap[r.region].lg_v+=r.lg_v;regMap[r.region].lg_cuota+=r.lg_cuota;
+          regMap[r.region].cases_v+=r.cases_v;regMap[r.region].cases_cuota+=r.cases_cuota;
+        });
+        D.lg_region=Object.values(regMap).map(function(r){
+          r.lg_alc=r.lg_cuota?Math.round(r.lg_v/r.lg_cuota*1000)/10:0;
+          r.cases_alc=r.cases_cuota?Math.round(r.cases_v/r.cases_cuota*1000)/10:0;
+          return r;
+        });
+        console.log('LG sheet parsed: '+newLgTienda.length+' tiendas');
+      }
+    } else {
+      console.warn('No se encontró hoja LG/Cases. Sheets disponibles: '+wb.SheetNames.join(', '));
+    }
+    // ── OH Detalle: actualiza oh_tienda + oh_productos
     var shOH=wb.SheetNames.find(function(x){return x.toLowerCase().includes('oh detalle')||x.toLowerCase().includes('oh det');});
     if(shOH){
       var rows3=XLSX.utils.sheet_to_json(wb.Sheets[shOH],{header:1,defval:null});
-      // Try to identify columns by header
       var hdr=rows3[0]||[];
-      var colCat=-1,colSub=-1,colCla=-1,colProd=-1,colCant=-1,colClave=-1;
+      var colCat=-1,colSub=-1,colCla=-1,colProd=-1,colCant=-1,colClave=-1,colReg3=-1,colGer=-1,colTda3=-1;
       hdr.forEach(function(h,i){
-        var v=String(h||'').toLowerCase();
-        if(v.includes('categoria')||v==='cat') colCat=i;
-        else if(v.includes('sub') && (v.includes('cat')||v.includes('sub'))) colSub=i;
-        else if(v.includes('clase')||v==='class') colCla=i;
+        var v=String(h||'').toLowerCase().trim();
+        if(v==='region'||v==='región') colReg3=i;
+        else if(v.includes('gerente')) colGer=i;
+        else if(v==='tienda') colTda3=i;
+        else if(v==='clave') colClave=i;
         else if(v.includes('producto')||v.includes('descripcion')) colProd=i;
+        else if(v.includes('sub')&&v.includes('cat')) colSub=i;
+        else if(v.includes('clase')||v==='class') colCla=i;
+        else if(v.includes('categoria')&&!v.includes('sub')) colCat=i;
         else if(v.includes('cantidad')||v==='cant'||v==='qty') colCant=i;
-        else if(v.includes('clave')) colClave=i;
       });
-      // Fallback column positions if headers not found (common structure)
-      if(colClave<0)colClave=1; if(colCat<0)colCat=5; if(colSub<0)colSub=6;
-      if(colCla<0)colCla=7; if(colProd<0)colProd=3; if(colCant<0)colCant=10;
-      // Group by product
+      if(colClave<0)colClave=1; if(colReg3<0)colReg3=0; if(colGer<0)colGer=2;
+      if(colTda3<0)colTda3=3; if(colProd<0)colProd=4; if(colCat<0)colCat=5;
+      if(colSub<0)colSub=6; if(colCla<0)colCla=7; if(colCant<0)colCant=10;
+      // Build oh_tienda (by clave) AND oh_productos (by product name)
+      var tiendaMap={};
       var prodMap={};
-      rows3.slice(1).filter(function(r){return r[colClave]||r[colProd];}).forEach(function(r){
-        var prod=String(r[colProd]||r[4]||'').trim();
+      rows3.slice(1).filter(function(r){return r[colClave]&&r[colProd];}).forEach(function(r){
+        var clave=String(r[colClave]||'').trim();
+        var tienda=String(r[colTda3]||'').trim();
+        var region=String(r[colReg3]||'').trim();
+        var gerente=String(r[colGer]||'').trim();
+        var prod=String(r[colProd]||'').trim();
         var cat=String(r[colCat]||'Accesories').trim();
         var sub=String(r[colSub]||'').trim()||inferSubcat(prod,cat);
         var cla=String(r[colCla]||'').trim()||inferClase(prod,cat);
         var cant=Math.round(+r[colCant]||0);
-        if(!prod||isNaN(cant)||cant<0) return;
-        if(!prodMap[prod]) prodMap[prod]={producto:prod,categoria:cat,sub_categoria:sub,clase:cla,cantidad:0,regiones:{}};
+        if(!clave||isNaN(cant)||cant<0) return;
+        // oh_tienda
+        if(!tiendaMap[clave]) tiendaMap[clave]={clave:clave,tienda:tienda,region:region,gerente:gerente,
+          cantidad:0,cat_cases_iphone:0,cat_cables:0,cat_charger:0,cat_liquid:0,cat_micas:0,cat_accesories:0};
+        tiendaMap[clave].cantidad+=cant;
+        var catL=cat.toLowerCase();
+        if(catL.includes('case')||catL.includes('cases')) tiendaMap[clave].cat_cases_iphone+=cant;
+        else if(catL.includes('cable')) tiendaMap[clave].cat_cables+=cant;
+        else if(catL.includes('charger')||catL.includes('cargador')) tiendaMap[clave].cat_charger+=cant;
+        else if(catL.includes('liquid')||catL.includes('lg')) tiendaMap[clave].cat_liquid+=cant;
+        else if(catL.includes('mica')) tiendaMap[clave].cat_micas+=cant;
+        else tiendaMap[clave].cat_accesories+=cant;
+        // oh_productos
+        if(!prodMap[prod]) prodMap[prod]={producto:prod,categoria:cat,sub_categoria:sub,clase:cla,cantidad:0};
         prodMap[prod].cantidad+=cant;
       });
-      D.oh_productos=Object.values(prodMap).filter(function(p){return p.cantidad>0;});
+      var newOH=Object.values(tiendaMap).filter(function(t){return t.cantidad>0;});
+      var newProds=Object.values(prodMap).filter(function(p){return p.cantidad>0;});
+      if(newOH.length>0) D.oh_tienda=newOH;
+      if(newProds.length>0) D.oh_productos=newProds;
+      // Rebuild cat_totals
+      var newCT={};
+      newProds.forEach(function(p){newCT[p.categoria]=(newCT[p.categoria]||0)+p.cantidad;});
+      if(Object.keys(newCT).length>0) D.cat_totals=newCT;
+      console.log('OH sheet parsed: '+newOH.length+' tiendas, '+newProds.length+' productos');
     }
-    if(ts)ts.textContent='✅ Datos actualizados — '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    if(ts)ts.textContent='✅ Datos actualizados — '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+' | Hojas: '+wb.SheetNames.join(', ');
   }catch(e){
     console.warn('autoLoad:',e);
     if(ts)ts.textContent='📦 Datos embebidos (Excel no disponible)';
