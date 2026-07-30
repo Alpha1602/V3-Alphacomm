@@ -375,25 +375,26 @@ function parseWorkbook(wb){
     var cClave=colIdx(hdr,['clave pdv','clave'],1);
     var cGerente=colIdx(hdr,['regional'],2);
     var cRegion=colIdx(hdr,['región','region'],3);
-    /* Col F: Categoría alphacomm → for KPI breakdown (Cases, Cables, etc.) */
-    var cCatAlpha=-1;
-    for(var hci=0;hci<hdr.length;hci++){var hn=s(hdr[hci]).toLowerCase();if(hn.includes('alphacomm')||hn.includes('alpha')){cCatAlpha=hci;break;}}
-    if(cCatAlpha<0)cCatAlpha=colIdx(hdr,['sku alpha','sku','categ alpha'],5);
+    /* Col F: Categoría alphacomm OR Sku alpha → KPI breakdown (Cases, Cables, etc.) */
+    var cCatAlpha=colIdx(hdr,['categ alpha','sku alpha','alphacomm'],5);
     /* Col G: Descripcion → product name */
     var cProd=colIdx(hdr,['descripcion','descripción'],6);
-    /* Col J: Cantidad → units */
-    var cCant=colIdx(hdr,['cantidad'],9);
-    /* Col L: Categoría (NOT alphacomm) → pivot level 1 */
+    /* Cantidad → search by name (works in both old and new structure) */
+    var cCant=colIdx(hdr,['cantidad'],10);
+    /* NEW structure: Categoría / Sub Categoría / Clase (cols L,M,N) */
+    /* OLD structure fallback: Modelo (col 7) / Subinventario (col 8) */
     var cCat1=-1;
-    for(var hci2=0;hci2<hdr.length;hci2++){var hn2=s(hdr[hci2]).toLowerCase();if(hn2==='categoría'||hn2==='categoria'){cCat1=hci2;break;}}
-    if(cCat1<0){/* fallback: find 'categ' but not 'alpha' */
-      for(var hci3=0;hci3<hdr.length;hci3++){var hn3=s(hdr[hci3]).toLowerCase();if(hn3.includes('categ')&&!hn3.includes('alpha')&&hci3!==cCatAlpha){cCat1=hci3;break;}}
+    /* exact match 'categoría' or 'categoria' (not containing 'alpha') */
+    for(var hci2=0;hci2<hdr.length;hci2++){
+      var hn2=s(hdr[hci2]).toLowerCase();
+      if((hn2==='categoría'||hn2==='categoria')&&!hn2.includes('alpha')&&hci2!==cCatAlpha){cCat1=hci2;break;}
     }
-    if(cCat1<0)cCat1=11;
-    /* Col M: Sub Categoría → pivot level 2 */
-    var cSub=colIdx(hdr,['sub categ','sub_categ','subcateg'],12);
-    /* Col N: Clase → pivot level 3 */
-    var cCla=colIdx(hdr,['clase'],13);
+    /* fallback: cCatAlpha itself (old struct reuses same col for pivot) */
+    if(cCat1<0)cCat1=cCatAlpha;
+    /* Sub Categoría → new struct; fallback to Modelo (old struct col 7) */
+    var cSub=colIdx(hdr,['sub categ','sub_categ','subcateg'],colIdx(hdr,['modelo'],7));
+    /* Clase → new struct; fallback to Subinventario / Sub inv (old struct col 8) */
+    var cCla=colIdx(hdr,['clase'],colIdx(hdr,['subinventario','sub inv'],8));
     var tMap={},pMap={};
     rows5.slice(hdrIdx+1).forEach(function(r){
       if(!r)return;var clave=s(r[cClave]);if(!clave)return;
