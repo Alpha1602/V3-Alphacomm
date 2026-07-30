@@ -410,7 +410,10 @@ function parseWorkbook(wb){
     var cTda  =coln(['nombre de la org','nombre org','nombre'],0);
     var cClave=coln(['clave pdv','clave'],1);
     var cGerente=coln(['regional'],2);
-    var cRegion=coln(['region'],3);
+    /* Match 'REGIÓN' (col D) but NOT 'REGIONAL' (col C) */
+    var cRegion=-1;
+    for(var hci_r=0;hci_r<hdrN.length;hci_r++){var hn_r=hdrN[hci_r];if(hn_r.includes('region')&&!hn_r.includes('al')&&!hn_r.includes('sub')){cRegion=hci_r;break;}}
+    if(cRegion<0)cRegion=3;
     /* Categoría alphacomm → KPI cats */
     var cCatAlpha=coln(['alphacomm','sku alpha'],5);
     /* Descripcion → product name */
@@ -562,7 +565,7 @@ function rT0(){
     kpi('OH Inventario','',n(totOH),'piezas on-hand')+
     kpi('Cobertura OH','purple',cobOH+'%','OH vs ventas')+
     kpi('Faltante Cuota','red',n(totFalt),'piezas por alcanzar')+
-    kpi('Proyección Cierre','yellow',n(totProy,1),'');
+    kpi('Proyección Cierre','yellow',n(totProy),'');
   /* Charts */
   var regMap={};
   rows.forEach(function(r){if(!regMap[r.region])regMap[r.region]={v:0,c:0,oh:0};regMap[r.region].v+=r.ventas;regMap[r.region].c+=r.cuota;regMap[r.region].oh+=r.oh_total;});
@@ -599,7 +602,7 @@ function rT0(){
   /* Total row */
   var totRow='<tr class="total-row"><td colspan="3"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
     '<td class="right">'+n(totC)+'</td><td class="right blue">'+n(totV)+'</td>'+
-    '<td class="right yellow">'+n(totProy,1)+'</td>'+
+    '<td class="right yellow">'+n(totProy)+'</td>'+
     '<td>'+pb(alc)+'</td>'+
     '<td class="right">'+n(totOH)+'</td>'+
     '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_cases;},0))+'</td>'+
@@ -614,7 +617,7 @@ function rT0(){
     var pC=r.proy>=r.cuota?'var(--green)':r.proy>=r.cuota*.7?'var(--yellow)':'var(--tx)';
     return '<tr><td>'+r.region+'</td><td>'+r.sub_region+'</td><td>'+r.tienda+'</td>'+
       '<td class="right">'+n(r.cuota)+'</td><td class="right">'+n(r.ventas)+'</td>'+
-      '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.proy,1)+'</td>'+
+      '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.proy)+'</td>'+
       '<td>'+pb(a)+'</td>'+
       '<td class="right">'+n(r.oh_total)+'</td><td class="right">'+n(r.oh_cases)+'</td>'+
       '<td class="right">'+n(r.oh_cables)+'</td><td class="right">'+n(r.oh_chargers)+'</td>'+
@@ -641,7 +644,7 @@ function rT1(){
   document.getElementById('k1').innerHTML=
     kpi('Alphacomm','blue',n(totA),'pzs vendidas')+
     kpi('Equipo','',n(totE),'pzs equipo')+
-    kpi('Proyección Cierre','yellow',n(totP,1),'pzs estimadas')+
+    kpi('Proyección Cierre','yellow',n(totP),'pzs estimadas')+
     kpi('Alcance vs Proy',aac,alcA+'%','alpha/proy')+
     kpi('Tiendas','',rows.length,'activas');
   /* Charts */
@@ -663,13 +666,13 @@ function rT1(){
     th('t1','alphacomm','Alphacomm',true)+th('t1','equipo','Equipo',true)+th('t1','proy','Proy Cierre',true);
   var totRow1='<tr class="total-row"><td colspan="4"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
     '<td class="right blue">'+n(totA)+'</td><td class="right">'+n(totE)+'</td>'+
-    '<td class="right yellow">'+n(totP,1)+'</td></tr>';
+    '<td class="right yellow">'+n(totP)+'</td></tr>';
   document.getElementById('tb1').innerHTML=totRow1+sortRows(rows,'t1').map(function(r){
     var pC=r.proy>0?(r.alphacomm>=r.proy?'var(--green)':r.alphacomm>=r.proy*.7?'var(--yellow)':'var(--red)'):'var(--tx2)';
     return '<tr><td>'+r.region+'</td><td>'+r.gerente+'</td><td>'+r.clave+'</td><td>'+r.tienda+'</td>'+
       '<td class="right" style="color:var(--blue);font-weight:600">'+n(r.alphacomm)+'</td>'+
       '<td class="right">'+n(r.equipo)+'</td>'+
-      '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.proy,1)+'</td></tr>';
+      '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.proy)+'</td></tr>';
   }).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
 }
 
@@ -684,8 +687,8 @@ function rT2(){
   var lgOH=rows.reduce(function(a,r){return a+r.oh_lg;},0);var csOH=rows.reduce(function(a,r){return a+r.oh_cases;},0);
   var lac=lgA>=100?'green':lgA>=70?'yellow':'red';var cac=csA>=100?'green':csA>=70?'yellow':'red';
   document.getElementById('k2').innerHTML=
-    kpi('LG Ventas','blue',n(lgV))+kpi('LG Cuota','',n(lgC,1))+kpi('LG Alcance',lac,lgA+'%')+kpi('LG OH','',n(lgOH))+
-    kpi('Cases Ventas','blue',n(csV))+kpi('Cases Cuota','',n(csC,1))+kpi('Cases Alcance',cac,csA+'%')+kpi('Cases OH','',n(csOH));
+    kpi('LG Ventas','blue',n(lgV))+kpi('LG Cuota','',n(lgC))+kpi('LG Alcance',lac,lgA+'%')+kpi('LG OH','',n(lgOH))+
+    kpi('Cases Ventas','blue',n(csV))+kpi('Cases Cuota','',n(csC))+kpi('Cases Alcance',cac,csA+'%')+kpi('Cases OH','',n(csOH));
   /* Charts */
   var regData=reg?[{region:reg,lg_v:lgV,cases_v:csV}]:D.lg_region.slice();
   var rLbls=regData.map(function(r){return r.region;});
@@ -712,17 +715,17 @@ function rT2(){
   var csTotA=csTotC?Math.round(csTotV/csTotC*1000)/10:0;
   /* LG table */
   document.getElementById('thLg').innerHTML=th('t2lg','tienda','Tienda')+th('t2lg','lg_v','Ventas',true)+th('t2lg','lg_cuota','Cuota',true)+'<th>Alcance</th>'+th('t2lg','oh_lg','OH',true);
-  var lgTR='<tr class="total-row"><td><strong>TOTAL ('+rows.length+')</strong></td><td class="right blue">'+n(lgTotV)+'</td><td class="right">'+n(lgTotC,1)+'</td><td>'+pb(lgTotA)+'</td><td class="right">'+n(lgTotOH)+'</td></tr>';
+  var lgTR='<tr class="total-row"><td><strong>TOTAL ('+rows.length+')</strong></td><td class="right blue">'+n(lgTotV)+'</td><td class="right">'+n(lgTotC)+'</td><td>'+pb(lgTotA)+'</td><td class="right">'+n(lgTotOH)+'</td></tr>';
   document.getElementById('tbLg').innerHTML=lgTR+sortRows(rows,'t2lg').map(function(r){
     var a=r.lg_cuota?Math.round(r.lg_v/r.lg_cuota*1000)/10:0;
-    return '<tr><td>'+r.tienda+'</td><td class="right">'+n(r.lg_v)+'</td><td class="right" style="color:var(--tx2)">'+n(r.lg_cuota,1)+'</td><td>'+pb(a)+'</td><td class="right">'+n(r.oh_lg)+'</td></tr>';
+    return '<tr><td>'+r.tienda+'</td><td class="right">'+n(r.lg_v)+'</td><td class="right" style="color:var(--tx2)">'+n(r.lg_cuota)+'</td><td>'+pb(a)+'</td><td class="right">'+n(r.oh_lg)+'</td></tr>';
   }).join('')||'<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--tx2)">Sin datos</td></tr>';
   /* Cases table */
   document.getElementById('thCs').innerHTML=th('t2cs','tienda','Tienda')+th('t2cs','cases_v','Ventas',true)+th('t2cs','cases_cuota','Cuota',true)+'<th>Alcance</th>'+th('t2cs','oh_cases','OH',true);
-  var csTR='<tr class="total-row"><td><strong>TOTAL ('+rows.length+')</strong></td><td class="right blue">'+n(csTotV)+'</td><td class="right">'+n(csTotC,1)+'</td><td>'+pb(csTotA)+'</td><td class="right">'+n(csTotOH)+'</td></tr>';
+  var csTR='<tr class="total-row"><td><strong>TOTAL ('+rows.length+')</strong></td><td class="right blue">'+n(csTotV)+'</td><td class="right">'+n(csTotC)+'</td><td>'+pb(csTotA)+'</td><td class="right">'+n(csTotOH)+'</td></tr>';
   document.getElementById('tbCs').innerHTML=csTR+sortRows(rows,'t2cs').map(function(r){
     var a=r.cases_cuota?Math.round(r.cases_v/r.cases_cuota*1000)/10:0;
-    return '<tr><td>'+r.tienda+'</td><td class="right">'+n(r.cases_v)+'</td><td class="right" style="color:var(--tx2)">'+n(r.cases_cuota,1)+'</td><td>'+pb(a)+'</td><td class="right">'+n(r.oh_cases)+'</td></tr>';
+    return '<tr><td>'+r.tienda+'</td><td class="right">'+n(r.cases_v)+'</td><td class="right" style="color:var(--tx2)">'+n(r.cases_cuota)+'</td><td>'+pb(a)+'</td><td class="right">'+n(r.oh_cases)+'</td></tr>';
   }).join('')||'<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--tx2)">Sin datos</td></tr>';
 }
 
