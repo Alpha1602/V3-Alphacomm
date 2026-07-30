@@ -455,6 +455,9 @@ function parseWorkbook(wb){
     D.oh_tienda=Object.values(tMap).sort(function(a,b){return a.clave.localeCompare(b.clave);});
     D.oh_productos=Object.values(pMap).sort(function(a,b){return b.cantidad-a.cantidad;});
     D.cat_totals={};D.oh_productos.forEach(function(p){D.cat_totals[p.categoria]=(D.cat_totals[p.categoria]||0)+p.cantidad;});
+    /* Regions found in OH data (may differ from sales regions) */
+    var ohRegSet={};Object.values(rMap).forEach(function(r){Object.keys(r.by_region).forEach(function(rg){if(rg)ohRegSet[rg]=1;});});
+    D.oh_regiones=Object.keys(ohRegSet).sort();
     /* Join OH → cuota_jul */
     var ohMap={};D.oh_tienda.forEach(function(t){ohMap[t.clave]=t;});
     D.cuota_jul.forEach(function(r){
@@ -514,13 +517,18 @@ function setChip(id,val,el){
 /* ═══ INIT FILTERS ═══ */
 function initFilters(){
   var regs=D.regiones;
-  ['f0reg','f1reg','f2reg','f3reg'].forEach(function(id){
+  ['f0reg','f1reg','f2reg'].forEach(function(id){
     var grp=document.getElementById(id);
-    var cur=grp.getAttribute('data-val')||'';
     grp.setAttribute('data-val','');
     grp.innerHTML='<div class="chip active" onclick="setChip(\''+id+'\',\'\',this)">Todas</div>'+
       regs.map(function(r){return '<div class="chip" onclick="setChip(\''+id+'\',\''+r.replace(/'/g,"\\'")+'\',this)">'+r+'</div>';}).join('');
   });
+  /* Tab 3 region chips use OH regions (different source) */
+  var ohRegs=D.oh_regiones||D.regiones;
+  var grp3=document.getElementById('f3reg');
+  grp3.setAttribute('data-val','');
+  grp3.innerHTML='<div class="chip active" onclick="setChip(\'f3reg\',\'\',this)">Todas</div>'+
+    ohRegs.map(function(r){return '<div class="chip" onclick="setChip(\'f3reg\',\''+r.replace(/'/g,"\\'")+'\',this)">'+r+'</div>';}).join('');
   /* Categoría chips for tab3 */
   var cg=document.getElementById('f3cat');
   cg.setAttribute('data-val','');
@@ -749,7 +757,7 @@ function renderMatrix(){
   var fCat=getChip('f3cat');
   var fReg=getChip('f3reg');
   var q=(document.getElementById('f3q').value||'').toLowerCase();
-  var regs=fReg?[fReg]:D.regiones;
+  var regs=fReg?[fReg]:(D.oh_regiones||D.regiones);
   /* Build sub→clase tree filtered by category */
   var rows=Object.values(D._rMap||{}).filter(function(r){
     if(fCat&&r.categoria!==fCat)return false;
