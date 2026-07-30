@@ -375,24 +375,41 @@ function parseWorkbook(wb){
     var cClave=colIdx(hdr,['clave pdv','clave'],1);
     var cGerente=colIdx(hdr,['regional'],2);
     var cRegion=colIdx(hdr,['región','region'],3);
-    var cCat=colIdx(hdr,['sku alpha','sku'],5);
+    /* Col F: Categoría alphacomm → for KPI breakdown (Cases, Cables, etc.) */
+    var cCatAlpha=-1;
+    for(var hci=0;hci<hdr.length;hci++){var hn=s(hdr[hci]).toLowerCase();if(hn.includes('alphacomm')||hn.includes('alpha')){cCatAlpha=hci;break;}}
+    if(cCatAlpha<0)cCatAlpha=colIdx(hdr,['sku alpha','sku','categ alpha'],5);
+    /* Col G: Descripcion → product name */
     var cProd=colIdx(hdr,['descripcion','descripción'],6);
-    var cSub=colIdx(hdr,['modelo'],7);
-    var cCla=colIdx(hdr,['subinventario','sub inv'],8);
-    var cCant=colIdx(hdr,['cantidad'],10);
+    /* Col J: Cantidad → units */
+    var cCant=colIdx(hdr,['cantidad'],9);
+    /* Col L: Categoría (NOT alphacomm) → pivot level 1 */
+    var cCat1=-1;
+    for(var hci2=0;hci2<hdr.length;hci2++){var hn2=s(hdr[hci2]).toLowerCase();if(hn2==='categoría'||hn2==='categoria'){cCat1=hci2;break;}}
+    if(cCat1<0){/* fallback: find 'categ' but not 'alpha' */
+      for(var hci3=0;hci3<hdr.length;hci3++){var hn3=s(hdr[hci3]).toLowerCase();if(hn3.includes('categ')&&!hn3.includes('alpha')&&hci3!==cCatAlpha){cCat1=hci3;break;}}
+    }
+    if(cCat1<0)cCat1=11;
+    /* Col M: Sub Categoría → pivot level 2 */
+    var cSub=colIdx(hdr,['sub categ','sub_categ','subcateg'],12);
+    /* Col N: Clase → pivot level 3 */
+    var cCla=colIdx(hdr,['clase'],13);
     var tMap={},pMap={};
     rows5.slice(hdrIdx+1).forEach(function(r){
       if(!r)return;var clave=s(r[cClave]);if(!clave)return;
       var cant=fi(r[cCant]);if(cant<=0)return;
-      var cat=s(r[cCat])||'Accesories';
-      var prod=s(r[cProd])||cat;
-      var sub=s(r[cSub])||cat;
+      var catAlpha=s(r[cCatAlpha])||'Accesories';
+      var prod=s(r[cProd])||catAlpha;
+      var cat1=s(r[cCat1])||catAlpha;
+      var sub=s(r[cSub])||cat1;
       var cla=s(r[cCla])||'General';
       if(!tMap[clave])tMap[clave]={clave:clave,tienda:s(r[cTda]),region:s(r[cRegion]),gerente:s(r[cGerente]),cantidad:0,cats:{}};
       tMap[clave].cantidad+=cant;
-      tMap[clave].cats[cat]=(tMap[clave].cats[cat]||0)+cant;
-      var pk=prod+'|'+sub+'|'+cla+'|'+cat;
-      if(!pMap[pk])pMap[pk]={producto:prod,sub_categoria:sub,clase:cla,categoria:cat,cantidad:0};
+      /* KPI breakdown uses Categoría alphacomm */
+      tMap[clave].cats[catAlpha]=(tMap[clave].cats[catAlpha]||0)+cant;
+      /* Pivot uses new Categoría / Sub Categoría / Clase */
+      var pk=prod+'|'+sub+'|'+cla+'|'+cat1;
+      if(!pMap[pk])pMap[pk]={producto:prod,sub_categoria:sub,clase:cla,categoria:cat1,cantidad:0};
       pMap[pk].cantidad+=cant;
     });
     D.oh_tienda=Object.values(tMap).sort(function(a,b){return a.clave.localeCompare(b.clave);});
