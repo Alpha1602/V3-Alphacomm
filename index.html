@@ -361,6 +361,11 @@ function parseWorkbook(wb){
     D.cuota_jul.forEach(function(r){r.proy=pm2[r.clave]||0;});
   }
 
+  /* ─ Sync ventas: copy 'ventas' from Cuota Jul into ar_clean by clave ─ */
+  var ventasLookup={};
+  D.cuota_jul.forEach(function(r){ventasLookup[r.clave]=r.ventas;});
+  D.ar_clean.forEach(function(r){r.alphacomm=ventasLookup[r.clave]||r.alphacomm||0;});
+
   /* ─ Dashboard AR – total proyección ─ */
   var shDAR=wb.SheetNames.find(function(x){return x.trim()==='Dashboard AR';});
   if(shDAR){
