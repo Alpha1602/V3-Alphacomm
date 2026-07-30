@@ -360,41 +360,42 @@ function parseWorkbook(wb){
   }
 
   /* ─ OH detalle – DETECT COLUMNS BY NAME ─ */
-  var shOH=wb.SheetNames.find(function(x){return x.trim()==='OH detalle';});
+  function normStr(v){return s(v).toLowerCase().replace(/[áéíóúüñ]/g,function(m){return{á:'a',é:'e',í:'i',ó:'o',ú:'u',ü:'u',ñ:'n'}[m]||m;});}
+  var shOH=wb.SheetNames.find(function(x){return normStr(x.trim())==='oh detalle';});
   if(shOH){
+   try{
     var rows5=XLSX.utils.sheet_to_json(wb.Sheets[shOH],{header:1,defval:null});
-    /* Find header row (first row with 'cantidad' or 'clave') */
+    /* Find header row (first row with 'cantidad') */
     var hdrIdx=2;
-    for(var hi=0;hi<Math.min(rows5.length,6);hi++){
+    for(var hi=0;hi<Math.min(rows5.length,8);hi++){
       var hr=rows5[hi]||[];
-      if(hr.some(function(c){return s(c).toLowerCase().includes('cantidad');})){hdrIdx=hi;break;}
+      if(hr.some(function(c){return normStr(c).includes('cantidad');})){hdrIdx=hi;break;}
     }
     var hdr=rows5[hdrIdx]||[];
-    /* Detect each column by name */
-    var cTda=colIdx(hdr,['nombre de la org','tienda','nombre org'],0);
-    var cClave=colIdx(hdr,['clave pdv','clave'],1);
-    var cGerente=colIdx(hdr,['regional'],2);
-    var cRegion=colIdx(hdr,['región','region'],3);
-    /* Col F: Categoría alphacomm OR Sku alpha → KPI breakdown (Cases, Cables, etc.) */
-    var cCatAlpha=colIdx(hdr,['categ alpha','sku alpha','alphacomm'],5);
-    /* Col G: Descripcion → product name */
-    var cProd=colIdx(hdr,['descripcion','descripción'],6);
-    /* Cantidad → search by name (works in both old and new structure) */
-    var cCant=colIdx(hdr,['cantidad'],10);
-    /* NEW structure: Categoría / Sub Categoría / Clase (cols L,M,N) */
-    /* OLD structure fallback: Modelo (col 7) / Subinventario (col 8) */
+    /* Build normalized header map */
+    var hdrN=hdr.map(function(c){return normStr(c);});
+    function coln(names,fallback){for(var i=0;i<names.length;i++){for(var j=0;j<hdrN.length;j++){if(hdrN[j].includes(names[i]))return j;}}return fallback;}
+    var cTda  =coln(['nombre de la org','nombre org','nombre'],0);
+    var cClave=coln(['clave pdv','clave'],1);
+    var cGerente=coln(['regional'],2);
+    var cRegion=coln(['region'],3);
+    /* Categoría alphacomm → KPI cats */
+    var cCatAlpha=coln(['alphacomm','sku alpha'],5);
+    /* Descripcion → product name */
+    var cProd=coln(['descripcion'],6);
+    /* Cantidad */
+    var cCant=coln(['cantidad'],8);
+    /* Categoría (not alpha, not sub) → pivot level 1 */
     var cCat1=-1;
-    /* exact match 'categoría' or 'categoria' (not containing 'alpha') */
-    for(var hci2=0;hci2<hdr.length;hci2++){
-      var hn2=s(hdr[hci2]).toLowerCase();
-      if((hn2==='categoría'||hn2==='categoria')&&!hn2.includes('alpha')&&hci2!==cCatAlpha){cCat1=hci2;break;}
+    for(var hci2=0;hci2<hdrN.length;hci2++){
+      var hn2=hdrN[hci2];
+      if(hn2.includes('categ')&&!hn2.includes('alpha')&&!hn2.includes('sub')&&hci2!==cCatAlpha){cCat1=hci2;break;}
     }
-    /* fallback: cCatAlpha itself (old struct reuses same col for pivot) */
     if(cCat1<0)cCat1=cCatAlpha;
-    /* Sub Categoría → new struct; fallback to Modelo (old struct col 7) */
-    var cSub=colIdx(hdr,['sub categ','sub_categ','subcateg'],colIdx(hdr,['modelo'],7));
-    /* Clase → new struct; fallback to Subinventario / Sub inv (old struct col 8) */
-    var cCla=colIdx(hdr,['clase'],colIdx(hdr,['subinventario','sub inv'],8));
+    /* Sub Categoría → pivot level 2; fallback Modelo */
+    var cSub=coln(['sub categ','sub_categ'],coln(['modelo'],7));
+    /* Clase → pivot level 3; fallback Subinventario */
+    var cCla=coln(['clase'],coln(['subinventario','sub inv'],8));
     var tMap={},pMap={};
     rows5.slice(hdrIdx+1).forEach(function(r){
       if(!r)return;var clave=s(r[cClave]);if(!clave)return;
@@ -406,9 +407,7 @@ function parseWorkbook(wb){
       var cla=s(r[cCla])||'General';
       if(!tMap[clave])tMap[clave]={clave:clave,tienda:s(r[cTda]),region:s(r[cRegion]),gerente:s(r[cGerente]),cantidad:0,cats:{}};
       tMap[clave].cantidad+=cant;
-      /* KPI breakdown uses Categoría alphacomm */
       tMap[clave].cats[catAlpha]=(tMap[clave].cats[catAlpha]||0)+cant;
-      /* Pivot uses new Categoría / Sub Categoría / Clase */
       var pk=prod+'|'+sub+'|'+cla+'|'+cat1;
       if(!pMap[pk])pMap[pk]={producto:prod,sub_categoria:sub,clase:cla,categoria:cat1,cantidad:0};
       pMap[pk].cantidad+=cant;
@@ -435,6 +434,7 @@ function parseWorkbook(wb){
       var oh=ohMap[r.clave];if(!oh)return;
       Object.keys(oh.cats).forEach(function(c){var cl=c.toLowerCase();if(cl.includes('liquid')||cl==='lg')r.oh_lg+=oh.cats[c];if(cl.includes('case'))r.oh_cases+=oh.cats[c];});
     });
+   }catch(ohErr){console.error('OH parse error:',ohErr);}
   }
 
   D.regiones=Array.from(new Set(D.cuota_jul.map(function(r){return r.region;}).filter(Boolean))).sort();
