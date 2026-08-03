@@ -130,6 +130,11 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
     <h1>📱 Dashboard Prime — Julio 2026</h1>
     <span id="hdrSub">Datos: Cargando…</span>
   </div>
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end">
+    <div class="filters" style="margin:0">
+      <label>Mes</label>
+      <div class="chip-group" id="monthChips"></div>
+    </div>
   <div class="hdr-btns">
     <button class="btn" onclick="exportImg()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px">
@@ -149,13 +154,14 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
       Exportar Excel
     </button>
   </div>
+  </div>
 </header>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab(0)"><span class="tab-ico">📋</span> Cuota Julio</div>
-  <div class="tab" onclick="switchTab(1)"><span class="tab-ico">📈</span> AR &amp; Proyección</div>
-  <div class="tab" onclick="switchTab(2)"><span class="tab-ico">💧</span> Cases &amp; Liquid Glass</div>
-  <div class="tab" onclick="switchTab(3)"><span class="tab-ico">📦</span> Inventario</div>
+  <div class="tab active" id="tab0label" onclick="switchTab(0)"><span class="tab-ico">📋</span> Ventas / Cuota</div>
+  <div class="tab" id="tab1label" onclick="switchTab(1)"><span class="tab-ico">📈</span> AR &amp; Proyección</div>
+  <div class="tab" id="tab2label" onclick="switchTab(2)"><span class="tab-ico">💧</span> Cases &amp; Liquid Glass</div>
+  <div class="tab" id="tab3label" onclick="switchTab(3)"><span class="tab-ico">📦</span> Inventario actual</div>
 </div>
 
 <!-- TAB 0: CUOTA JULIO -->
@@ -267,7 +273,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 
 <script>
 /* ═══ STORE ═══ */
-var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{}};
+var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},monthly_store:{},month_keys:[],active_month:'',current_month:'',quota_by_month:{},lg_quota_by_month:{}};
 var charts={};
 var activeTab=0;
 var srt={t0:{col:null,dir:-1},t1:{col:null,dir:-1},t2lg:{col:null,dir:-1},t2cs:{col:null,dir:-1}};
@@ -488,10 +494,112 @@ function parseWorkbook(wb){
    }catch(ohErr){console.error('OH parse error:',ohErr);}
   }
 
+
+  /* ═══ MONTHLY HISTORY ENGINE ═══
+     Sales history comes from 2.Base. Quota exists only where a monthly
+     quota sheet exists (Jul-Dec). OH remains tied to the latest loaded month. */
+  var MON={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+  var MON_ES={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+  function monthKey(y,m){return String(y)+'-'+String(m).padStart(2,'0');}
+  function monthLabel(k){var a=k.split('-');return (MON_ES[parseInt(a[1],10)]||k)+' '+a[0];}
+  function shortMonth(k){var a=k.split('-');return (MON_ES[parseInt(a[1],10)]||k).slice(0,3);}
+
+  /* Preserve the operational/current-month datasets already parsed above. */
+  D._current_cuota=D.cuota_jul.slice();
+  D._current_ar=D.ar_clean.slice();
+  D._current_lg=D.lg_tienda.slice();
+  D._current_lg_region=D.lg_region.slice();
+  D._current_lg_totals=D.lg_totals;
+  D._current_proy_total=D.proy_total;
+
+  /* Sales history by store/month from 2.Base. */
+  var shBase=wb.SheetNames.find(function(x){return x.trim()==='2.Base';});
+  if(shBase){
+    var rb=XLSX.utils.sheet_to_json(wb.Sheets[shBase],{header:1,defval:null});
+    var hb=rb[2]||[];
+    var bReg=colIdx(hb,['región','region'],0),bGer=colIdx(hb,['gerente regional','gerente'],2),bClave=colIdx(hb,['clave pdv','clave'],3),bTda=colIdx(hb,['nombre pdv','nombre'],4);
+    var bUni=colIdx(hb,['unidades'],7),bMes=colIdx(hb,['mes'],8),bAno=colIdx(hb,['año','ano'],9),bCat=colIdx(hb,['categoría','categoria'],10);
+    rb.slice(3).forEach(function(r){
+      var y=fi(r[bAno]),m=MON[s(r[bMes])],clave=s(r[bClave]);if(!y||!m||!clave)return;
+      var k=monthKey(y,m),u=fi(r[bUni]),cat=s(r[bCat])||'Otros';
+      if(!D.monthly_store[k])D.monthly_store[k]={};
+      if(!D.monthly_store[k][clave])D.monthly_store[k][clave]={region:s(r[bReg]),gerente:s(r[bGer]),clave:clave,tienda:s(r[bTda]),ventas:0,cats:{}};
+      D.monthly_store[k][clave].ventas+=u;
+      D.monthly_store[k][clave].cats[cat]=(D.monthly_store[k][clave].cats[cat]||0)+u;
+    });
+  }
+
+  /* Read every monthly quota sheet available. This intentionally creates no
+     quota history before July unless such a sheet is explicitly added. */
+  wb.SheetNames.forEach(function(sn){
+    var mq=sn.trim().match(/^Cuota\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i);
+    if(mq){
+      var mm=MON[mq[1].slice(0,1).toUpperCase()+mq[1].slice(1,3).toLowerCase()];
+      var yr=2026,kq=monthKey(yr,mm),rq=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null});
+      var qm={};rq.slice(3).forEach(function(r){if(!r[2])return;qm[s(r[2])]={region:s(r[0]),sub_region:s(r[1]),clave:s(r[2]),tienda:s(r[3]),cuota:fi(r[4]),resurtido:fi(r[8]),faltante:fi(r[9]),riesgo:s(r[10])||'Sin riesgo'};});
+      D.quota_by_month[kq]=qm;
+    }
+    var ml=sn.trim().match(/^Cuota\s+LG-Cases\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i);
+    if(ml){
+      var mml=MON[ml[1].slice(0,1).toUpperCase()+ml[1].slice(1,3).toLowerCase()],kl=monthKey(2026,mml),rl=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null}),lm={};
+      for(var li=18;li<rl.length;li++){var rr=rl[li];if(!rr||!rr[1])continue;lm[s(rr[1])]={lg_cuota:flt(rr[5]),cases_cuota:flt(rr[9])};}
+      D.lg_quota_by_month[kl]=lm;
+    }
+  });
+
+  D.month_keys=Object.keys(D.monthly_store).filter(function(k){return k.indexOf('2026-')===0;}).sort();
+  D.current_month=D.month_keys.length?D.month_keys[D.month_keys.length-1]:'2026-07';
+  D.active_month=D.current_month;
+
+  function activateMonth(k){
+    D.active_month=k;
+    var isCurrent=k===D.current_month,sm=D.monthly_store[k]||{},qm=D.quota_by_month[k]||{};
+    var keys={};Object.keys(sm).forEach(function(x){keys[x]=1;});Object.keys(qm).forEach(function(x){keys[x]=1;});
+    var ohLookup={},proyLookup={};
+    D._current_cuota.forEach(function(r){ohLookup[r.clave]=r;proyLookup[r.clave]=r.proy||0;});
+    D.cuota_jul=Object.keys(keys).map(function(clave){
+      var v=sm[clave]||{},q=qm[clave]||{},oh=isCurrent?(ohLookup[clave]||{}):{};
+      var cuota=q.cuota||0,ventas=v.ventas||0;
+      return {region:q.region||v.region||'',sub_region:q.sub_region||'',clave:clave,tienda:q.tienda||v.tienda||clave,cuota:cuota,ventas:ventas,
+        alcance:cuota?Math.round(ventas/cuota*1000)/10:0,oh:isCurrent?(oh.oh||0):0,resurtido:q.resurtido||0,faltante:cuota?Math.max(cuota-ventas,0):0,
+        riesgo:cuota?(q.riesgo||'Sin riesgo'):'Sin cuota histórica',proy:isCurrent?(proyLookup[clave]||0):0,
+        oh_total:isCurrent?(oh.oh_total||0):0,oh_cases:isCurrent?(oh.oh_cases||0):0,oh_cables:isCurrent?(oh.oh_cables||0):0,
+        oh_chargers:isCurrent?(oh.oh_chargers||0):0,oh_liquid:isCurrent?(oh.oh_liquid||0):0,oh_micas:isCurrent?(oh.oh_micas||0):0};
+    });
+
+    /* AR: current month keeps equipment/projection. Historical months expose
+       sales only because the workbook has no monthly equipment history. */
+    if(isCurrent){D.ar_clean=D._current_ar.slice();D.proy_total=D._current_proy_total;}
+    else{D.ar_clean=Object.values(sm).map(function(v){return{region:v.region,gerente:v.gerente,clave:v.clave,tienda:v.tienda,alphacomm:v.ventas,equipo:0,proy:0};});D.proy_total=0;}
+
+    /* Cases / Liquid Glass sales by month from 2.Base. */
+    var lqm=D.lg_quota_by_month[k]||{},lgOH={};D._current_lg.forEach(function(r){lgOH[r.clave]=r;});
+    D.lg_tienda=Object.values(sm).map(function(v){
+      var q=lqm[v.clave]||{},o=isCurrent?(lgOH[v.clave]||{}):{};
+      var lv=0,cv=0;Object.keys(v.cats||{}).forEach(function(c){var cl=c.toLowerCase();if(cl.includes('liquid'))lv+=v.cats[c];if(cl.includes('case'))cv+=v.cats[c];});
+      return {region:v.region,clave:v.clave,tienda:v.tienda,lg_v:lv,lg_cuota:q.lg_cuota||0,lg_alc:q.lg_cuota?Math.round(lv/q.lg_cuota*1000)/10:0,cases_v:cv,cases_cuota:q.cases_cuota||0,cases_alc:q.cases_cuota?Math.round(cv/q.cases_cuota*1000)/10:0,oh_lg:isCurrent?(o.oh_lg||0):0,oh_cases:isCurrent?(o.oh_cases||0):0};
+    });
+    D.lg_totals=null;
+    var rg={};D.lg_tienda.forEach(function(r){if(!rg[r.region])rg[r.region]={region:r.region,lg_v:0,lg_cuota:0,cases_v:0,cases_cuota:0};rg[r.region].lg_v+=r.lg_v;rg[r.region].lg_cuota+=r.lg_cuota;rg[r.region].cases_v+=r.cases_v;rg[r.region].cases_cuota+=r.cases_cuota;});D.lg_region=Object.values(rg);
+    D.regiones=Array.from(new Set(D.cuota_jul.map(function(r){return r.region;}).filter(Boolean))).sort();
+    updateMonthUI();initFilters();rT0();rT1();rT2();
+  }
+
+  function updateMonthUI(){
+    var label=monthLabel(D.active_month),hasQuota=!!D.quota_by_month[D.active_month],isCurrent=D.active_month===D.current_month;
+    document.querySelector('.hdr-left h1').textContent='📱 Dashboard Prime — '+label;
+    document.getElementById('tab0label').innerHTML='<span class="tab-ico">📋</span> '+(hasQuota?'Ventas & Cuota ':'Ventas ')+shortMonth(D.active_month);
+    document.getElementById('tab1label').innerHTML='<span class="tab-ico">📈</span> AR & Proyección'+(isCurrent?'':' (ventas)');
+    document.getElementById('tab2label').innerHTML='<span class="tab-ico">💧</span> Cases & LG '+shortMonth(D.active_month);
+    document.getElementById('tab3label').innerHTML='<span class="tab-ico">📦</span> Inventario actual';
+    var g=document.getElementById('monthChips');if(g)g.innerHTML=D.month_keys.map(function(k){return '<div class="chip '+(k===D.active_month?'active':'')+'" onclick="activateMonth(\''+k+'\')">'+shortMonth(k)+'</div>';}).join('');
+  }
+
   D.regiones=Array.from(new Set(D.cuota_jul.map(function(r){return r.region;}).filter(Boolean))).sort();
+  activateMonth(D.current_month);
   var now=new Date();
   document.getElementById('hdrSub').textContent='Datos al '+now.toLocaleDateString('es-MX')+' '+now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-  initFilters();rT0();rT1();rT2();rT3();renderMatrix();
+  rT3();renderMatrix();
 }
 
 /* ═══ SORT ═══ */
@@ -564,13 +672,13 @@ function rT0(){
   var cobOH=totV?Math.round(totOH/totV*1000)/10:0;
   var ac=alc>=100?'green':alc>=70?'yellow':'red';
   document.getElementById('k0').innerHTML=
-    kpi('Cuota Total Julio','',n(totC),'piezas accesorios')+
-    kpi('Ventas Julio','blue',n(totV),'piezas vendidas')+
-    kpi('Alcance Total',ac,alc+'%','vs cuota')+
-    kpi('OH Inventario','',n(totOH),'piezas on-hand')+
-    kpi('Cobertura OH','purple',cobOH+'%','OH vs ventas')+
-    kpi('Faltante Cuota','red',n(totFalt),'piezas por alcanzar')+
-    kpi('Proyección Cierre','yellow',n(totProy),'');
+    kpi('Cuota '+shortMonth(D.active_month),'',totC?n(totC):'N/D',totC?'piezas accesorios':'sin cuota histórica')+
+    kpi('Ventas '+shortMonth(D.active_month),'blue',n(totV),'piezas vendidas')+
+    kpi('Alcance Total',ac,totC?alc+'%':'N/D',totC?'vs cuota':'sin cuota histórica')+
+    kpi('OH Inventario','',D.active_month===D.current_month?n(totOH):'N/D',D.active_month===D.current_month?'piezas on-hand':'solo mes vigente')+
+    kpi('Cobertura OH','purple',D.active_month===D.current_month?cobOH+'%':'N/D',D.active_month===D.current_month?'OH vs ventas':'solo mes vigente')+
+    kpi('Faltante Cuota','red',totC?n(totFalt):'N/D',totC?'piezas por alcanzar':'sin cuota histórica')+
+    kpi('Proyección Cierre','yellow',D.active_month===D.current_month?n(totProy):'N/D',D.active_month===D.current_month?'':'solo mes vigente');
   /* Charts */
   var regMap={};
   rows.forEach(function(r){if(!regMap[r.region])regMap[r.region]={v:0,c:0,oh:0};regMap[r.region].v+=r.ventas;regMap[r.region].c+=r.cuota;regMap[r.region].oh+=r.oh_total;});
@@ -597,7 +705,7 @@ function rT0(){
   document.getElementById('t0cnt').textContent='Total: '+rows.length+' tiendas';
   document.getElementById('th0').innerHTML=
     th('t0','region','Región')+th('t0','sub_region','Sub-Región')+th('t0','tienda','Tienda')+
-    th('t0','cuota','Cuota',true)+th('t0','ventas','Ventas Jul',true)+
+    th('t0','cuota','Cuota',true)+th('t0','ventas','Ventas '+shortMonth(D.active_month),true)+
     th('t0','proy','Proy Cierre',true)+'<th>Alcance</th>'+
     th('t0','oh_total','OH Total',true)+th('t0','oh_cases','Cases',true)+
     th('t0','oh_cables','Cables',true)+th('t0','oh_chargers','Chargers',true)+
@@ -621,7 +729,7 @@ function rT0(){
     var a=r.cuota?Math.round(r.ventas/r.cuota*1000)/10:0;
     var pC=r.proy>=r.cuota?'var(--green)':r.proy>=r.cuota*.7?'var(--yellow)':'var(--tx)';
     return '<tr><td>'+r.region+'</td><td>'+r.sub_region+'</td><td>'+r.tienda+'</td>'+
-      '<td class="right">'+n(r.cuota)+'</td><td class="right">'+n(r.ventas)+'</td>'+
+      '<td class="right">'+(r.cuota?n(r.cuota):'—')+'</td><td class="right">'+n(r.ventas)+'</td>'+
       '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.proy)+'</td>'+
       '<td>'+pb(a)+'</td>'+
       '<td class="right">'+n(r.oh_total)+'</td><td class="right">'+n(r.oh_cases)+'</td>'+
@@ -648,9 +756,9 @@ function rT1(){
   var aac=alcA>=100?'green':alcA>=70?'yellow':'red';
   document.getElementById('k1').innerHTML=
     kpi('Alphacomm','blue',n(totA),'pzs vendidas')+
-    kpi('Equipo','',n(totE),'pzs equipo')+
-    kpi('Proyección Cierre','yellow',n(totP),'pzs estimadas')+
-    kpi('Alcance vs Proy',aac,alcA+'%','alpha/proy')+
+    kpi('Equipo','',D.active_month===D.current_month?n(totE):'N/D',D.active_month===D.current_month?'pzs equipo':'sin histórico en archivo')+
+    kpi('Proyección Cierre','yellow',D.active_month===D.current_month?n(totP):'N/D',D.active_month===D.current_month?'pzs estimadas':'solo mes vigente')+
+    kpi('Alcance vs Proy',aac,D.active_month===D.current_month?alcA+'%':'N/D',D.active_month===D.current_month?'alpha/proy':'solo mes vigente')+
     kpi('Tiendas','',rows.length,'activas');
   /* Charts */
   var regMap={};
@@ -692,8 +800,8 @@ function rT2(){
   var lgOH=rows.reduce(function(a,r){return a+r.oh_lg;},0);var csOH=rows.reduce(function(a,r){return a+r.oh_cases;},0);
   var lac=lgA>=100?'green':lgA>=70?'yellow':'red';var cac=csA>=100?'green':csA>=70?'yellow':'red';
   document.getElementById('k2').innerHTML=
-    kpi('LG Ventas','blue',n(lgV))+kpi('LG Cuota','',n(lgC))+kpi('LG Alcance',lac,lgA+'%')+kpi('LG OH','',n(lgOH))+
-    kpi('Cases Ventas','blue',n(csV))+kpi('Cases Cuota','',n(csC))+kpi('Cases Alcance',cac,csA+'%')+kpi('Cases OH','',n(csOH));
+    kpi('LG Ventas','blue',n(lgV))+kpi('LG Cuota','',lgC?n(lgC):'N/D')+kpi('LG Alcance',lac,lgC?lgA+'%':'N/D')+kpi('LG OH','',D.active_month===D.current_month?n(lgOH):'N/D','solo mes vigente')+
+    kpi('Cases Ventas','blue',n(csV))+kpi('Cases Cuota','',csC?n(csC):'N/D')+kpi('Cases Alcance',cac,csC?csA+'%':'N/D')+kpi('Cases OH','',D.active_month===D.current_month?n(csOH):'N/D','solo mes vigente');
   /* Charts */
   var regData=reg?[{region:reg,lg_v:lgV,cases_v:csV}]:D.lg_region.slice();
   var rLbls=regData.map(function(r){return r.region;});
@@ -844,7 +952,7 @@ function exportImg(){
     if(btn)btn.style.display='flex';
     var a=document.createElement('a');
     a.href=canvas.toDataURL('image/png');
-    a.download='dashboard_pestaña'+(activeTab+1)+'_'+new Date().toLocaleDateString('es-MX').replace(/\//g,'-')+'.png';
+    a.download='dashboard_'+D.active_month+'_pestaña'+(activeTab+1)+'_'+new Date().toLocaleDateString('es-MX').replace(/\//g,'-')+'.png';
     a.click();
   }).catch(function(){if(btn)btn.style.display='flex';});
 }
@@ -853,17 +961,17 @@ function exportImg(){
 function exportXLSX(){
   var ws,wb2,name;
   if(activeTab===0){
-    var hd=['Región','Sub-Región','Clave','Tienda','Cuota','Ventas Jul','Proy Cierre','Alcance%','OH Total','Cases OH','Cables OH','Chargers OH','Liquid OH','Micas OH','Resurtido','Faltante','Riesgo'];
+    var hd=['Región','Sub-Región','Clave','Tienda','Cuota','Ventas '+shortMonth(D.active_month),'Proy Cierre','Alcance%','OH Total','Cases OH','Cables OH','Chargers OH','Liquid OH','Micas OH','Resurtido','Faltante','Riesgo'];
     var data=D.cuota_jul.map(function(r){return[r.region,r.sub_region,r.clave,r.tienda,r.cuota,r.ventas,r.proy,r.alcance,r.oh_total,r.oh_cases,r.oh_cables,r.oh_chargers,r.oh_liquid,r.oh_micas,r.resurtido,r.faltante,r.riesgo];});
-    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cuota_Julio.xlsx';
+    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Ventas_Cuota_'+shortMonth(D.active_month)+'_'+D.active_month.slice(0,4)+'.xlsx';
   }else if(activeTab===1){
     var hd=['Región','Gerente','Clave','Tienda','Alphacomm','Equipo','Proy Cierre'];
     var data=D.ar_clean.map(function(r){return[r.region,r.gerente,r.clave,r.tienda,r.alphacomm,r.equipo,r.proy];});
-    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='AR_Proyeccion.xlsx';
+    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='AR_Proyeccion_'+shortMonth(D.active_month)+'_'+D.active_month.slice(0,4)+'.xlsx';
   }else if(activeTab===2){
     var hd=['Región','Clave','Tienda','LG Ventas','LG Cuota','LG Alc%','Cases Ventas','Cases Cuota','Cases Alc%','OH LG','OH Cases'];
     var data=D.lg_tienda.map(function(r){return[r.region,r.clave,r.tienda,r.lg_v,r.lg_cuota,r.lg_alc,r.cases_v,r.cases_cuota,r.cases_alc,r.oh_lg,r.oh_cases];});
-    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cases_LG.xlsx';
+    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cases_LG_'+shortMonth(D.active_month)+'_'+D.active_month.slice(0,4)+'.xlsx';
   }else{
     var hd=['Categoría','Sub-Categoría','Clase','Producto','Cantidad'];
     var data=D.oh_productos.map(function(p){return[p.categoria,p.sub_categoria,p.clase,p.producto,p.cantidad];});
