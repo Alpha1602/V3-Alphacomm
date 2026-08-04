@@ -526,40 +526,54 @@ function parseWorkbook(wb){
    }catch(ohErr){console.error('OH parse error:',ohErr);}
   }
 
-  /* ─ 2.Base: historial mensual ─ */
-  var shBase=wb.SheetNames.find(function(x){return x.trim()==='2.Base';});
-  if(shBase){
-    try{
-      var rowsB=XLSX.utils.sheet_to_json(wb.Sheets[shBase],{header:1,defval:null});
-      var MO={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
-      var bm={};var bRegSet={};var bCatSet={};
-      rowsB.slice(3).forEach(function(r){
-        if(!r[8]||!r[7])return;
-        var mes=s(r[8]),año=fi(r[9])||2025,units=fi(r[7]);
-        if(units<=0)return;
-        var key=mes+'|'+año;
-        var reg=s(r[0]),cat=s(r[10]);
-        if(!bm[key])bm[key]={mes:mes,año:año,total:0,by_region:{},by_cat:{},by_rc:{}};
-        bm[key].total+=units;
-        if(reg){bm[key].by_region[reg]=(bm[key].by_region[reg]||0)+units;bRegSet[reg]=1;}
-        if(cat){bm[key].by_cat[cat]=(bm[key].by_cat[cat]||0)+units;bCatSet[cat]=1;}
-        if(reg&&cat){var rc=reg+'|'+cat;bm[key].by_rc[rc]=(bm[key].by_rc[rc]||0)+units;}
-      });
-      var sortedB=Object.keys(bm).sort(function(a,b){
-        var pa=a.split('|'),pb=b.split('|');
-        var ya=parseInt(pa[1]),yb=parseInt(pb[1]);
-        if(ya!==yb)return ya-yb;
-        return (MO[pa[0]]||0)-(MO[pb[0]]||0);
-      });
-      D.base_data={byMonth:bm,sorted:sortedB,cats:Object.keys(bCatSet).sort()};
-      D.base_regiones=Object.keys(bRegSet).sort();
-    }catch(bErr){console.error('2.Base parse error:',bErr);}
-  }
+  /* 2.Base se parsea de forma lazy al abrir el tab Histórico */
+  D._wb=wb;
 
   D.regiones=Array.from(new Set(D.cuota_jul.map(function(r){return r.region;}).filter(Boolean))).sort();
   var now=new Date();
   document.getElementById('hdrSub').textContent='Datos al '+now.toLocaleDateString('es-MX')+' '+now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
   initFilters();rT0();rT1();rT2();rT3();renderMatrix();
+}
+
+/* ─ Parsea 2.Base la primera vez que se abre tab Histórico ─ */
+function parse2Base(){
+  if(D.base_data||!D._wb)return true;
+  var wb2=D._wb;
+  var shBase=wb2.SheetNames.find(function(x){return x.trim()==='2.Base';});
+  if(!shBase)return false;
+  try{
+    document.getElementById('h4tbl').innerHTML='<p style="color:var(--tx2);padding:20px">⏳ Cargando historial (72 mil filas)…</p>';
+    var rowsB=XLSX.utils.sheet_to_json(wb2.Sheets[shBase],{header:1,defval:null});
+    var MO={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+    var bm={};var bRegSet={};var bCatSet={};
+    rowsB.slice(3).forEach(function(r){
+      if(!r[8]||!r[7])return;
+      var mes=s(r[8]),año=fi(r[9])||2025,units=fi(r[7]);
+      if(units<=0)return;
+      var key=mes+'|'+año;
+      var reg=s(r[0]),cat=s(r[10]);
+      if(!bm[key])bm[key]={mes:mes,año:año,total:0,by_region:{},by_cat:{},by_rc:{}};
+      bm[key].total+=units;
+      if(reg){bm[key].by_region[reg]=(bm[key].by_region[reg]||0)+units;bRegSet[reg]=1;}
+      if(cat){bm[key].by_cat[cat]=(bm[key].by_cat[cat]||0)+units;bCatSet[cat]=1;}
+      if(reg&&cat){var rc=reg+'|'+cat;bm[key].by_rc[rc]=(bm[key].by_rc[rc]||0)+units;}
+    });
+    var sortedB=Object.keys(bm).sort(function(a,b){
+      var pa=a.split('|'),pb=b.split('|');
+      var ya=parseInt(pa[1]),yb=parseInt(pb[1]);
+      if(ya!==yb)return ya-yb;
+      return (MO[pa[0]]||0)-(MO[pb[0]]||0);
+    });
+    D.base_data={byMonth:bm,sorted:sortedB,cats:Object.keys(bCatSet).sort()};
+    D.base_regiones=Object.keys(bRegSet).sort();
+    /* Init tab 4 filter chips now that data is ready */
+    var bRegs=D.base_regiones;
+    var g4r=document.getElementById('f4reg');
+    if(g4r){g4r.setAttribute('data-val','');g4r.innerHTML='<div class="chip active" onclick="setChip(\'f4reg\',\'\',this)">Todas</div>'+bRegs.map(function(r){return '<div class="chip" onclick="setChip(\'f4reg\',\''+r.replace(/'/g,"\\'")+'\',this)">'+r+'</div>';}).join('');}
+    var g4c=document.getElementById('f4cat');
+    if(g4c){g4c.setAttribute('data-val','');g4c.innerHTML='<div class="chip active" onclick="setChip(\'f4cat\',\'\',this)">Todas</div>'+D.base_data.cats.map(function(c){return '<div class="chip" onclick="setChip(\'f4cat\',\''+c.replace(/'/g,"\\'")+'\',this)">'+c+'</div>';}).join('');}
+    return true;
+  }catch(e){console.error('2.Base parse error:',e);return false;}
 }
 
 /* ═══ SORT ═══ */
@@ -611,13 +625,7 @@ function initFilters(){
   cg.setAttribute('data-val','');
   cg.innerHTML='<div class="chip active" onclick="setChip(\'f3cat\',\'\',this)">Todas</div>'+
     Object.keys(D.cat_totals).sort().map(function(c){return '<div class="chip" onclick="setChip(\'f3cat\',\''+c+'\',this)">'+c+'</div>';}).join('');
-  /* Tab 4: Histórico — region chips from 2.Base */
-  var bRegs=D.base_regiones.length?D.base_regiones:D.regiones;
-  var g4r=document.getElementById('f4reg');
-  if(g4r){g4r.setAttribute('data-val','');g4r.innerHTML='<div class="chip active" onclick="setChip(\'f4reg\',\'\',this)">Todas</div>'+bRegs.map(function(r){return '<div class="chip" onclick="setChip(\'f4reg\',\''+r.replace(/'/g,"\\'")+'\',this)">'+r+'</div>';}).join('');}
-  /* Tab 4: category chips from 2.Base */
-  var g4c=document.getElementById('f4cat');
-  if(g4c){var bCats=D.base_data?D.base_data.cats:[];g4c.setAttribute('data-val','');g4c.innerHTML='<div class="chip active" onclick="setChip(\'f4cat\',\'\',this)">Todas</div>'+bCats.map(function(c){return '<div class="chip" onclick="setChip(\'f4cat\',\''+c.replace(/'/g,"\\'")+'\',this)">'+c+'</div>';}).join('');}
+  /* Tab 4 chips se inicializan en parse2Base() al abrir ese tab */
 }
 
 /* ═══ TAB 0: CUOTA JULIO ═══ */
@@ -910,6 +918,7 @@ function setCmpChip(id,val,el){
   rT4();
 }
 function rT4(){
+  if(!D.base_data&&!parse2Base())return;
   if(!D.base_data)return;
   var MES_ES={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul',Aug:'Ago',Sep:'Sep',Oct:'Oct',Nov:'Nov',Dec:'Dic'};
   var fReg=getChip('f4reg'),fCat=getChip('f4cat');
