@@ -158,7 +158,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 </header>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab(0)"><span class="tab-ico">📊</span> Vista General</div>
+  <div class="tab active" onclick="switchTab(0)"><span class="tab-ico">📊</span> 2025 vs 2026</div>
   <div class="tab" onclick="switchTab(1)"><span class="tab-ico">📋</span> Cuota del Mes</div>
   <div class="tab" onclick="switchTab(2)"><span class="tab-ico">📈</span> Attach Rate y Protección</div>
   <div class="tab" onclick="switchTab(3)"><span class="tab-ico">💧</span> Cuota Cases &amp; Liquid Glass</div>
@@ -675,9 +675,12 @@ function rT1(){
   var totP=reg?rows.reduce(function(a,r){return a+r.proy;},0):D.proy_total;
   var alcA=totP?Math.round(totA/totP*1000)/10:0;
   var aac=alcA>=100?'green':alcA>=70?'yellow':'red';
+  var arPct=totE?Math.round(totA/totE*1000)/10:0;
+  var arcls=arPct>=100?'green':arPct>=70?'yellow':'red';
   document.getElementById('k1').innerHTML=
-    kpi('Alphacomm','blue',n(totA),'pzs vendidas')+
-    kpi('Equipo','',n(totE),'pzs equipo')+
+    kpi('Attach Rate del Mes',arcls,n(arPct,1)+'%','accesorios / dispositivo')+
+    kpi('Alphacomm','blue',n(totA),'pzs accesorios')+
+    kpi('Equipo','',n(totE),'pzs dispositivos')+
     kpi('Proyección Cierre','yellow',n(totP),'pzs estimadas')+
     kpi('Alcance vs Proy',aac,alcA+'%','alpha/proy')+
     kpi('Tiendas','',rows.length,'activas');
