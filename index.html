@@ -545,13 +545,16 @@ function rT0_Jul26(){
   var totOH=rows.reduce(function(a,r){return a+r.oh_total;},0);
   var totFalt=rows.reduce(function(a,r){return a+r.faltante;},0);
   var totProy=rows.reduce(function(a,r){return a+r.proy;},0);
+  /* Ventas reales julio: base_data incluye todas las tiendas (no solo prime) */
+  var bJul=D.base_data&&D.base_data.byMonth['Jul|2026'];
+  var totVBase=bJul?(reg?(bJul.by_region[reg]||0):bJul.total):totV;
   var alc=totC?Math.round(totV/totC*1000)/10:0;
-  var cobOH=totV?Math.round(totOH/totV*1000)/10:0;
+  var cobOH=totVBase?Math.round(totOH/totVBase*1000)/10:0;
   var ac=alc>=100?'green':alc>=70?'yellow':'red';
   /* KPIs */
   document.getElementById('k0').innerHTML=
     kpi('Cuota Total Julio','',n(totC),'piezas accesorios')+
-    kpi('Ventas Julio','blue',n(totV),'piezas vendidas')+
+    kpi('Ventas Julio','blue',n(totVBase),'piezas vendidas')+
     kpi('Alcance Total',ac,alc+'%','vs cuota')+
     kpi('OH Inventario','',n(totOH),'piezas on-hand')+
     kpi('Cobertura OH','purple',cobOH+'%','OH vs ventas')+
