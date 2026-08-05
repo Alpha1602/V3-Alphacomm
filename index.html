@@ -274,38 +274,31 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 
 <!-- TAB 4: HISTÓRICO -->
 <div class="pane" id="pane4">
-  <div class="filters" style="margin-bottom:10px;flex-direction:column;align-items:flex-start;gap:10px">
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <label>Año</label>
-      <div class="chip-group" id="f4year"></div>
-      <div class="filter-sep"></div>
-      <label>Mes</label>
-      <div class="chip-group" id="f4month"></div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <label>Categoría</label>
-      <div class="chip-group" id="f4cat"></div>
-    </div>
+  <!-- Filtros -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Categoría</label>
+    <div class="chip-group" id="f4cat"></div>
+    <div class="filter-sep"></div>
+    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Región</label>
+    <div class="chip-group" id="f4reg"></div>
   </div>
+  <!-- KPIs -->
   <div class="kpi-grid" id="k4"></div>
-  <div class="charts-row" style="margin-top:14px">
-    <div class="chart-card"><h3>Tendencia mensual</h3><canvas id="cH1"></canvas></div>
-    <div class="chart-card"><h3>2025 vs 2026 por mes</h3><canvas id="cH2"></canvas></div>
-  </div>
-  <div class="h-cmp">
-    <div class="h-cmp-card">
-      <h3>Mes A &nbsp;<span id="h4labA" style="color:var(--acc2);font-size:12px;text-transform:none"></span></h3>
-      <div class="chip-group" id="f4ma" style="flex-wrap:wrap;margin-bottom:10px"></div>
-      <div class="kpi-grid" id="h4kA"></div>
+  <!-- Gráfica YoY -->
+  <div class="chart-card" style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:700;color:var(--tx)">Comparativo Año vs Año</span>
+      <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--tx2)">
+        <select id="yoyA" onchange="rT4()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer"></select>
+        <span style="font-weight:600">vs</span>
+        <select id="yoyB" onchange="rT4()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer"></select>
+      </div>
     </div>
-    <div class="h-cmp-card">
-      <h3>Mes B &nbsp;<span id="h4labB" style="color:var(--green);font-size:12px;text-transform:none"></span></h3>
-      <div class="chip-group" id="f4mb" style="flex-wrap:wrap;margin-bottom:10px"></div>
-      <div class="kpi-grid" id="h4kB"></div>
-    </div>
+    <canvas id="cYoY" style="max-height:300px"></canvas>
   </div>
-  <div class="sec-hdr"><h2>Detalle mensual</h2></div>
-  <div class="tbl-wrap" style="max-height:calc(100vh - 490px);overflow-y:auto" id="h4tbl"></div>
+  <!-- Tabla detalle -->
+  <div class="sec-hdr" style="margin-top:16px"><h2>Detalle mensual</h2></div>
+  <div class="tbl-wrap" style="max-height:320px;overflow-y:auto" id="h4tbl"></div>
 </div>
 
 <script>
@@ -359,16 +352,17 @@ function autoLoad(){
 function initHistorico(){
   if(!D.base_data)return;
   var bm=D.base_data.byMonth;
-  var MES_ES_I={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul',Aug:'Ago',Sep:'Sep',Oct:'Oct',Nov:'Nov',Dec:'Dic'};
-  var MO={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
-  var yearSet={};Object.keys(bm).forEach(function(k){yearSet[k.split('|')[1]]=1;});
-  var g4y=document.getElementById('f4year');
-  if(g4y){g4y.setAttribute('data-val','');g4y.innerHTML='<div class="chip active" onclick="setChip(\'f4year\',\'\',this)">Todos</div>'+Object.keys(yearSet).sort().map(function(y){return '<div class="chip" onclick="setChip(\'f4year\',\''+y+'\',this)">'+y+'</div>';}).join('');}
-  var monthSet={};Object.keys(bm).forEach(function(k){monthSet[k.split('|')[0]]=1;});
-  var g4m=document.getElementById('f4month');
-  if(g4m){g4m.setAttribute('data-val','');g4m.innerHTML='<div class="chip active" onclick="setChip(\'f4month\',\'\',this)">Todos</div>'+Object.keys(monthSet).sort(function(a,b){return (MO[a]||0)-(MO[b]||0);}).map(function(m){return '<div class="chip" onclick="setChip(\'f4month\',\''+m+'\',this)">'+(MES_ES_I[m]||m)+'</div>';}).join('');}
+  /* Categoría chips */
   var g4c=document.getElementById('f4cat');
   if(g4c){g4c.setAttribute('data-val','');g4c.innerHTML='<div class="chip active" onclick="setChip(\'f4cat\',\'\',this)">Todas</div>'+D.base_data.cats.map(function(c){return '<div class="chip" onclick="setChip(\'f4cat\',\''+c.replace(/'/g,"\\'")+'\',this)">'+c+'</div>';}).join('');}
+  /* Región chips */
+  var g4r=document.getElementById('f4reg');
+  if(g4r){g4r.setAttribute('data-val','');g4r.innerHTML='<div class="chip active" onclick="setChip(\'f4reg\',\'\',this)">Todas</div>'+D.base_regiones.map(function(r){return '<div class="chip" onclick="setChip(\'f4reg\',\''+r.replace(/'/g,"\\'")+'\',this)">'+r+'</div>';}).join('');}
+  /* Year selectors */
+  var yearSet={};Object.keys(bm).forEach(function(k){yearSet[k.split('|')[1]]=1;});
+  var years=Object.keys(yearSet).sort();
+  var selA=document.getElementById('yoyA'),selB=document.getElementById('yoyB');
+  if(selA&&selA.options.length===0){years.forEach(function(y){selA.add(new Option(y,y));selB.add(new Option(y,y));});selA.value=years[0]||'2025';selB.value=years[years.length-1]||'2026';}
 }
 
 
@@ -402,7 +396,7 @@ function setChip(id,val,el){
   else if(id==='f2reg')rT2();
   else if(id==='f3reg'){rT3();renderMatrix();}
   else if(id==='f3cat')renderMatrix();
-  else if(id==='f4year'||id==='f4month'||id==='f4cat')rT4();
+  else if(id==='f4cat'||id==='f4reg')rT4();
 }
 
 /* ═══ INIT FILTERS ═══ */
@@ -710,95 +704,112 @@ function renderMatrix(){
 }
 
 /* ═══ TAB 4: HISTÓRICO ═══ */
-function setCmpChip(id,val,el){
-  if(id==='f4ma')H4.mA=val;
-  else if(id==='f4mb')H4.mB=val;
-  document.getElementById(id).querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});
-  if(el)el.classList.add('active');
-  rT4();
-}
 function rT4(){
-  if(!D.base_data&&!parse2Base())return;
   if(!D.base_data)return;
   var MES_ES={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul',Aug:'Ago',Sep:'Sep',Oct:'Oct',Nov:'Nov',Dec:'Dic'};
-  var fYear=getChip('f4year'),fMonth=getChip('f4month'),fCat=getChip('f4cat');
+  var MONTHS12=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var bd=D.base_data;
-  /* Filter sorted list by selected year and/or month */
-  var sorted=bd.sorted.filter(function(k){
-    var p=k.split('|');
-    if(fYear&&p[1]!==fYear)return false;
-    if(fMonth&&p[0]!==fMonth)return false;
-    return true;
-  });
-  if(!sorted.length)return;
-  /* Default comparison months from full list */
-  var allSorted=bd.sorted;
-  if(!H4.mA&&allSorted.length>1)H4.mA=allSorted[allSorted.length-2];
-  if(!H4.mB&&allSorted.length>0)H4.mB=allSorted[allSorted.length-1];
+  var fCat=getChip('f4cat'),fReg=getChip('f4reg');
   function getT(key){
     var m=bd.byMonth[key];if(!m)return 0;
+    if(fCat&&fReg)return m.by_rc[fReg+'|'+fCat]||0;
     if(fCat)return m.by_cat[fCat]||0;
+    if(fReg)return m.by_region[fReg]||0;
     return m.total;
   }
-  function lbl(k){if(!k)return '';var p=k.split('|');return (MES_ES[p[0]]||p[0])+' '+p[1];}
-  var totals=sorted.map(getT);
+  /* Year selectors */
+  var selA=document.getElementById('yoyA'),selB=document.getElementById('yoyB');
+  var yA=selA?selA.value:'2025',yB=selB?selB.value:'2026';
+  /* Build per-year month maps */
+  var dA={},dB={};
+  bd.sorted.forEach(function(k){var p=k.split('|');if(p[1]===yA)dA[p[0]]=getT(k);if(p[1]===yB)dB[p[0]]=getT(k);});
+  var ym=MONTHS12.filter(function(m){return dA[m]||dB[m];});
+  var dataA=ym.map(function(m){return dA[m]||0;});
+  var dataB=ym.map(function(m){return dB[m]||0;});
   /* KPIs */
-  var last=sorted[sorted.length-1],prevK=sorted.length>1?sorted[sorted.length-2]:null;
-  var tL=getT(last),tPK=prevK?getT(prevK):0;
-  var dL=prevK?tL-tPK:null,pL=tPK&&dL!==null?Math.round(dL/tPK*1000)/10:null;
-  var lParts=last.split('|'),lPY=lParts[0]+'|'+(parseInt(lParts[1])-1);
-  var tLPY=bd.byMonth[lPY]?getT(lPY):null;
-  var dYL=tLPY!==null?tL-tLPY:null,pYL=tLPY&&dYL!==null?Math.round(dYL/tLPY*1000)/10:null;
-  var bestI=0;totals.forEach(function(t,i){if(t>totals[bestI])bestI=i;});
-  var k4h=kpi('Último: '+lbl(last),'blue',n(tL),'unidades vendidas');
-  if(dL!==null)k4h+=kpi('vs '+lbl(prevK),dL>=0?'green':'red',(dL>=0?'+':'')+n(dL)+' ('+(pL>=0?'+':'')+n(pL,1)+'%)','mes anterior');
-  if(dYL!==null)k4h+=kpi('YoY',dYL>=0?'green':'red',(dYL>=0?'+':'')+n(dYL)+' ('+(pYL>=0?'+':'')+n(pYL,1)+'%)','vs '+lbl(lPY));
-  k4h+=kpi('Mejor mes','purple',n(totals[bestI]),lbl(sorted[bestI]));
+  var totA=dataA.reduce(function(s,v){return s+v;},0);
+  var totB=dataB.reduce(function(s,v){return s+v;},0);
+  var grand=totA+totB;
+  var bestA=Math.max.apply(null,dataA),bestB=Math.max.apply(null,dataB);
+  var bestMonth=ym[dataB.indexOf(Math.max.apply(null,dataB))]||ym[dataA.indexOf(Math.max.apply(null,dataA))];
+  var yoyDelta=totA?Math.round((totB-totA)/totA*1000)/10:null;
+  var avgA=ym.length?Math.round(totA/ym.length):0,avgB=ym.length?Math.round(totB/ym.length):0;
+  var k4h=kpi('Total '+yA,'blue',n(totA),'unidades');
+  k4h+=kpi('Total '+yB,totB>=totA?'green':'red',n(totB),'unidades');
+  k4h+=kpi('Prom. Mensual','',n(avgB),yB+' / mes');
+  if(yoyDelta!==null)k4h+=kpi('Crec. '+yA+' → '+yB,yoyDelta>=0?'green':'red',(yoyDelta>=0?'+':'')+n(yoyDelta,1)+'%','año completo');
+  if(bestMonth)k4h+=kpi('Mejor Mes','purple',n(Math.max(bestA,bestB)),(MES_ES[bestMonth]||bestMonth));
   document.getElementById('k4').innerHTML=k4h;
-  /* Charts */
-  var axO={ticks:{color:'#a0a0b8',font:{size:9}},grid:{color:'#2e3150'}};
-  mkChart('cH1','bar',sorted.map(lbl),[
-    {label:'Unidades',data:totals,backgroundColor:sorted.map(function(k){return k.split('|')[1]==='2026'?'#6c63ff':'rgba(108,99,255,.3)';}),borderRadius:3}
-  ],{scales:{x:axO,y:axO},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return n(ctx.raw)+' uds';}}}}});
-  /* 2025 vs 2026 */
-  var months12=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var d25={},d26={};
-  sorted.forEach(function(k){var p=k.split('|');if(p[1]==='2025')d25[p[0]]=getT(k);else if(p[1]==='2026')d26[p[0]]=getT(k);});
-  var ym=months12.filter(function(m){return d25[m]||d26[m];});
-  mkChart('cH2','bar',ym.map(function(m){return MES_ES[m]||m;}),[
-    {label:'2025',data:ym.map(function(m){return d25[m]||0;}),backgroundColor:'rgba(108,99,255,.3)',borderRadius:3},
-    {label:'2026',data:ym.map(function(m){return d26[m]||0;}),backgroundColor:'#6c63ff',borderRadius:3}
-  ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
-  /* Comparison chips */
-  var grpA=document.getElementById('f4ma'),grpB=document.getElementById('f4mb');
-  if(grpA){grpA.setAttribute('data-val',H4.mA);grpA.innerHTML=sorted.map(function(k){return '<div class="chip'+(k===H4.mA?' active':'')+'" onclick="setCmpChip(\'f4ma\',\''+k+'\',this)">'+lbl(k)+'</div>';}).join('');}
-  if(grpB){grpB.setAttribute('data-val',H4.mB);grpB.innerHTML=sorted.map(function(k){return '<div class="chip'+(k===H4.mB?' active':'')+'" onclick="setCmpChip(\'f4mb\',\''+k+'\',this)">'+lbl(k)+'</div>';}).join('');}
-  /* Comparison KPIs */
-  var tA=getT(H4.mA),tB2=getT(H4.mB),dAB=tB2-tA;
-  var pAB=tA?Math.round(dAB/tA*1000)/10:null;
-  var elLabA=document.getElementById('h4labA'),elLabB=document.getElementById('h4labB');
-  if(elLabA)elLabA.textContent=lbl(H4.mA);
-  if(elLabB)elLabB.textContent=lbl(H4.mB);
-  var elA=document.getElementById('h4kA'),elB=document.getElementById('h4kB');
-  if(elA)elA.innerHTML=kpi('Ventas','blue',n(tA),'unidades')+(pAB!==null?kpi('vs Mes B',dAB>=0?'red':'green',(dAB>=0?'+':'')+n(dAB)+' ('+(pAB>=0?'+':'')+n(pAB,1)+'%)','diferencia'):'');
-  if(elB)elB.innerHTML=kpi('Ventas','blue',n(tB2),'unidades')+(pAB!==null?kpi('vs Mes A',dAB>=0?'green':'red',(dAB>=0?'+':'')+n(-dAB)+' ('+(-pAB>=0?'+':'')+n(-pAB,1)+'%)','diferencia'):'');
-  /* Table */
-  var grand=totals.reduce(function(a,b){return a+b;},0);
-  var tbl='<table><thead><tr><th>Mes</th><th class="right">Unidades</th><th class="right">Δ Mensual</th><th class="right">% Mensual</th><th class="right">Δ YoY</th><th class="right">% YoY</th></tr></thead><tbody>';
-  tbl+='<tr class="total-row"><td><strong>TOTAL</strong></td><td class="right">'+n(grand)+'</td><td colspan="4" class="right" style="color:var(--tx2)">—</td></tr>';
-  sorted.forEach(function(k,i){
-    var t=getT(k),pKey=i>0?sorted[i-1]:null,tP=pKey?getT(pKey):null;
-    var dM=tP!==null?t-tP:null,pM=tP&&dM!==null?Math.round(dM/tP*1000)/10:null;
-    var kps=k.split('|'),kPrev=kps[0]+'|'+(parseInt(kps[1])-1),tPY=bd.byMonth[kPrev]?getT(kPrev):null;
-    var dY=tPY!==null?t-tPY:null,pY=tPY&&dY!==null?Math.round(dY/tPY*1000)/10:null;
-    var isA=k===H4.mA,isB=k===H4.mB;
-    tbl+='<tr style="'+(isA?'background:rgba(108,99,255,.12)':isB?'background:rgba(34,197,94,.08)':'')+'">';
-    tbl+='<td style="font-weight:'+(isA||isB?700:500)+'">'+(isA?'🔵 ':isB?'🟢 ':'')+lbl(k)+'</td>';
-    tbl+='<td class="right">'+n(t)+'</td>';
-    if(dM!==null){var cm=dM>=0?'delta-pos':'delta-neg';tbl+='<td class="right '+cm+'">'+(dM>=0?'+':'')+n(dM)+'</td><td class="right '+cm+'">'+(pM>=0?'+':'')+n(pM,1)+'%</td>';}
-    else tbl+='<td class="right" style="color:var(--tx2)">—</td><td class="right" style="color:var(--tx2)">—</td>';
-    if(dY!==null){var cy=dY>=0?'delta-pos':'delta-neg';tbl+='<td class="right '+cy+'">'+(dY>=0?'+':'')+n(dY)+'</td><td class="right '+cy+'">'+(pY>=0?'+':'')+n(pY,1)+'%</td>';}
-    else tbl+='<td class="right" style="color:var(--tx2)">—</td><td class="right" style="color:var(--tx2)">—</td>';
+  /* YoY bar chart with delta labels plugin */
+  if(charts['cYoY'])charts['cYoY'].destroy();
+  var ctx=document.getElementById('cYoY');
+  if(ctx){
+    var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
+    charts['cYoY']=new Chart(ctx.getContext('2d'),{
+      type:'bar',
+      data:{
+        labels:ym.map(function(m){return MES_ES[m]||m;}),
+        datasets:[
+          {label:yA,data:dataA,backgroundColor:'rgba(59,130,246,0.65)',borderRadius:4,borderSkipped:false},
+          {label:yB,data:dataB,
+           backgroundColor:dataB.map(function(b,i){return dataA[i]&&b<dataA[i]?'rgba(239,68,68,0.7)':'rgba(34,197,94,0.7)';}),
+           borderRadius:4,borderSkipped:false}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:true,
+        layout:{padding:{top:22}},
+        scales:{x:axO,y:Object.assign({},axO,{ticks:Object.assign({},axO.ticks,{callback:function(v){return v>=1000?Math.round(v/1000)+'K':v;}})})},
+        plugins:{
+          legend:{labels:{color:'#a0a0b8',font:{size:11},boxWidth:12}},
+          tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+n(c.raw)+' uds';}}}
+        }
+      },
+      plugins:[{
+        id:'deltaLabels',
+        afterDatasetsDraw:function(chart){
+          if(!chart.data.datasets[1])return;
+          var c2=chart.ctx,m0=chart.getDatasetMeta(0),m1=chart.getDatasetMeta(1);
+          var d0=chart.data.datasets[0].data,d1=chart.data.datasets[1].data;
+          c2.save();c2.font='bold 9px "Segoe UI",sans-serif';c2.textAlign='center';
+          m0.data.forEach(function(b0,i){
+            var b1=m1.data[i];if(!b1)return;
+            var a=d0[i]||0,b=d1[i]||0;if(a===0&&b===0)return;
+            var delta=a?Math.round((b-a)/a*1000)/10:null;if(delta===null)return;
+            var x=(b0.x+b1.x)/2,y=Math.min(b0.y,b1.y)-5;
+            c2.fillStyle=delta>=0?'#22c55e':'#ef4444';
+            c2.fillText((delta>=0?'+':'')+n(delta,1)+'%',x,y);
+          });
+          c2.restore();
+        }
+      }]
+    });
+  }
+  /* Tabla detalle */
+  var tbl='<table><thead><tr>';
+  tbl+='<th>Mes</th>';
+  tbl+='<th class="right" style="color:rgba(59,130,246,.8)">'+yA+'</th>';
+  tbl+='<th class="right" style="color:rgba(34,197,94,.8)">'+yB+'</th>';
+  tbl+='<th class="right">Δ Uds</th><th class="right">% Cambio</th>';
+  tbl+='</tr></thead><tbody>';
+  /* Total row */
+  var tD=totB-totA,tP=totA?Math.round(tD/totA*1000)/10:null,tCls=tD>=0?'delta-pos':'delta-neg';
+  tbl+='<tr class="total-row">';
+  tbl+='<td><strong>TOTAL</strong></td>';
+  tbl+='<td class="right blue">'+n(totA)+'</td>';
+  tbl+='<td class="right green">'+n(totB)+'</td>';
+  tbl+='<td class="right '+tCls+'">'+(tD>=0?'+':'')+n(tD)+'</td>';
+  tbl+='<td class="right '+tCls+'">'+(tP!==null?(tP>=0?'+':'')+n(tP,1)+'%':'—')+'</td>';
+  tbl+='</tr>';
+  ym.forEach(function(m,i){
+    var a=dataA[i]||0,b=dataB[i]||0,d=b-a;
+    var p=a?Math.round(d/a*1000)/10:null,cls=d>=0?'delta-pos':'delta-neg';
+    tbl+='<tr>';
+    tbl+='<td style="font-weight:600">'+(MES_ES[m]||m)+'</td>';
+    tbl+='<td class="right">'+n(a)+'</td>';
+    tbl+='<td class="right">'+n(b)+'</td>';
+    tbl+='<td class="right '+cls+'">'+(d>=0?'+':'')+n(d)+'</td>';
+    tbl+='<td class="right '+cls+'">'+(p!==null?(p>=0?'+':'')+n(p,1)+'%':'—')+'</td>';
     tbl+='</tr>';
   });
   tbl+='</tbody></table>';
