@@ -128,7 +128,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 </head>
 <body>
 
-<div id="loading"><div class="spinner"></div><div id="loadMsg">Cargando Excel desde GitHub…</div></div>
+<div id="loading"><div class="spinner"></div><div id="loadMsg">Cargando datos…</div></div>
 <div id="errBanner"></div>
 
 <header>
@@ -158,28 +158,65 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 </header>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab(0)"><span class="tab-ico">📋</span> Cuota Julio</div>
-  <div class="tab" onclick="switchTab(1)"><span class="tab-ico">📈</span> AR &amp; Proyección</div>
-  <div class="tab" onclick="switchTab(2)"><span class="tab-ico">💧</span> Cases &amp; Liquid Glass</div>
-  <div class="tab" onclick="switchTab(3)"><span class="tab-ico">📦</span> Inventario</div>
-  <div class="tab" onclick="switchTab(4)"><span class="tab-ico">📊</span> Histórico</div>
+  <div class="tab active" onclick="switchTab(0)"><span class="tab-ico">📊</span> Vista General</div>
+  <div class="tab" onclick="switchTab(1)"><span class="tab-ico">📋</span> Cuota del Mes</div>
+  <div class="tab" onclick="switchTab(2)"><span class="tab-ico">📈</span> Attach Rate y Protección</div>
+  <div class="tab" onclick="switchTab(3)"><span class="tab-ico">💧</span> Cuota Cases &amp; Liquid Glass</div>
+  <div class="tab" onclick="switchTab(4)"><span class="tab-ico">📦</span> Inventario</div>
 </div>
 
-<!-- TAB 0: CUOTA JULIO -->
+<!-- TAB 0: VISTA GENERAL (Histórico YoY) -->
 <div class="pane active" id="pane0">
-  <div class="kpi-grid" id="k0"></div>
-  <div class="charts-row">
-    <div class="chart-card"><h3>Ventas vs Cuota por Región</h3><canvas id="c0reg"></canvas></div>
-    <div class="chart-card"><h3>Inventario OH por Región</h3><canvas id="c0oh"></canvas></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Categoría</label>
+    <div class="chip-group" id="f4cat"></div>
+    <div class="filter-sep"></div>
+    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Región</label>
+    <div class="chip-group" id="f4reg"></div>
   </div>
-  <div class="reg-bars"><h3>Alcance por Región</h3><div id="regBarsBody"></div></div>
+  <div class="kpi-grid" id="k4"></div>
+  <div class="chart-card" style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:700;color:var(--tx)">Comparativo Año vs Año</span>
+      <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--tx2)">
+        <select id="yoyA" onchange="rT4()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer"></select>
+        <span style="font-weight:600">vs</span>
+        <select id="yoyB" onchange="rT4()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer"></select>
+      </div>
+    </div>
+    <canvas id="cYoY" style="max-height:300px"></canvas>
+  </div>
+  <div class="sec-hdr" style="margin-top:16px"><h2>Detalle mensual</h2></div>
+  <div class="tbl-wrap" style="max-height:320px;overflow-y:auto" id="h4tbl"></div>
+</div>
+
+<!-- TAB 1: CUOTA DEL MES -->
+<div class="pane" id="pane1">
+  <!-- Filtro año / mes -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Año</label>
+    <div class="chip-group" id="f0yr"></div>
+    <div class="filter-sep"></div>
+    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Mes</label>
+    <div class="chip-group" id="f0mo"></div>
+  </div>
+  <!-- KPIs -->
+  <div class="kpi-grid" id="k0"></div>
+  <!-- Charts row -->
+  <div class="charts-row">
+    <div class="chart-card"><h3 id="c0regTitle">Ventas vs Cuota por Región</h3><canvas id="c0reg"></canvas></div>
+    <div class="chart-card"><h3 id="c0ohTitle">Inventario OH por Región</h3><canvas id="c0oh"></canvas></div>
+  </div>
+  <!-- Progress bars -->
+  <div class="reg-bars" id="regBarsWrap"><h3 id="regBarsTitle">Alcance por Región</h3><div id="regBarsBody"></div></div>
+  <!-- Detail section -->
   <div class="sec-hdr" style="margin-top:14px">
-    <h2>Detalle por Tienda</h2>
+    <h2 id="t0secHdr">Detalle por Tienda</h2>
     <div class="filters" style="margin-bottom:0">
       <label>Región</label>
       <div class="chip-group" id="f0reg"></div>
-      <div class="filter-sep"></div>
-      <label>Riesgo</label>
+      <div class="filter-sep" id="f0riesSep"></div>
+      <label id="f0riesLbl" style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Riesgo</label>
       <div class="chip-group" id="f0ries">
         <div class="chip active" onclick="setChip('f0ries','',this)">Todos</div>
         <div class="chip ries-alto" onclick="setChip('f0ries','alto',this)">Alto</div>
@@ -187,19 +224,19 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
         <div class="chip ries-bajo" onclick="setChip('f0ries','bajo',this)">Bajo</div>
         <div class="chip" onclick="setChip('f0ries','sin',this)">Sin riesgo</div>
       </div>
-      <div class="filter-sep"></div>
+      <div class="filter-sep" id="f0qSep"></div>
       <input id="f0q" oninput="rT0()" placeholder="🔍 Nombre o clave…">
     </div>
   </div>
   <div id="t0cnt" style="color:var(--tx2);font-size:11px;margin:4px 0 6px"></div>
-  <div class="tbl-wrap" style="max-height:58vh;overflow-y:auto"><table>
+  <div class="tbl-wrap" style="max-height:52vh;overflow-y:auto"><table>
     <thead><tr id="th0"></tr></thead>
     <tbody id="tb0"></tbody>
   </table></div>
 </div>
 
-<!-- TAB 1: AR & PROYECCIÓN -->
-<div class="pane" id="pane1">
+<!-- TAB 2: ATTACH RATE Y PROTECCIÓN -->
+<div class="pane" id="pane2">
   <div class="kpi-grid" id="k1"></div>
   <div class="ar-charts">
     <div class="chart-card"><h3>Alphacomm vs Proyección por Región</h3><canvas id="c1alpha"></canvas></div>
@@ -221,8 +258,8 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   </table></div>
 </div>
 
-<!-- TAB 2: CASES & LG -->
-<div class="pane" id="pane2">
+<!-- TAB 3: CUOTA CASES & LIQUID GLASS -->
+<div class="pane" id="pane3">
   <div class="filters">
     <label>Región</label>
     <div class="chip-group" id="f2reg"></div>
@@ -250,8 +287,8 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   </div>
 </div>
 
-<!-- TAB 3: INVENTARIO -->
-<div class="pane" id="pane3">
+<!-- TAB 4: INVENTARIO -->
+<div class="pane" id="pane4">
   <div class="filters">
     <label>Región</label>
     <div class="chip-group" id="f3reg"></div>
@@ -272,42 +309,16 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   <div id="pivot" style="margin-top:8px"></div>
 </div>
 
-<!-- TAB 4: HISTÓRICO -->
-<div class="pane" id="pane4">
-  <!-- Filtros -->
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Categoría</label>
-    <div class="chip-group" id="f4cat"></div>
-    <div class="filter-sep"></div>
-    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Región</label>
-    <div class="chip-group" id="f4reg"></div>
-  </div>
-  <!-- KPIs -->
-  <div class="kpi-grid" id="k4"></div>
-  <!-- Gráfica YoY -->
-  <div class="chart-card" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <span style="font-size:13px;font-weight:700;color:var(--tx)">Comparativo Año vs Año</span>
-      <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--tx2)">
-        <select id="yoyA" onchange="rT4()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer"></select>
-        <span style="font-weight:600">vs</span>
-        <select id="yoyB" onchange="rT4()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer"></select>
-      </div>
-    </div>
-    <canvas id="cYoY" style="max-height:300px"></canvas>
-  </div>
-  <!-- Tabla detalle -->
-  <div class="sec-hdr" style="margin-top:16px"><h2>Detalle mensual</h2></div>
-  <div class="tbl-wrap" style="max-height:320px;overflow-y:auto" id="h4tbl"></div>
-</div>
-
 <script>
+/* ═══ CONSTANTS ═══ */
+var MES_ES={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul',Aug:'Ago',Sep:'Sep',Oct:'Oct',Nov:'Nov',Dec:'Dic'};
+var MONTHS12=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 /* ═══ STORE ═══ */
 var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[]};
 var charts={};
 var activeTab=0;
 var srt={t0:{col:null,dir:-1},t1:{col:null,dir:-1},t2lg:{col:null,dir:-1},t2cs:{col:null,dir:-1}};
-var H4={mA:'',mB:'',year:'',month:''};
 
 /* ═══ UTILS ═══ */
 function n(v,dec){dec=dec||0;v=parseFloat(v)||0;return v.toLocaleString('es-MX',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
@@ -344,31 +355,60 @@ function autoLoad(){
       D.base_data=data.base_data; D.base_regiones=data.base_regiones;
       var now=new Date();
       document.getElementById('hdrSub').textContent='Datos al '+now.toLocaleDateString('es-MX')+' '+now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-      initFilters(); rT0(); rT1(); rT2(); rT3(); renderMatrix(); initHistorico();
+      initFilters();
+      initHistorico();
+      initCuotaFilter();
+      rT4(); rT0(); rT1(); rT2(); rT3(); renderMatrix();
       hideLoading();
     })
     .catch(function(e){hideLoading();showError('No se pudo cargar los datos: '+e.message);});
 }
+
+/* ═══ INIT HISTÓRICO CHIPS ═══ */
 function initHistorico(){
   if(!D.base_data)return;
   var bm=D.base_data.byMonth;
-  /* Categoría chips */
   var g4c=document.getElementById('f4cat');
   if(g4c){g4c.setAttribute('data-val','');g4c.innerHTML='<div class="chip active" onclick="setChip(\'f4cat\',\'\',this)">Todas</div>'+D.base_data.cats.map(function(c){return '<div class="chip" onclick="setChip(\'f4cat\',\''+c.replace(/'/g,"\\'")+'\',this)">'+c+'</div>';}).join('');}
-  /* Región chips */
   var g4r=document.getElementById('f4reg');
   if(g4r){g4r.setAttribute('data-val','');g4r.innerHTML='<div class="chip active" onclick="setChip(\'f4reg\',\'\',this)">Todas</div>'+D.base_regiones.map(function(r){return '<div class="chip" onclick="setChip(\'f4reg\',\''+r.replace(/'/g,"\\'")+'\',this)">'+r+'</div>';}).join('');}
-  /* Year selectors */
   var yearSet={};Object.keys(bm).forEach(function(k){yearSet[k.split('|')[1]]=1;});
   var years=Object.keys(yearSet).sort();
   var selA=document.getElementById('yoyA'),selB=document.getElementById('yoyB');
   if(selA&&selA.options.length===0){years.forEach(function(y){selA.add(new Option(y,y));selB.add(new Option(y,y));});selA.value=years[0]||'2025';selB.value=years[years.length-1]||'2026';}
 }
 
+/* ═══ INIT CUOTA DEL MES CHIPS ═══ */
+function initCuotaFilter(){
+  if(!D.base_data)return;
+  var yearSet={};
+  D.base_data.sorted.forEach(function(k){yearSet[k.split('|')[1]]=1;});
+  var years=Object.keys(yearSet).sort();
+  var latestYr=years[years.length-1]||'2026';
+  var g0yr=document.getElementById('f0yr');
+  if(g0yr){
+    g0yr.setAttribute('data-val',latestYr);
+    g0yr.innerHTML=years.map(function(y){
+      return '<div class="chip'+(y===latestYr?' active':'')+'" onclick="setChip(\'f0yr\',\''+y+'\',this)">'+y+'</div>';
+    }).join('');
+  }
+  updateMonthChips(latestYr);
+}
 
-
-/* parse2Base ya no es necesario — datos vienen del JSON */
-function parse2Base(){ return D.base_data != null; }
+function updateMonthChips(yr){
+  if(!D.base_data)return;
+  var mos=D.base_data.sorted
+    .filter(function(k){return k.split('|')[1]===yr;})
+    .map(function(k){return k.split('|')[0];})
+    .sort(function(a,b){return MONTHS12.indexOf(a)-MONTHS12.indexOf(b);});
+  var lastMo=mos[mos.length-1]||'Jul';
+  var g0mo=document.getElementById('f0mo');
+  if(!g0mo)return;
+  g0mo.setAttribute('data-val',lastMo);
+  g0mo.innerHTML=mos.map(function(m){
+    return '<div class="chip'+(m===lastMo?' active':'')+'" onclick="setChip(\'f0mo\',\''+m+'\',this)">'+(MES_ES[m]||m)+'</div>';
+  }).join('');
+}
 
 /* ═══ SORT ═══ */
 function sortCol(key,col){
@@ -385,13 +425,15 @@ function th(key,col,label,right){
 }
 
 /* ═══ CHIP HELPERS ═══ */
-function getChip(id){return document.getElementById(id).getAttribute('data-val')||'';}
+function getChip(id){var g=document.getElementById(id);return g?g.getAttribute('data-val')||''  :'';}
 function setChip(id,val,el){
   var grp=document.getElementById(id);
   grp.setAttribute('data-val',val);
   grp.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});
   el.classList.add('active');
   if(id==='f0reg'||id==='f0ries')rT0();
+  else if(id==='f0yr'){updateMonthChips(val);rT0();}
+  else if(id==='f0mo')rT0();
   else if(id==='f1reg')rT1();
   else if(id==='f2reg')rT2();
   else if(id==='f3reg'){rT3();renderMatrix();}
@@ -399,7 +441,7 @@ function setChip(id,val,el){
   else if(id==='f4cat'||id==='f4reg')rT4();
 }
 
-/* ═══ INIT FILTERS ═══ */
+/* ═══ INIT FILTERS (region chips for tabs) ═══ */
 function initFilters(){
   var regs=D.regiones;
   ['f0reg','f1reg','f2reg'].forEach(function(id){
@@ -408,25 +450,39 @@ function initFilters(){
     grp.innerHTML='<div class="chip active" onclick="setChip(\''+id+'\',\'\',this)">Todas</div>'+
       regs.map(function(r){return '<div class="chip" onclick="setChip(\''+id+'\',\''+r.replace(/'/g,"\\'")+'\',this)">'+r+'</div>';}).join('');
   });
-  /* Tab 3 region chips use OH regions (different source) */
   var ohRegs=D.oh_regiones||D.regiones;
   var grp3=document.getElementById('f3reg');
   grp3.setAttribute('data-val','');
   grp3.innerHTML='<div class="chip active" onclick="setChip(\'f3reg\',\'\',this)">Todas</div>'+
     ohRegs.map(function(r){return '<div class="chip" onclick="setChip(\'f3reg\',\''+r.replace(/'/g,"\\'")+'\',this)">'+r+'</div>';}).join('');
-  /* Categoría chips for tab3 */
   var cg=document.getElementById('f3cat');
   cg.setAttribute('data-val','');
   cg.innerHTML='<div class="chip active" onclick="setChip(\'f3cat\',\'\',this)">Todas</div>'+
     Object.keys(D.cat_totals).sort().map(function(c){return '<div class="chip" onclick="setChip(\'f3cat\',\''+c+'\',this)">'+c+'</div>';}).join('');
-  /* Tab 4 chips se inicializan en parse2Base() al abrir ese tab */
 }
 
-/* ═══ TAB 0: CUOTA JULIO ═══ */
+/* ═══ TAB 1: CUOTA DEL MES ═══ */
 function rT0(){
+  var fYr=getChip('f0yr')||'2026';
+  var fMo=getChip('f0mo')||'Jul';
+  var isJul26=(fYr==='2026'&&fMo==='Jul');
+  /* Show/hide July-only controls */
+  var riesSep=document.getElementById('f0riesSep');
+  var riesLbl=document.getElementById('f0riesLbl');
+  var riesGrp=document.getElementById('f0ries');
+  var qSep=document.getElementById('f0qSep');
+  var qInp=document.getElementById('f0q');
+  var regBarsWrap=document.getElementById('regBarsWrap');
+  [riesSep,riesLbl,riesGrp,qSep,qInp].forEach(function(el){if(el)el.style.display=isJul26?'':'none';});
+  if(regBarsWrap)regBarsWrap.style.display=isJul26?'':'none';
+  var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display=isJul26?'':'none';
+  if(isJul26){rT0_Jul26();}else{rT0_Month(fYr,fMo);}
+}
+
+function rT0_Jul26(){
   var reg=getChip('f0reg');
   var ries=getChip('f0ries').toLowerCase();
-  var q=document.getElementById('f0q').value.toLowerCase();
+  var q=(document.getElementById('f0q')||{}).value||'';q=q.toLowerCase();
   var rows=D.cuota_jul.filter(function(r){
     if(reg&&r.region!==reg)return false;
     if(ries&&!s(r.riesgo).toLowerCase().includes(ries))return false;
@@ -441,6 +497,7 @@ function rT0(){
   var alc=totC?Math.round(totV/totC*1000)/10:0;
   var cobOH=totV?Math.round(totOH/totV*1000)/10:0;
   var ac=alc>=100?'green':alc>=70?'yellow':'red';
+  /* KPIs */
   document.getElementById('k0').innerHTML=
     kpi('Cuota Total Julio','',n(totC),'piezas accesorios')+
     kpi('Ventas Julio','blue',n(totV),'piezas vendidas')+
@@ -449,6 +506,9 @@ function rT0(){
     kpi('Cobertura OH','purple',cobOH+'%','OH vs ventas')+
     kpi('Faltante Cuota','red',n(totFalt),'piezas por alcanzar')+
     kpi('Proyección Cierre','yellow',n(totProy),'');
+  /* Chart titles */
+  var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas vs Cuota por Región';
+  var cot=document.getElementById('c0ohTitle');if(cot)cot.textContent='Inventario OH por Región';
   /* Charts */
   var regMap={};
   rows.forEach(function(r){if(!regMap[r.region])regMap[r.region]={v:0,c:0,oh:0};regMap[r.region].v+=r.ventas;regMap[r.region].c+=r.cuota;regMap[r.region].oh+=r.oh_total;});
@@ -462,6 +522,7 @@ function rT0(){
     {label:'OH',data:rK.map(function(k){return regMap[k].oh;}),backgroundColor:rK.map(function(k,i){return PAL[i%PAL.length];}),borderRadius:4}
   ],{scales:{x:axO,y:axO},plugins:{legend:{display:false}}});
   /* Progress bars */
+  var rt=document.getElementById('regBarsTitle');if(rt)rt.textContent='Alcance por Región';
   var barsHTML='';
   rK.forEach(function(k){
     var rm=regMap[k];var a=rm.c?Math.round(rm.v/rm.c*1000)/10:0;
@@ -471,6 +532,8 @@ function rT0(){
       '<div class="reg-meta">'+n(rm.v)+' / '+n(rm.c)+' = <strong style="color:'+bColor+'">'+a+'%</strong> &nbsp;|&nbsp; OH: '+n(rm.oh)+'</div></div>';
   });
   document.getElementById('regBarsBody').innerHTML=barsHTML;
+  /* Section header */
+  var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle por Tienda — Julio 2026';
   /* Table */
   document.getElementById('t0cnt').textContent='Total: '+rows.length+' tiendas';
   document.getElementById('th0').innerHTML=
@@ -482,7 +545,6 @@ function rT0(){
     th('t0','oh_liquid','Liquid Glass',true)+th('t0','oh_micas','Screen Prot.',true)+
     th('t0','resurtido','Resurtido',true)+th('t0','faltante','Faltante',true)+
     th('t0','riesgo','Riesgo');
-  /* Total row */
   var totRow='<tr class="total-row"><td colspan="3"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
     '<td class="right">'+n(totC)+'</td><td class="right blue">'+n(totV)+'</td>'+
     '<td class="right yellow">'+n(totProy)+'</td>'+
@@ -510,7 +572,96 @@ function rT0(){
   }).join('')||'<tr><td colspan="16" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
 }
 
-/* ═══ TAB 1: AR & PROYECCIÓN ═══ */
+function rT0_Month(yr,mo){
+  if(!D.base_data){return;}
+  var reg=getChip('f0reg');
+  var bm=D.base_data.byMonth;
+  /* Keys */
+  var curKey=mo+'|'+yr;
+  var pyYr=String(parseInt(yr)-1);
+  var pyKey=mo+'|'+pyYr;
+  var moIdx=MONTHS12.indexOf(mo);
+  var prevMo=moIdx>0?MONTHS12[moIdx-1]:'Dec';
+  var prevYr=moIdx>0?yr:String(parseInt(yr)-1);
+  var pmKey=prevMo+'|'+prevYr;
+  /* Get values */
+  function getV(key){
+    var m=bm[key];if(!m)return 0;
+    return reg?(m.by_region[reg]||0):m.total;
+  }
+  var curV=getV(curKey),pyV=getV(pyKey),pmV=getV(pmKey);
+  var yoyD=pyV?Math.round((curV-pyV)/pyV*1000)/10:null;
+  var momD=pmV?Math.round((curV-pmV)/pmV*1000)/10:null;
+  var mesNm=(MES_ES[mo]||mo)+' '+yr;
+  /* KPIs */
+  var html=kpi('Ventas '+mesNm,'blue',n(curV),'unidades vendidas');
+  html+=kpi('Mismo Mes '+pyYr,'',n(pyV),'unidades');
+  if(yoyD!==null)html+=kpi('vs Año Anterior',yoyD>=0?'green':'red',(yoyD>=0?'+':'')+n(yoyD,1)+'%','variación interanual');
+  html+=kpi('Mes Anterior','',n(pmV),(MES_ES[prevMo]||prevMo)+' '+prevYr);
+  if(momD!==null)html+=kpi('vs Mes Anterior',momD>=0?'green':'red',(momD>=0?'+':'')+n(momD,1)+'%','variación mensual');
+  document.getElementById('k0').innerHTML=html;
+  /* Chart: ventas por región este mes vs mismo mes PY */
+  var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas por Región — '+mesNm+' vs '+pyYr;
+  var curM=bm[curKey]||{by_region:{}};
+  var pyM=bm[pyKey]||{by_region:{}};
+  var regions=D.base_regiones;
+  var rCur=regions.map(function(r){return reg&&r!==reg?0:(curM.by_region[r]||0);});
+  var rPY=regions.map(function(r){return reg&&r!==reg?0:(pyM.by_region[r]||0);});
+  var rLbls=reg?[reg]:regions;
+  var dCur=reg?[curM.by_region[reg]||0]:rCur;
+  var dPY=reg?[pyM.by_region[reg]||0]:rPY;
+  var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
+  mkChart('c0reg','bar',rLbls,[
+    {label:mesNm,data:dCur,backgroundColor:'#6c63ff',borderRadius:3},
+    {label:(MES_ES[mo]||mo)+' '+pyYr,data:dPY,backgroundColor:'rgba(160,160,184,.25)',borderRadius:3,borderColor:'#a0a0b8',borderWidth:1}
+  ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
+  /* Section header */
+  var sh=document.getElementById('t0secHdr');
+  if(sh)sh.textContent='Comparativa por Región — '+mesNm;
+  document.getElementById('t0cnt').textContent='';
+  /* Table: region × current / PY / prev month */
+  var pmM=bm[pmKey]||{by_region:{}};
+  document.getElementById('th0').innerHTML=
+    '<th>Región</th>'+
+    '<th class="right">'+mesNm+'</th>'+
+    '<th class="right">'+mo+' '+pyYr+'</th>'+
+    '<th class="right">Δ Uds YoY</th>'+
+    '<th class="right">% YoY</th>'+
+    '<th class="right">'+(MES_ES[prevMo]||prevMo)+' '+prevYr+'</th>'+
+    '<th class="right">% MoM</th>';
+  var totCur=0,totPY=0,totPM=0;
+  var rows_html=regions.map(function(r){
+    var cv=curM.by_region[r]||0;
+    var pv=pyM.by_region[r]||0;
+    var mv=pmM.by_region[r]||0;
+    totCur+=cv;totPY+=pv;totPM+=mv;
+    var d=cv-pv,p=pv?Math.round(d/pv*1000)/10:null;
+    var dm=cv-mv,pm2=mv?Math.round(dm/mv*1000)/10:null;
+    return '<tr>'+
+      '<td style="font-weight:600">'+r+'</td>'+
+      '<td class="right">'+n(cv)+'</td>'+
+      '<td class="right" style="color:var(--tx2)">'+n(pv)+'</td>'+
+      '<td class="right '+(d>=0?'delta-pos':'delta-neg')+'">'+(d>=0?'+':'')+n(d)+'</td>'+
+      '<td class="right '+(d>=0?'delta-pos':'delta-neg')+'">'+(p!==null?(p>=0?'+':'')+n(p,1)+'%':'—')+'</td>'+
+      '<td class="right" style="color:var(--tx2)">'+n(mv)+'</td>'+
+      '<td class="right '+(dm>=0?'delta-pos':'delta-neg')+'">'+(pm2!==null?(pm2>=0?'+':'')+n(pm2,1)+'%':'—')+'</td>'+
+      '</tr>';
+  }).join('');
+  var td=totCur-totPY,tp=totPY?Math.round(td/totPY*1000)/10:null;
+  var tdm=totCur-totPM,tpm=totPM?Math.round(tdm/totPM*1000)/10:null;
+  var totRow='<tr class="total-row">'+
+    '<td><strong>TOTAL</strong></td>'+
+    '<td class="right blue">'+n(totCur)+'</td>'+
+    '<td class="right">'+n(totPY)+'</td>'+
+    '<td class="right '+(td>=0?'delta-pos':'delta-neg')+'">'+(td>=0?'+':'')+n(td)+'</td>'+
+    '<td class="right '+(td>=0?'delta-pos':'delta-neg')+'">'+(tp!==null?(tp>=0?'+':'')+n(tp,1)+'%':'—')+'</td>'+
+    '<td class="right">'+n(totPM)+'</td>'+
+    '<td class="right '+(tdm>=0?'delta-pos':'delta-neg')+'">'+(tpm!==null?(tpm>=0?'+':'')+n(tpm,1)+'%':'—')+'</td>'+
+    '</tr>';
+  document.getElementById('tb0').innerHTML=totRow+rows_html;
+}
+
+/* ═══ TAB 2: ATTACH RATE Y PROTECCIÓN ═══ */
 function rT1(){
   var reg=getChip('f1reg');
   var q=document.getElementById('f1q').value.toLowerCase();
@@ -530,7 +681,6 @@ function rT1(){
     kpi('Proyección Cierre','yellow',n(totP),'pzs estimadas')+
     kpi('Alcance vs Proy',aac,alcA+'%','alpha/proy')+
     kpi('Tiendas','',rows.length,'activas');
-  /* Charts */
   var regMap={};
   rows.forEach(function(r){if(!regMap[r.region])regMap[r.region]={a:0,e:0,p:0};regMap[r.region].a+=r.alphacomm;regMap[r.region].e+=r.equipo;regMap[r.region].p+=r.proy;});
   var rK=Object.keys(regMap).sort();
@@ -542,7 +692,6 @@ function rT1(){
   mkChart('c1equipo','bar',rK,[
     {label:'Equipo',data:rK.map(function(k){return regMap[k].e;}),backgroundColor:rK.map(function(k,i){return PAL[i%PAL.length];}),borderRadius:4}
   ],{scales:{x:axO,y:axO},plugins:{legend:{display:false}}});
-  /* Table */
   document.getElementById('t1cnt').textContent='Total: '+rows.length+' tiendas';
   document.getElementById('th1').innerHTML=
     th('t1','region','Región')+th('t1','gerente','Gerente')+th('t1','clave','Clave')+th('t1','tienda','Tienda')+
@@ -559,7 +708,7 @@ function rT1(){
   }).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
 }
 
-/* ═══ TAB 2: CASES & LG ═══ */
+/* ═══ TAB 3: CUOTA CASES & LIQUID GLASS ═══ */
 function rT2(){
   var reg=getChip('f2reg');
   var rows=D.lg_tienda.filter(function(r){return !reg||r.region===reg;});
@@ -572,7 +721,6 @@ function rT2(){
   document.getElementById('k2').innerHTML=
     kpi('LG Ventas','blue',n(lgV))+kpi('LG Cuota','',n(lgC))+kpi('LG Alcance',lac,lgA+'%')+kpi('LG OH','',n(lgOH))+
     kpi('Cases Ventas','blue',n(csV))+kpi('Cases Cuota','',n(csC))+kpi('Cases Alcance',cac,csA+'%')+kpi('Cases OH','',n(csOH));
-  /* Charts */
   var regData=reg?[{region:reg,lg_v:lgV,cases_v:csV}]:D.lg_region.slice();
   var rLbls=regData.map(function(r){return r.region;});
   var lgVals=regData.map(function(r){return r.lg_v;});
@@ -586,24 +734,20 @@ function rT2(){
     {label:'Liquid Glass',data:lgVals,backgroundColor:'#6c63ff',borderRadius:3},
     {label:'Cases',data:csVals,backgroundColor:'#38bdf8',borderRadius:3}
   ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
-  /* LG total row */
   var lgTotV=rows.reduce(function(a,r){return a+r.lg_v;},0);
   var lgTotC=rows.reduce(function(a,r){return a+r.lg_cuota;},0);
   var lgTotOH=rows.reduce(function(a,r){return a+r.oh_lg;},0);
   var lgTotA=lgTotC?Math.round(lgTotV/lgTotC*1000)/10:0;
-  /* Cases total row */
   var csTotV=rows.reduce(function(a,r){return a+r.cases_v;},0);
   var csTotC=rows.reduce(function(a,r){return a+r.cases_cuota;},0);
   var csTotOH=rows.reduce(function(a,r){return a+r.oh_cases;},0);
   var csTotA=csTotC?Math.round(csTotV/csTotC*1000)/10:0;
-  /* LG table */
   document.getElementById('thLg').innerHTML=th('t2lg','tienda','Tienda')+th('t2lg','lg_v','Ventas',true)+th('t2lg','lg_cuota','Cuota',true)+'<th>Alcance</th>'+th('t2lg','oh_lg','OH',true);
   var lgTR='<tr class="total-row"><td><strong>TOTAL ('+rows.length+')</strong></td><td class="right blue">'+n(lgTotV)+'</td><td class="right">'+n(lgTotC)+'</td><td>'+pb(lgTotA)+'</td><td class="right">'+n(lgTotOH)+'</td></tr>';
   document.getElementById('tbLg').innerHTML=lgTR+sortRows(rows,'t2lg').map(function(r){
     var a=r.lg_cuota?Math.round(r.lg_v/r.lg_cuota*1000)/10:0;
     return '<tr><td>'+r.tienda+'</td><td class="right">'+n(r.lg_v)+'</td><td class="right" style="color:var(--tx2)">'+n(r.lg_cuota)+'</td><td>'+pb(a)+'</td><td class="right">'+n(r.oh_lg)+'</td></tr>';
   }).join('')||'<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--tx2)">Sin datos</td></tr>';
-  /* Cases table */
   document.getElementById('thCs').innerHTML=th('t2cs','tienda','Tienda')+th('t2cs','cases_v','Ventas',true)+th('t2cs','cases_cuota','Cuota',true)+'<th>Alcance</th>'+th('t2cs','oh_cases','OH',true);
   var csTR='<tr class="total-row"><td><strong>TOTAL ('+rows.length+')</strong></td><td class="right blue">'+n(csTotV)+'</td><td class="right">'+n(csTotC)+'</td><td>'+pb(csTotA)+'</td><td class="right">'+n(csTotOH)+'</td></tr>';
   document.getElementById('tbCs').innerHTML=csTR+sortRows(rows,'t2cs').map(function(r){
@@ -612,7 +756,7 @@ function rT2(){
   }).join('')||'<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--tx2)">Sin datos</td></tr>';
 }
 
-/* ═══ TAB 3: INVENTARIO ═══ */
+/* ═══ TAB 4: INVENTARIO ═══ */
 function rT3(){
   var reg=getChip('f3reg');
   var tF=D.oh_tienda.filter(function(t){return !reg||t.region===reg;});
@@ -644,12 +788,10 @@ function renderMatrix(){
   var fReg=getChip('f3reg');
   var q=(document.getElementById('f3q').value||'').toLowerCase();
   var regs=fReg?[fReg]:(D.oh_regiones||D.regiones);
-  /* Build sub→clase tree filtered by category */
   var rows=Object.values(D._rMap||{}).filter(function(r){
     if(fCat&&r.categoria!==fCat)return false;
     return true;
   });
-  /* Further filter by product name if query */
   if(q){
     var matchPks={};
     D.oh_productos.forEach(function(p){
@@ -661,7 +803,6 @@ function renderMatrix(){
     rows=rows.filter(function(r){return matchPks[r.sub_categoria+'|'+r.clase+'|'+r.categoria];});
   }
   if(!rows.length){document.getElementById('pivot').innerHTML='<p style="color:var(--tx2);padding:20px">Sin datos</p>';return;}
-  /* Group by sub_categoria */
   var tree={};
   rows.forEach(function(r){
     var sub=r.sub_categoria,cla=r.clase;
@@ -676,22 +817,17 @@ function renderMatrix(){
   var grand=Object.values(tree).reduce(function(a,v){return a+v.total;},0);
   var subKeys=Object.keys(tree).sort(function(a,b){return tree[b].total-tree[a].total;});
   var html='<div class="tbl-wrap" style="max-height:calc(100vh - 430px);overflow-y:auto"><table>';
-  /* Header */
   html+='<thead><tr><th style="min-width:140px">Sub Categoría</th><th style="min-width:110px">Clase</th>';
   regs.forEach(function(rg){html+='<th class="right" style="min-width:80px">'+rg+'</th>';});
   html+='<th class="right" style="min-width:70px">TOTAL</th></tr></thead><tbody>';
-  /* Grand total row */
   html+='<tr class="total-row"><td colspan="2"><strong>TOTAL</strong></td>';
   regs.forEach(function(rg){var t=rows.reduce(function(a,r){return a+(r.by_region[rg]||0);},0);html+='<td class="right">'+n(t)+'</td>';});
   html+='<td class="right" style="color:var(--acc2)">'+n(grand)+'</td></tr>';
-  /* Rows */
   subKeys.forEach(function(sub){
     var sg=tree[sub];
-    /* Sub-cat header */
     html+='<tr style="background:var(--bg3)"><td style="font-weight:700;color:var(--tx)">'+sub+'</td><td style="color:var(--tx2);font-size:11px">'+Object.keys(sg.clases).length+' clases</td>';
     regs.forEach(function(rg){html+='<td class="right" style="font-weight:700">'+n(sg.by_region&&sg.by_region[rg]||0)+'</td>';});
     html+='<td class="right" style="font-weight:700;color:var(--acc2)">'+n(sg.total)+'</td></tr>';
-    /* Clase rows */
     Object.keys(sg.clases).sort(function(a,b){return sg.clases[b].total-sg.clases[a].total;}).forEach(function(cla){
       var kg=sg.clases[cla];
       html+='<tr><td style="padding-left:16px;color:var(--tx2);font-size:11px"></td><td style="color:var(--tx);padding-left:10px">'+cla+'</td>';
@@ -703,11 +839,9 @@ function renderMatrix(){
   document.getElementById('pivot').innerHTML=html;
 }
 
-/* ═══ TAB 4: HISTÓRICO ═══ */
+/* ═══ TAB 0: VISTA GENERAL (YoY) ═══ */
 function rT4(){
   if(!D.base_data)return;
-  var MES_ES={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul',Aug:'Ago',Sep:'Sep',Oct:'Oct',Nov:'Nov',Dec:'Dic'};
-  var MONTHS12=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var bd=D.base_data;
   var fCat=getChip('f4cat'),fReg=getChip('f4reg');
   function getT(key){
@@ -717,19 +851,15 @@ function rT4(){
     if(fReg)return m.by_region[fReg]||0;
     return m.total;
   }
-  /* Year selectors */
   var selA=document.getElementById('yoyA'),selB=document.getElementById('yoyB');
   var yA=selA?selA.value:'2025',yB=selB?selB.value:'2026';
-  /* Build per-year month maps */
   var dA={},dB={};
   bd.sorted.forEach(function(k){var p=k.split('|');if(p[1]===yA)dA[p[0]]=getT(k);if(p[1]===yB)dB[p[0]]=getT(k);});
   var ym=MONTHS12.filter(function(m){return dA[m]||dB[m];});
   var dataA=ym.map(function(m){return dA[m]||0;});
   var dataB=ym.map(function(m){return dB[m]||0;});
-  /* KPIs */
   var totA=dataA.reduce(function(s,v){return s+v;},0);
   var totB=dataB.reduce(function(s,v){return s+v;},0);
-  var grand=totA+totB;
   var bestA=Math.max.apply(null,dataA),bestB=Math.max.apply(null,dataB);
   var bestMonth=ym[dataB.indexOf(Math.max.apply(null,dataB))]||ym[dataA.indexOf(Math.max.apply(null,dataA))];
   var yoyDelta=totA?Math.round((totB-totA)/totA*1000)/10:null;
@@ -740,7 +870,6 @@ function rT4(){
   if(yoyDelta!==null)k4h+=kpi('Crec. '+yA+' → '+yB,yoyDelta>=0?'green':'red',(yoyDelta>=0?'+':'')+n(yoyDelta,1)+'%','año completo');
   if(bestMonth)k4h+=kpi('Mejor Mes','purple',n(Math.max(bestA,bestB)),(MES_ES[bestMonth]||bestMonth));
   document.getElementById('k4').innerHTML=k4h;
-  /* YoY bar chart with delta labels plugin */
   if(charts['cYoY'])charts['cYoY'].destroy();
   var ctx=document.getElementById('cYoY');
   if(ctx){
@@ -785,14 +914,12 @@ function rT4(){
       }]
     });
   }
-  /* Tabla detalle */
   var tbl='<table><thead><tr>';
   tbl+='<th>Mes</th>';
   tbl+='<th class="right" style="color:rgba(59,130,246,.8)">'+yA+'</th>';
   tbl+='<th class="right" style="color:rgba(34,197,94,.8)">'+yB+'</th>';
   tbl+='<th class="right">Δ Uds</th><th class="right">% Cambio</th>';
   tbl+='</tr></thead><tbody>';
-  /* Total row */
   var tD=totB-totA,tP=totA?Math.round(tD/totA*1000)/10:null,tCls=tD>=0?'delta-pos':'delta-neg';
   tbl+='<tr class="total-row">';
   tbl+='<td><strong>TOTAL</strong></td>';
@@ -821,10 +948,11 @@ function switchTab(idx){
   activeTab=idx;
   document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',i===idx);});
   document.querySelectorAll('.pane').forEach(function(p,i){p.classList.toggle('active',i===idx);});
-  if(idx===1)setTimeout(function(){rT1();},60);
-  if(idx===2)setTimeout(function(){rT2();},60);
-  if(idx===3)setTimeout(function(){rT3();renderMatrix();},60);
-  if(idx===4)setTimeout(function(){rT4();},60);
+  if(idx===0)setTimeout(function(){rT4();},60);
+  if(idx===1)setTimeout(function(){rT0();},60);
+  if(idx===2)setTimeout(function(){rT1();},60);
+  if(idx===3)setTimeout(function(){rT2();},60);
+  if(idx===4)setTimeout(function(){rT3();renderMatrix();},60);
 }
 
 /* ═══ EXPORT IMAGEN ═══ */
@@ -845,28 +973,30 @@ function exportImg(){
 function exportXLSX(){
   var ws,wb2,name;
   if(activeTab===0){
-    var hd=['Región','Sub-Región','Clave','Tienda','Cuota','Ventas Jul','Proy Cierre','Alcance%','OH Total','Cases OH','Cables OH','Chargers OH','Liquid OH','Micas OH','Resurtido','Faltante','Riesgo'];
-    var data=D.cuota_jul.map(function(r){return[r.region,r.sub_region,r.clave,r.tienda,r.cuota,r.ventas,r.proy,r.alcance,r.oh_total,r.oh_cases,r.oh_cables,r.oh_chargers,r.oh_liquid,r.oh_micas,r.resurtido,r.faltante,r.riesgo];});
-    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cuota_Julio.xlsx';
-  }else if(activeTab===1){
-    var hd=['Región','Gerente','Clave','Tienda','Alphacomm','Equipo','Proy Cierre'];
-    var data=D.ar_clean.map(function(r){return[r.region,r.gerente,r.clave,r.tienda,r.alphacomm,r.equipo,r.proy];});
-    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='AR_Proyeccion.xlsx';
-  }else if(activeTab===2){
-    var hd=['Región','Clave','Tienda','LG Ventas','LG Cuota','LG Alc%','Cases Ventas','Cases Cuota','Cases Alc%','OH LG','OH Cases'];
-    var data=D.lg_tienda.map(function(r){return[r.region,r.clave,r.tienda,r.lg_v,r.lg_cuota,r.lg_alc,r.cases_v,r.cases_cuota,r.cases_alc,r.oh_lg,r.oh_cases];});
-    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cases_LG.xlsx';
-  }else if(activeTab===3){
-    var hd=['Categoría','Sub-Categoría','Clase','Producto','Cantidad'];
-    var data=D.oh_productos.map(function(p){return[p.categoria,p.sub_categoria,p.clase,p.producto,p.cantidad];});
-    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Inventario.xlsx';
-  }else{
+    /* Vista General → histórico */
     var hd=['Mes','Año','Total','BAJIO-NORTE 2','CENTRO','NOROESTE','NORTE 1','PACIFICO','SUR PENINSULA'];
     var data=(D.base_data?D.base_data.sorted:[]).map(function(k){
       var m=D.base_data.byMonth[k];var p=k.split('|');
       return [p[0],p[1],m.total,m.by_region['BAJIO-NORTE 2']||0,m.by_region['CENTRO']||0,m.by_region['NOROESTE']||0,m.by_region['NORTE 1']||0,m.by_region['PACIFICO']||0,m.by_region['SUR PENINSULA']||0];
     });
-    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Historico.xlsx';
+    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Vista_General.xlsx';
+  }else if(activeTab===1){
+    /* Cuota del Mes */
+    var hd=['Región','Sub-Región','Clave','Tienda','Cuota','Ventas Jul','Proy Cierre','Alcance%','OH Total','Cases OH','Cables OH','Chargers OH','Liquid OH','Micas OH','Resurtido','Faltante','Riesgo'];
+    var data=D.cuota_jul.map(function(r){return[r.region,r.sub_region,r.clave,r.tienda,r.cuota,r.ventas,r.proy,r.alcance,r.oh_total,r.oh_cases,r.oh_cables,r.oh_chargers,r.oh_liquid,r.oh_micas,r.resurtido,r.faltante,r.riesgo];});
+    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cuota_Mes.xlsx';
+  }else if(activeTab===2){
+    var hd=['Región','Gerente','Clave','Tienda','Alphacomm','Equipo','Proy Cierre'];
+    var data=D.ar_clean.map(function(r){return[r.region,r.gerente,r.clave,r.tienda,r.alphacomm,r.equipo,r.proy];});
+    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='AR_Proteccion.xlsx';
+  }else if(activeTab===3){
+    var hd=['Región','Clave','Tienda','LG Ventas','LG Cuota','LG Alc%','Cases Ventas','Cases Cuota','Cases Alc%','OH LG','OH Cases'];
+    var data=D.lg_tienda.map(function(r){return[r.region,r.clave,r.tienda,r.lg_v,r.lg_cuota,r.lg_alc,r.cases_v,r.cases_cuota,r.cases_alc,r.oh_lg,r.oh_cases];});
+    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cuota_Cases_LG.xlsx';
+  }else{
+    var hd=['Categoría','Sub-Categoría','Clase','Producto','Cantidad'];
+    var data=D.oh_productos.map(function(p){return[p.categoria,p.sub_categoria,p.clase,p.producto,p.cantidad];});
+    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Inventario.xlsx';
   }
   wb2=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb2,ws,'Datos');
