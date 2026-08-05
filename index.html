@@ -274,12 +274,18 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 
 <!-- TAB 4: HISTÓRICO -->
 <div class="pane" id="pane4">
-  <div class="filters" style="margin-bottom:10px">
-    <label>Región</label>
-    <div class="chip-group" id="f4reg"></div>
-    <div class="filter-sep"></div>
-    <label>Categoría</label>
-    <div class="chip-group" id="f4cat"></div>
+  <div class="filters" style="margin-bottom:10px;flex-direction:column;align-items:flex-start;gap:10px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <label>Año</label>
+      <div class="chip-group" id="f4year"></div>
+      <div class="filter-sep"></div>
+      <label>Mes</label>
+      <div class="chip-group" id="f4month"></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <label>Categoría</label>
+      <div class="chip-group" id="f4cat"></div>
+    </div>
   </div>
   <div class="kpi-grid" id="k4"></div>
   <div class="charts-row" style="margin-top:14px">
@@ -308,7 +314,7 @@ var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_produc
 var charts={};
 var activeTab=0;
 var srt={t0:{col:null,dir:-1},t1:{col:null,dir:-1},t2lg:{col:null,dir:-1},t2cs:{col:null,dir:-1}};
-var H4={mA:'',mB:''};
+var H4={mA:'',mB:'',year:'',month:''};
 
 /* ═══ UTILS ═══ */
 function n(v,dec){dec=dec||0;v=parseFloat(v)||0;return v.toLocaleString('es-MX',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
@@ -567,9 +573,18 @@ function parse2Base(){
     D.base_data={byMonth:bm,sorted:sortedB,cats:Object.keys(bCatSet).sort()};
     D.base_regiones=Object.keys(bRegSet).sort();
     /* Init tab 4 filter chips now that data is ready */
-    var bRegs=D.base_regiones;
-    var g4r=document.getElementById('f4reg');
-    if(g4r){g4r.setAttribute('data-val','');g4r.innerHTML='<div class="chip active" onclick="setChip(\'f4reg\',\'\',this)">Todas</div>'+bRegs.map(function(r){return '<div class="chip" onclick="setChip(\'f4reg\',\''+r.replace(/'/g,"\\'")+'\',this)">'+r+'</div>';}).join('');}
+    var MES_ES_I={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul',Aug:'Ago',Sep:'Sep',Oct:'Oct',Nov:'Nov',Dec:'Dic'};
+    /* Year chips */
+    var yearSet={};Object.keys(bm).forEach(function(k){yearSet[k.split('|')[1]]=1;});
+    var yearList=Object.keys(yearSet).sort();
+    var g4y=document.getElementById('f4year');
+    if(g4y){g4y.setAttribute('data-val','');g4y.innerHTML='<div class="chip active" onclick="setChip(\'f4year\',\'\',this)">Todos</div>'+yearList.map(function(y){return '<div class="chip" onclick="setChip(\'f4year\',\''+y+'\',this)">'+y+'</div>';}).join('');}
+    /* Month chips (unique months sorted Jan→Dec) */
+    var monthSet2={};Object.keys(bm).forEach(function(k){monthSet2[k.split('|')[0]]=1;});
+    var monthList2=Object.keys(monthSet2).sort(function(a,b){return (MO[a]||0)-(MO[b]||0);});
+    var g4m=document.getElementById('f4month');
+    if(g4m){g4m.setAttribute('data-val','');g4m.innerHTML='<div class="chip active" onclick="setChip(\'f4month\',\'\',this)">Todos</div>'+monthList2.map(function(m){return '<div class="chip" onclick="setChip(\'f4month\',\''+m+'\',this)">'+(MES_ES_I[m]||m)+'</div>';}).join('');}
+    /* Category chips */
     var g4c=document.getElementById('f4cat');
     if(g4c){g4c.setAttribute('data-val','');g4c.innerHTML='<div class="chip active" onclick="setChip(\'f4cat\',\'\',this)">Todas</div>'+D.base_data.cats.map(function(c){return '<div class="chip" onclick="setChip(\'f4cat\',\''+c.replace(/'/g,"\\'")+'\',this)">'+c+'</div>';}).join('');}
     return true;
@@ -602,7 +617,7 @@ function setChip(id,val,el){
   else if(id==='f2reg')rT2();
   else if(id==='f3reg'){rT3();renderMatrix();}
   else if(id==='f3cat')renderMatrix();
-  else if(id==='f4reg'||id==='f4cat')rT4();
+  else if(id==='f4year'||id==='f4month'||id==='f4cat')rT4();
 }
 
 /* ═══ INIT FILTERS ═══ */
@@ -921,16 +936,22 @@ function rT4(){
   if(!D.base_data&&!parse2Base())return;
   if(!D.base_data)return;
   var MES_ES={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul',Aug:'Ago',Sep:'Sep',Oct:'Oct',Nov:'Nov',Dec:'Dic'};
-  var fReg=getChip('f4reg'),fCat=getChip('f4cat');
-  var bd=D.base_data,sorted=bd.sorted;
+  var fYear=getChip('f4year'),fMonth=getChip('f4month'),fCat=getChip('f4cat');
+  var bd=D.base_data;
+  /* Filter sorted list by selected year and/or month */
+  var sorted=bd.sorted.filter(function(k){
+    var p=k.split('|');
+    if(fYear&&p[1]!==fYear)return false;
+    if(fMonth&&p[0]!==fMonth)return false;
+    return true;
+  });
   if(!sorted.length)return;
-  /* Default comparison months */
-  if(!H4.mA&&sorted.length>1)H4.mA=sorted[sorted.length-2];
-  if(!H4.mB&&sorted.length>0)H4.mB=sorted[sorted.length-1];
+  /* Default comparison months from full list */
+  var allSorted=bd.sorted;
+  if(!H4.mA&&allSorted.length>1)H4.mA=allSorted[allSorted.length-2];
+  if(!H4.mB&&allSorted.length>0)H4.mB=allSorted[allSorted.length-1];
   function getT(key){
     var m=bd.byMonth[key];if(!m)return 0;
-    if(fReg&&fCat)return m.by_rc[fReg+'|'+fCat]||0;
-    if(fReg)return m.by_region[fReg]||0;
     if(fCat)return m.by_cat[fCat]||0;
     return m.total;
   }
