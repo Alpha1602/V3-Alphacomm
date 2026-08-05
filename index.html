@@ -548,7 +548,7 @@ function rT0_Jul26(){
   /* Ventas reales julio: base_data incluye todas las tiendas (no solo prime) */
   var bJul=D.base_data&&D.base_data.byMonth['Jul|2026'];
   var totVBase=bJul?(reg?(bJul.by_region[reg]||0):bJul.total):totV;
-  var alc=totC?Math.round(totV/totC*1000)/10:0;
+  var alc=totC?Math.round(totVBase/totC*1000)/10:0;
   var cobOH=totVBase?Math.round(totOH/totVBase*1000)/10:0;
   var ac=alc>=100?'green':alc>=70?'yellow':'red';
   /* KPIs */
@@ -563,9 +563,19 @@ function rT0_Jul26(){
   /* Chart titles */
   var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas vs Cuota por Región';
   var cot=document.getElementById('c0ohTitle');if(cot)cot.textContent='Inventario OH por Región';
-  /* Charts */
+  /* Charts — ventas de base_data (todas las tiendas), cuota y OH de prime */
   var regMap={};
-  rows.forEach(function(r){if(!regMap[r.region])regMap[r.region]={v:0,c:0,oh:0};regMap[r.region].v+=r.ventas;regMap[r.region].c+=r.cuota;regMap[r.region].oh+=r.oh_total;});
+  rows.forEach(function(r){
+    if(!regMap[r.region])regMap[r.region]={v:0,c:0,oh:0};
+    regMap[r.region].c+=r.cuota;
+    regMap[r.region].oh+=r.oh_total;
+  });
+  /* Parchear ventas por región desde base_data */
+  if(bJul&&bJul.by_region){
+    Object.keys(bJul.by_region).forEach(function(rg){
+      if(regMap[rg])regMap[rg].v=bJul.by_region[rg]||0;
+    });
+  }
   var rK=Object.keys(regMap).sort();
   var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
   mkChart('c0reg','bar',rK,[
