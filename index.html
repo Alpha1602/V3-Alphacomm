@@ -237,25 +237,43 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 
 <!-- TAB 2: ATTACH RATE Y PROTECCIÓN -->
 <div class="pane" id="pane2">
+  <!-- Filtro año / mes -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Año</label>
+    <div class="chip-group" id="f1yr"></div>
+    <div class="filter-sep"></div>
+    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Mes</label>
+    <div class="chip-group" id="f1mo"></div>
+    <div class="filter-sep"></div>
+    <label style="color:var(--tx2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Región</label>
+    <div class="chip-group" id="f1reg"></div>
+  </div>
+  <!-- KPIs -->
   <div class="kpi-grid" id="k1"></div>
-  <div class="ar-charts">
+  <!-- Charts (solo mes actual) -->
+  <div id="arChartsWrap" class="ar-charts">
     <div class="chart-card"><h3>Alphacomm vs Proyección por Región</h3><canvas id="c1alpha"></canvas></div>
     <div class="chart-card"><h3>Equipo por Región</h3><canvas id="c1equipo"></canvas></div>
   </div>
-  <div class="sec-hdr">
-    <h2>Detalle AR por Tienda</h2>
-    <div class="filters" style="margin-bottom:0">
-      <label>Región</label>
-      <div class="chip-group" id="f1reg"></div>
-      <div class="filter-sep"></div>
-      <input id="f1q" oninput="rT1()" placeholder="🔍 Tienda / gerente…">
-    </div>
+  <!-- Tabla de crecimiento mensual -->
+  <div class="sec-hdr" style="margin-top:14px">
+    <h2 id="arTrendHdr">Tendencia Mensual — Crecimiento MoM y YoY</h2>
   </div>
-  <div id="t1cnt" style="color:var(--tx2);font-size:11px;margin:4px 0 6px"></div>
-  <div class="tbl-wrap" style="max-height:58vh;overflow-y:auto"><table>
-    <thead><tr id="th1"></tr></thead>
-    <tbody id="tb1"></tbody>
-  </table></div>
+  <div class="tbl-wrap" style="max-height:340px;overflow-y:auto" id="arMonthlyTbl"></div>
+  <!-- Detalle por tienda (solo mes actual) -->
+  <div id="arTiendaSection">
+    <div class="sec-hdr" style="margin-top:14px">
+      <h2>Detalle AR por Tienda — Período Actual</h2>
+      <div class="filters" style="margin-bottom:0">
+        <input id="f1q" oninput="rT1()" placeholder="🔍 Tienda / gerente…">
+      </div>
+    </div>
+    <div id="t1cnt" style="color:var(--tx2);font-size:11px;margin:4px 0 6px"></div>
+    <div class="tbl-wrap" style="max-height:40vh;overflow-y:auto"><table>
+      <thead><tr id="th1"></tr></thead>
+      <tbody id="tb1"></tbody>
+    </table></div>
+  </div>
 </div>
 
 <!-- TAB 3: CUOTA CASES & LIQUID GLASS -->
@@ -358,6 +376,7 @@ function autoLoad(){
       initFilters();
       initHistorico();
       initCuotaFilter();
+      initARFilter();
       rT4(); rT0(); rT1(); rT2(); rT3(); renderMatrix();
       hideLoading();
     })
@@ -393,6 +412,37 @@ function initCuotaFilter(){
     }).join('');
   }
   updateMonthChips(latestYr);
+}
+
+function initARFilter(){
+  if(!D.base_data)return;
+  var yearSet={};
+  D.base_data.sorted.forEach(function(k){yearSet[k.split('|')[1]]=1;});
+  var years=Object.keys(yearSet).sort();
+  var latestYr=years[years.length-1]||'2026';
+  var g1yr=document.getElementById('f1yr');
+  if(g1yr){
+    g1yr.setAttribute('data-val',latestYr);
+    g1yr.innerHTML=years.map(function(y){
+      return '<div class="chip'+(y===latestYr?' active':'')+'" onclick="setChip(\'f1yr\',\''+y+'\',this)">'+y+'</div>';
+    }).join('');
+  }
+  updateARMonthChips(latestYr);
+}
+
+function updateARMonthChips(yr){
+  if(!D.base_data)return;
+  var mos=D.base_data.sorted
+    .filter(function(k){return k.split('|')[1]===yr;})
+    .map(function(k){return k.split('|')[0];})
+    .sort(function(a,b){return MONTHS12.indexOf(a)-MONTHS12.indexOf(b);});
+  var lastMo=mos[mos.length-1]||'Aug';
+  var g1mo=document.getElementById('f1mo');
+  if(!g1mo)return;
+  g1mo.setAttribute('data-val',lastMo);
+  g1mo.innerHTML=mos.map(function(m){
+    return '<div class="chip'+(m===lastMo?' active':'')+'" onclick="setChip(\'f1mo\',\''+m+'\',this)">'+(MES_ES[m]||m)+'</div>';
+  }).join('');
 }
 
 function updateMonthChips(yr){
@@ -434,7 +484,8 @@ function setChip(id,val,el){
   if(id==='f0reg'||id==='f0ries')rT0();
   else if(id==='f0yr'){updateMonthChips(val);rT0();}
   else if(id==='f0mo')rT0();
-  else if(id==='f1reg')rT1();
+  else if(id==='f1reg'||id==='f1mo')rT1();
+  else if(id==='f1yr'){updateARMonthChips(val);rT1();}
   else if(id==='f2reg')rT2();
   else if(id==='f3reg'){rT3();renderMatrix();}
   else if(id==='f3cat')renderMatrix();
@@ -664,7 +715,15 @@ function rT0_Month(yr,mo){
 /* ═══ TAB 2: ATTACH RATE Y PROTECCIÓN ═══ */
 function rT1(){
   var reg=getChip('f1reg');
-  var q=document.getElementById('f1q').value.toLowerCase();
+  var fYr=getChip('f1yr')||'2026';
+  var fMo=getChip('f1mo')||'Aug';
+  var q=(document.getElementById('f1q')||{}).value||'';q=q.toLowerCase();
+  /* Determine current month (latest in base_data) */
+  var latestKey=D.base_data?D.base_data.sorted[D.base_data.sorted.length-1]:'Aug|2026';
+  var lp=latestKey.split('|');
+  var isCurrentMonth=(fYr===lp[1]&&fMo===lp[0]);
+  var mesNm=(MES_ES[fMo]||fMo)+' '+fYr;
+  /* AR data (always from ar_clean = current period) */
   var rows=D.ar_clean.filter(function(r){
     if(reg&&r.region!==reg)return false;
     if(q&&!r.tienda.toLowerCase().includes(q)&&!r.gerente.toLowerCase().includes(q)&&!r.clave.toLowerCase().includes(q))return false;
@@ -672,43 +731,110 @@ function rT1(){
   });
   var totA=rows.reduce(function(a,r){return a+r.alphacomm;},0);
   var totE=rows.reduce(function(a,r){return a+r.equipo;},0);
-  var totP=reg?rows.reduce(function(a,r){return a+r.proy;},0):D.proy_total;
-  var alcA=totP?Math.round(totA/totP*1000)/10:0;
-  var aac=alcA>=100?'green':alcA>=70?'yellow':'red';
+  var totP=rows.reduce(function(a,r){return a+r.proy;},0);
   var arPct=totE?Math.round(totA/totE*1000)/10:0;
   var arcls=arPct>=100?'green':arPct>=70?'yellow':'red';
-  document.getElementById('k1').innerHTML=
-    kpi('Attach Rate del Mes',arcls,n(arPct,1)+'%','accesorios / dispositivo')+
-    kpi('Alphacomm','blue',n(totA),'pzs accesorios')+
-    kpi('Equipo','',n(totE),'pzs dispositivos')+
-    kpi('Proyección Cierre','yellow',n(totP),'pzs estimadas')+
-    kpi('Alcance vs Proy',aac,alcA+'%','alpha/proy')+
-    kpi('Tiendas','',rows.length,'activas');
-  var regMap={};
-  rows.forEach(function(r){if(!regMap[r.region])regMap[r.region]={a:0,e:0,p:0};regMap[r.region].a+=r.alphacomm;regMap[r.region].e+=r.equipo;regMap[r.region].p+=r.proy;});
-  var rK=Object.keys(regMap).sort();
-  var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
-  mkChart('c1alpha','bar',rK,[
-    {label:'Alphacomm',data:rK.map(function(k){return regMap[k].a;}),backgroundColor:'#6c63ff',borderRadius:3},
-    {label:'Proyección',data:rK.map(function(k){return regMap[k].p;}),backgroundColor:'rgba(234,179,8,.3)',borderRadius:3,borderColor:'#eab308',borderWidth:1}
-  ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
-  mkChart('c1equipo','bar',rK,[
-    {label:'Equipo',data:rK.map(function(k){return regMap[k].e;}),backgroundColor:rK.map(function(k,i){return PAL[i%PAL.length];}),borderRadius:4}
-  ],{scales:{x:axO,y:axO},plugins:{legend:{display:false}}});
-  document.getElementById('t1cnt').textContent='Total: '+rows.length+' tiendas';
-  document.getElementById('th1').innerHTML=
-    th('t1','region','Región')+th('t1','gerente','Gerente')+th('t1','clave','Clave')+th('t1','tienda','Tienda')+
-    th('t1','alphacomm','Alphacomm',true)+th('t1','equipo','Equipo',true)+th('t1','proy','Proy Cierre',true);
-  var totRow1='<tr class="total-row"><td colspan="4"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
-    '<td class="right blue">'+n(totA)+'</td><td class="right">'+n(totE)+'</td>'+
-    '<td class="right yellow">'+n(totP)+'</td></tr>';
-  document.getElementById('tb1').innerHTML=totRow1+sortRows(rows,'t1').map(function(r){
-    var pC=r.proy>0?(r.alphacomm>=r.proy?'var(--green)':r.alphacomm>=r.proy*.7?'var(--yellow)':'var(--red)'):'var(--tx2)';
-    return '<tr><td>'+r.region+'</td><td>'+r.gerente+'</td><td>'+r.clave+'</td><td>'+r.tienda+'</td>'+
-      '<td class="right" style="color:var(--blue);font-weight:600">'+n(r.alphacomm)+'</td>'+
-      '<td class="right">'+n(r.equipo)+'</td>'+
-      '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.proy)+'</td></tr>';
-  }).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
+  /* MoM / YoY from base_data for selected month */
+  function getBaseV(key){
+    if(!D.base_data)return 0;
+    var m=D.base_data.byMonth[key];if(!m)return 0;
+    return reg?(m.by_region[reg]||0):m.total;
+  }
+  var curKey=fMo+'|'+fYr;
+  var pyYr=String(parseInt(fYr)-1);
+  var moIdx=MONTHS12.indexOf(fMo);
+  var prevMo=moIdx>0?MONTHS12[moIdx-1]:'Dec';
+  var prevYr=moIdx>0?fYr:String(parseInt(fYr)-1);
+  var curV=getBaseV(curKey),pyV=getBaseV(fMo+'|'+pyYr),pmV=getBaseV(prevMo+'|'+prevYr);
+  var yoyD=pyV?Math.round((curV-pyV)/pyV*1000)/10:null;
+  var momD=pmV?Math.round((curV-pmV)/pmV*1000)/10:null;
+  /* KPIs */
+  var kpis='';
+  kpis+=kpi('Attach Rate',arcls,n(arPct,1)+'%','accesorios / dispositivo');
+  if(yoyD!==null)kpis+=kpi('Crec. YoY',yoyD>=0?'green':'red',(yoyD>=0?'+':'')+n(yoyD,1)+'%',mesNm+' vs '+fMo+' '+pyYr);
+  if(momD!==null)kpis+=kpi('Crec. MoM',momD>=0?'green':'red',(momD>=0?'+':'')+n(momD,1)+'%',mesNm+' vs '+(MES_ES[prevMo]||prevMo)+' '+prevYr);
+  if(isCurrentMonth){
+    kpis+=kpi('Alphacomm','blue',n(totA),'accesorios período');
+    kpis+=kpi('Equipo','',n(totE),'dispositivos período');
+    kpis+=kpi('Proyección Cierre','yellow',n(totP),'pzs estimadas');
+  } else {
+    kpis+=kpi('Ventas '+mesNm,'blue',n(curV),'uds accesorios (base)');
+  }
+  kpis+=kpi('Tiendas','',rows.length,'activas');
+  document.getElementById('k1').innerHTML=kpis;
+  /* Charts: only for current month */
+  var chartsWrap=document.getElementById('arChartsWrap');
+  if(chartsWrap)chartsWrap.style.display=isCurrentMonth?'':'none';
+  if(isCurrentMonth){
+    var regMap={};
+    rows.forEach(function(r){if(!regMap[r.region])regMap[r.region]={a:0,e:0,p:0};regMap[r.region].a+=r.alphacomm;regMap[r.region].e+=r.equipo;regMap[r.region].p+=r.proy;});
+    var rK=Object.keys(regMap).sort();
+    var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
+    mkChart('c1alpha','bar',rK,[
+      {label:'Alphacomm',data:rK.map(function(k){return regMap[k].a;}),backgroundColor:'#6c63ff',borderRadius:3},
+      {label:'Proyección',data:rK.map(function(k){return regMap[k].p;}),backgroundColor:'rgba(234,179,8,.3)',borderRadius:3,borderColor:'#eab308',borderWidth:1}
+    ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
+    mkChart('c1equipo','bar',rK,[
+      {label:'Equipo',data:rK.map(function(k){return regMap[k].e;}),backgroundColor:rK.map(function(k,i){return PAL[i%PAL.length];}),borderRadius:4}
+    ],{scales:{x:axO,y:axO},plugins:{legend:{display:false}}});
+  }
+  /* Monthly trend table */
+  if(D.base_data){
+    var hdr=document.getElementById('arTrendHdr');
+    if(hdr)hdr.textContent='Tendencia '+fYr+' — Crecimiento MoM y YoY vs '+pyYr;
+    var months=D.base_data.sorted.filter(function(k){return k.split('|')[1]===fYr;})
+      .sort(function(a,b){return MONTHS12.indexOf(a.split('|')[0])-MONTHS12.indexOf(b.split('|')[0]);});
+    var tbl='<table><thead><tr>'+
+      '<th>Mes</th>'+
+      '<th class="right">Ventas '+fYr+'</th>'+
+      '<th class="right">Mes Anterior</th>'+
+      '<th class="right">% MoM</th>'+
+      '<th class="right">'+pyYr+'</th>'+
+      '<th class="right">% YoY</th>'+
+      '</tr></thead><tbody>';
+    months.forEach(function(k){
+      var p=k.split('|');var mo=p[0];
+      var v=getBaseV(k);
+      var miIdx=MONTHS12.indexOf(mo);
+      var pm2=miIdx>0?MONTHS12[miIdx-1]:'Dec';var py2=miIdx>0?fYr:String(parseInt(fYr)-1);
+      var pmV2=getBaseV(pm2+'|'+py2);
+      var pyV2=getBaseV(mo+'|'+pyYr);
+      var mom=pmV2?Math.round((v-pmV2)/pmV2*1000)/10:null;
+      var yoy=pyV2?Math.round((v-pyV2)/pyV2*1000)/10:null;
+      var isSel=(mo===fMo);
+      tbl+='<tr style="'+(isSel?'background:rgba(108,99,255,.15)':'')+'">';
+      tbl+='<td style="font-weight:'+(isSel?'700':'600')+'">'+( MES_ES[mo]||mo)+'</td>';
+      tbl+='<td class="right"'+(isSel?' style="font-weight:700"':'')+'>'+n(v)+'</td>';
+      tbl+='<td class="right" style="color:var(--tx2)">'+n(pmV2)+'</td>';
+      tbl+='<td class="right '+(mom!==null&&mom>=0?'delta-pos':'delta-neg')+'">'+
+        (mom!==null?(mom>=0?'+':'')+n(mom,1)+'%':'—')+'</td>';
+      tbl+='<td class="right" style="color:var(--tx2)">'+n(pyV2)+'</td>';
+      tbl+='<td class="right '+(yoy!==null&&yoy>=0?'delta-pos':'delta-neg')+'">'+
+        (yoy!==null?(yoy>=0?'+':'')+n(yoy,1)+'%':'—')+'</td>';
+      tbl+='</tr>';
+    });
+    tbl+='</tbody></table>';
+    document.getElementById('arMonthlyTbl').innerHTML=tbl;
+  }
+  /* Tienda detail: only current month */
+  var tSection=document.getElementById('arTiendaSection');
+  if(tSection)tSection.style.display=isCurrentMonth?'':'none';
+  if(isCurrentMonth){
+    document.getElementById('t1cnt').textContent='Total: '+rows.length+' tiendas';
+    document.getElementById('th1').innerHTML=
+      th('t1','region','Región')+th('t1','gerente','Gerente')+th('t1','clave','Clave')+th('t1','tienda','Tienda')+
+      th('t1','alphacomm','Alphacomm',true)+th('t1','equipo','Equipo',true)+th('t1','proy','Proy Cierre',true);
+    var totRow1='<tr class="total-row"><td colspan="4"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
+      '<td class="right blue">'+n(totA)+'</td><td class="right">'+n(totE)+'</td>'+
+      '<td class="right yellow">'+n(totP)+'</td></tr>';
+    document.getElementById('tb1').innerHTML=totRow1+sortRows(rows,'t1').map(function(r){
+      var pC=r.proy>0?(r.alphacomm>=r.proy?'var(--green)':r.alphacomm>=r.proy*.7?'var(--yellow)':'var(--red)'):'var(--tx2)';
+      return '<tr><td>'+r.region+'</td><td>'+r.gerente+'</td><td>'+r.clave+'</td><td>'+r.tienda+'</td>'+
+        '<td class="right" style="color:var(--blue);font-weight:600">'+n(r.alphacomm)+'</td>'+
+        '<td class="right">'+n(r.equipo)+'</td>'+
+        '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.proy)+'</td></tr>';
+    }).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
+  }
 }
 
 /* ═══ TAB 3: CUOTA CASES & LIQUID GLASS ═══ */
