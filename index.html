@@ -133,7 +133,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 
 <header>
   <div class="hdr-left">
-    <h1>📱 Dashboard Prime — Julio 2026</h1>
+    <h1 id="dashTitle">📱 Dashboard Prime</h1>
     <span id="hdrSub">Datos: Cargando…</span>
   </div>
   <div class="hdr-btns">
@@ -371,6 +371,10 @@ function autoLoad(){
       D.oh_tienda=data.oh_tienda; D.oh_productos=data.oh_productos;
       D.oh_regiones=data.oh_regiones; D._rMap=data.rMap;
       D.base_data=data.base_data; D.base_regiones=data.base_regiones;
+      D.cuota_mes=data.cuota_mes||'Aug'; D.cuota_año=data.cuota_año||2026;
+      /* Título dinámico */
+      var tEl=document.getElementById('dashTitle');
+      if(tEl)tEl.textContent='📱 Dashboard Prime — '+(MES_ES[D.cuota_mes]||D.cuota_mes)+' '+D.cuota_año;
       var now=new Date();
       document.getElementById('hdrSub').textContent='Datos al '+now.toLocaleDateString('es-MX')+' '+now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
       initFilters();
@@ -451,12 +455,14 @@ function updateMonthChips(yr){
     .filter(function(k){return k.split('|')[1]===yr;})
     .map(function(k){return k.split('|')[0];})
     .sort(function(a,b){return MONTHS12.indexOf(a)-MONTHS12.indexOf(b);});
-  var lastMo=mos[mos.length-1]||'Jul';
+  /* Default al mes de cuota si el año seleccionado coincide, sino el último disponible */
+  var defMo=(yr===String(D.cuota_año||2026))?(D.cuota_mes||mos[mos.length-1]):mos[mos.length-1];
+  if(!defMo)defMo=mos[mos.length-1]||'Aug';
   var g0mo=document.getElementById('f0mo');
   if(!g0mo)return;
-  g0mo.setAttribute('data-val',lastMo);
+  g0mo.setAttribute('data-val',defMo);
   g0mo.innerHTML=mos.map(function(m){
-    return '<div class="chip'+(m===lastMo?' active':'')+'" onclick="setChip(\'f0mo\',\''+m+'\',this)">'+(MES_ES[m]||m)+'</div>';
+    return '<div class="chip'+(m===defMo?' active':'')+'" onclick="setChip(\'f0mo\',\''+m+'\',this)">'+(MES_ES[m]||m)+'</div>';
   }).join('');
 }
 
@@ -514,23 +520,25 @@ function initFilters(){
 
 /* ═══ TAB 1: CUOTA DEL MES ═══ */
 function rT0(){
-  var fYr=getChip('f0yr')||'2026';
-  var fMo=getChip('f0mo')||'Jul';
-  var isJul26=(fYr==='2026'&&fMo==='Jul');
-  /* Show/hide July-only controls */
+  var fYr=getChip('f0yr')||String(D.cuota_año||2026);
+  var fMo=getChip('f0mo')||(D.cuota_mes||'Aug');
+  var isCuotaMes=(fYr===String(D.cuota_año||2026)&&fMo===(D.cuota_mes||'Aug'));
+  /* Show/hide cuota-month-only controls */
   var riesSep=document.getElementById('f0riesSep');
   var riesLbl=document.getElementById('f0riesLbl');
   var riesGrp=document.getElementById('f0ries');
   var qSep=document.getElementById('f0qSep');
   var qInp=document.getElementById('f0q');
   var regBarsWrap=document.getElementById('regBarsWrap');
-  [riesSep,riesLbl,riesGrp,qSep,qInp].forEach(function(el){if(el)el.style.display=isJul26?'':'none';});
-  if(regBarsWrap)regBarsWrap.style.display=isJul26?'':'none';
-  var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display=isJul26?'':'none';
-  if(isJul26){rT0_Jul26();}else{rT0_Month(fYr,fMo);}
+  [riesSep,riesLbl,riesGrp,qSep,qInp].forEach(function(el){if(el)el.style.display=isCuotaMes?'':'none';});
+  if(regBarsWrap)regBarsWrap.style.display=isCuotaMes?'':'none';
+  var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display=isCuotaMes?'':'none';
+  if(isCuotaMes){rT0_CuotaMes();}else{rT0_Month(fYr,fMo);}
 }
 
-function rT0_Jul26(){
+function rT0_CuotaMes(){
+  var cMo=D.cuota_mes||'Aug'; var cYr=String(D.cuota_año||2026);
+  var mesNm=(MES_ES[cMo]||cMo)+' '+cYr;
   var reg=getChip('f0reg');
   var ries=getChip('f0ries').toLowerCase();
   var q=(document.getElementById('f0q')||{}).value||'';q=q.toLowerCase();
@@ -545,23 +553,25 @@ function rT0_Jul26(){
   var totOH=rows.reduce(function(a,r){return a+r.oh_total;},0);
   var totFalt=rows.reduce(function(a,r){return a+r.faltante;},0);
   var totProy=rows.reduce(function(a,r){return a+r.proy;},0);
-  /* Ventas reales julio: base_data incluye todas las tiendas (no solo prime) */
-  var bJul=D.base_data&&D.base_data.byMonth['Jul|2026'];
-  var totVBase=bJul?(reg?(bJul.by_region[reg]||0):bJul.total):totV;
+  /* Ventas reales: base_data incluye todas las tiendas */
+  var bMes=D.base_data&&D.base_data.byMonth[cMo+'|'+cYr];
+  var totVBase=bMes?(reg?(bMes.by_region[reg]||0):bMes.total):totV;
+  /* Si no hay datos en base_data para el mes cuota, usar ventas de cuota_jul */
+  if(!totVBase)totVBase=totV;
   var alc=totC?Math.round(totVBase/totC*1000)/10:0;
   var cobOH=totVBase?Math.round(totOH/totVBase*1000)/10:0;
   var ac=alc>=100?'green':alc>=70?'yellow':'red';
   /* KPIs */
   document.getElementById('k0').innerHTML=
-    kpi('Cuota Total Julio','',n(totC),'piezas accesorios')+
-    kpi('Ventas Julio','blue',n(totVBase),'piezas vendidas')+
+    kpi('Cuota '+mesNm,'',n(totC),'piezas accesorios')+
+    kpi('Ventas '+mesNm,'blue',n(totVBase),'piezas vendidas')+
     kpi('Alcance Total',ac,alc+'%','vs cuota')+
     kpi('OH Inventario','',n(totOH),'piezas on-hand')+
     kpi('Cobertura OH','purple',cobOH+'%','OH vs ventas')+
     kpi('Faltante Cuota','red',n(totFalt),'piezas por alcanzar')+
     kpi('Proyección Cierre','yellow',n(totProy),'');
   /* Chart titles */
-  var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas vs Cuota por Región';
+  var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas vs Cuota por Región — '+mesNm;
   var cot=document.getElementById('c0ohTitle');if(cot)cot.textContent='Inventario OH por Región';
   /* Charts — ventas de base_data (todas las tiendas), cuota y OH de prime */
   var regMap={};
@@ -597,7 +607,7 @@ function rT0_Jul26(){
   });
   document.getElementById('regBarsBody').innerHTML=barsHTML;
   /* Section header */
-  var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle por Tienda — Julio 2026';
+  var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle por Tienda — '+mesNm;
   /* Table */
   document.getElementById('t0cnt').textContent='Total: '+rows.length+' tiendas';
   document.getElementById('th0').innerHTML=
