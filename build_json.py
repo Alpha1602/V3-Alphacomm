@@ -1,6 +1,6 @@
 import openpyxl, json, os
 
-EXCEL = "/sessions/tender-amazing-curie/mnt/uploads/Sales YoY .2.xlsx"
+EXCEL = "/sessions/tender-amazing-curie/mnt/uploads/Sales YoY .3.xlsx"
 wb = openpyxl.load_workbook(EXCEL, read_only=True, data_only=True)
 
 # Helper: pick first existing sheet name
@@ -192,12 +192,25 @@ base_data = {'byMonth': bm, 'sorted': sorted_keys, 'cats': sorted(bCatSet.keys()
 base_regiones = sorted(bRegSet.keys())
 print(f"2.Base: {count} filas, {len(bm)} meses")
 
-# ── 7. TOTALES ────────────────────────────────────────────────────────────
+# ── 7. TOTALES + MES CUOTA ACTUAL ─────────────────────────────────────────
 regiones = sorted(set(r['region'] for r in cuota_jul if r['region']))
 proy_total = sum(r['proy'] for r in cuota_jul)
 
+# Detectar mes de cuota: el mes siguiente al último mes completo (>= 5000 uds)
+mo_list = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+complete_keys = [k for k in sorted_keys if bm[k]['total'] >= 5000]
+if complete_keys:
+    lmo, lyr = complete_keys[-1].split('|')
+    idx = mo_list.index(lmo)
+    cuota_mes = mo_list[idx+1] if idx < 11 else 'Jan'
+    cuota_año = int(lyr) + (1 if idx == 11 else 0)
+else:
+    cuota_mes, cuota_año = 'Aug', 2026
+print(f"Cuota mes detectado: {cuota_mes}|{cuota_año}")
+
 # ── 8. EXPORTAR ───────────────────────────────────────────────────────────
 data = {
+    'cuota_mes': cuota_mes, 'cuota_año': cuota_año,
     'cuota_jul': cuota_jul, 'ar_clean': ar_clean,
     'lg_region': lg_region, 'lg_tienda': lg_tienda,
     'lg_totals': lg_totals, 'cat_totals': cat_totals,
