@@ -581,9 +581,9 @@ function rT0_CuotaMes(){
     regMap[r.region].oh+=r.oh_total;
   });
   /* Parchear ventas por región desde base_data */
-  if(bJul&&bJul.by_region){
-    Object.keys(bJul.by_region).forEach(function(rg){
-      if(regMap[rg])regMap[rg].v=bJul.by_region[rg]||0;
+  if(bMes&&bMes.by_region){
+    Object.keys(bMes.by_region).forEach(function(rg){
+      if(regMap[rg])regMap[rg].v=bMes.by_region[rg]||0;
     });
   }
   var rK=Object.keys(regMap).sort();
