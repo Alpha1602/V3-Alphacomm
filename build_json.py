@@ -1,6 +1,6 @@
-import openpyxl, json, os
+import openpyxl, json, os, sys
 
-EXCEL = "/sessions/tender-amazing-curie/mnt/uploads/Sales YoY .3.xlsx"
+EXCEL = sys.argv[1] if len(sys.argv) > 1 else "/sessions/tender-amazing-curie/mnt/uploads/Sales YoY .3.xlsx"
 wb = openpyxl.load_workbook(EXCEL, read_only=True, data_only=True)
 
 # Helper: pick first existing sheet name
@@ -220,7 +220,7 @@ data = {
     'base_data': base_data, 'base_regiones': base_regiones
 }
 
-out = '/sessions/tender-amazing-curie/mnt/outputs/data.json'
+out = sys.argv[2] if len(sys.argv) > 2 else '/sessions/brave-zealous-einstein/mnt/2.Prime/data.json'
 with open(out,'w',encoding='utf-8') as f:
     json.dump(data, f, ensure_ascii=False, separators=(',',':'))
 sz = os.path.getsize(out)
