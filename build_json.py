@@ -53,10 +53,12 @@ ar_clean = []
 for r in get_sheet('3.AR','1.AR').iter_rows(values_only=True, min_row=4):
     reg = s(r[0]); clv = s(r[3])
     if not reg or not clv: continue
+    # proy: prefer pm dict (2.Proyección Tienda) over col K which may have uncached formulas
+    proy_val = pm.get(clv, round(flt(r[10]), 1))
     ar_clean.append({'region':reg,'gerente':s(r[2]),'clave':clv,'tienda':s(r[4]),
         'alphacomm': fi(r[5]),   # Ventas Alphacomm del período actual
         'equipo':    fi(r[8]),   # Venta de equipo del período actual
-        'proy':      round(flt(r[10]),1)})  # Alphacomm proy. cierre
+        'proy':      proy_val})  # Alphacomm proy. cierre (desde 2.Proyección Tienda)
 print(f"1.AR: {len(ar_clean)} registros")
 
 # ── 4. OH DETALLE → oh_tienda, oh_productos, _rMap ───────────────────────

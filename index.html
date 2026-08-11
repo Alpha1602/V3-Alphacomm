@@ -133,7 +133,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 
 <header>
   <div class="hdr-left">
-    <h1 id="dashTitle">📱 Dashboard Prime</h1>
+    <h1>📱 Dashboard Prime — Julio 2026</h1>
     <span id="hdrSub">Datos: Cargando…</span>
   </div>
   <div class="hdr-btns">
@@ -333,7 +333,7 @@ var MES_ES={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul
 var MONTHS12=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 /* ═══ STORE ═══ */
-var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[]};
+var D={cuota_mes:null,cuota_año:null,cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[]};
 var charts={};
 var activeTab=0;
 var srt={t0:{col:null,dir:-1},t1:{col:null,dir:-1},t2lg:{col:null,dir:-1},t2cs:{col:null,dir:-1}};
@@ -364,6 +364,7 @@ function autoLoad(){
   fetch('./data.json?v='+Date.now())
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(data){
+      D.cuota_mes=data.cuota_mes; D.cuota_año=data.cuota_año;
       D.cuota_jul=data.cuota_jul; D.ar_clean=data.ar_clean;
       D.lg_region=data.lg_region; D.lg_tienda=data.lg_tienda;
       D.lg_totals=data.lg_totals; D.cat_totals=data.cat_totals;
@@ -371,10 +372,6 @@ function autoLoad(){
       D.oh_tienda=data.oh_tienda; D.oh_productos=data.oh_productos;
       D.oh_regiones=data.oh_regiones; D._rMap=data.rMap;
       D.base_data=data.base_data; D.base_regiones=data.base_regiones;
-      D.cuota_mes=data.cuota_mes||'Aug'; D.cuota_año=data.cuota_año||2026;
-      /* Título dinámico */
-      var tEl=document.getElementById('dashTitle');
-      if(tEl)tEl.textContent='📱 Dashboard Prime — '+(MES_ES[D.cuota_mes]||D.cuota_mes)+' '+D.cuota_año;
       var now=new Date();
       document.getElementById('hdrSub').textContent='Datos al '+now.toLocaleDateString('es-MX')+' '+now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
       initFilters();
@@ -404,18 +401,20 @@ function initHistorico(){
 /* ═══ INIT CUOTA DEL MES CHIPS ═══ */
 function initCuotaFilter(){
   if(!D.base_data)return;
+  var cuotaYr=String(D.cuota_año||2026);
+  var cuotaMo=D.cuota_mes||'Sep';
   var yearSet={};
   D.base_data.sorted.forEach(function(k){yearSet[k.split('|')[1]]=1;});
+  yearSet[cuotaYr]=1;
   var years=Object.keys(yearSet).sort();
-  var latestYr=years[years.length-1]||'2026';
   var g0yr=document.getElementById('f0yr');
   if(g0yr){
-    g0yr.setAttribute('data-val',latestYr);
+    g0yr.setAttribute('data-val',cuotaYr);
     g0yr.innerHTML=years.map(function(y){
-      return '<div class="chip'+(y===latestYr?' active':'')+'" onclick="setChip(\'f0yr\',\''+y+'\',this)">'+y+'</div>';
+      return '<div class="chip'+(y===cuotaYr?' active':'')+'" onclick="setChip(\'f0yr\',\''+y+'\',this)">'+y+'</div>';
     }).join('');
   }
-  updateMonthChips(latestYr);
+  updateMonthChips(cuotaYr,cuotaMo);
 }
 
 function initARFilter(){
@@ -449,20 +448,21 @@ function updateARMonthChips(yr){
   }).join('');
 }
 
-function updateMonthChips(yr){
+function updateMonthChips(yr,defaultMo){
   if(!D.base_data)return;
-  var mos=D.base_data.sorted
-    .filter(function(k){return k.split('|')[1]===yr;})
-    .map(function(k){return k.split('|')[0];})
-    .sort(function(a,b){return MONTHS12.indexOf(a)-MONTHS12.indexOf(b);});
-  /* Default al mes de cuota si el año seleccionado coincide, sino el último disponible */
-  var defMo=(yr===String(D.cuota_año||2026))?(D.cuota_mes||mos[mos.length-1]):mos[mos.length-1];
-  if(!defMo)defMo=mos[mos.length-1]||'Aug';
+  var cuotaMo=D.cuota_mes||'Sep';
+  var cuotaYr=String(D.cuota_año||2026);
+  var moSet={};
+  D.base_data.sorted.filter(function(k){return k.split('|')[1]===yr;})
+    .forEach(function(k){moSet[k.split('|')[0]]=1;});
+  if(yr===cuotaYr)moSet[cuotaMo]=1;
+  var mos=Object.keys(moSet).sort(function(a,b){return MONTHS12.indexOf(a)-MONTHS12.indexOf(b);});
+  var selMo=defaultMo||(yr===cuotaYr?cuotaMo:(mos[mos.length-1]||'Aug'));
   var g0mo=document.getElementById('f0mo');
   if(!g0mo)return;
-  g0mo.setAttribute('data-val',defMo);
+  g0mo.setAttribute('data-val',selMo);
   g0mo.innerHTML=mos.map(function(m){
-    return '<div class="chip'+(m===defMo?' active':'')+'" onclick="setChip(\'f0mo\',\''+m+'\',this)">'+(MES_ES[m]||m)+'</div>';
+    return '<div class="chip'+(m===selMo?' active':'')+'" onclick="setChip(\'f0mo\',\''+m+'\',this)">'+(MES_ES[m]||m)+'</div>';
   }).join('');
 }
 
@@ -521,24 +521,22 @@ function initFilters(){
 /* ═══ TAB 1: CUOTA DEL MES ═══ */
 function rT0(){
   var fYr=getChip('f0yr')||String(D.cuota_año||2026);
-  var fMo=getChip('f0mo')||(D.cuota_mes||'Aug');
-  var isCuotaMes=(fYr===String(D.cuota_año||2026)&&fMo===(D.cuota_mes||'Aug'));
-  /* Show/hide cuota-month-only controls */
+  var fMo=getChip('f0mo')||(D.cuota_mes||'Sep');
+  var isJul26=(fYr===String(D.cuota_año||2026)&&fMo===(D.cuota_mes||'Sep'));  // isCuotaMes
+  /* Show/hide July-only controls */
   var riesSep=document.getElementById('f0riesSep');
   var riesLbl=document.getElementById('f0riesLbl');
   var riesGrp=document.getElementById('f0ries');
   var qSep=document.getElementById('f0qSep');
   var qInp=document.getElementById('f0q');
   var regBarsWrap=document.getElementById('regBarsWrap');
-  [riesSep,riesLbl,riesGrp,qSep,qInp].forEach(function(el){if(el)el.style.display=isCuotaMes?'':'none';});
-  if(regBarsWrap)regBarsWrap.style.display=isCuotaMes?'':'none';
-  var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display=isCuotaMes?'':'none';
-  if(isCuotaMes){rT0_CuotaMes();}else{rT0_Month(fYr,fMo);}
+  [riesSep,riesLbl,riesGrp,qSep,qInp].forEach(function(el){if(el)el.style.display=isJul26?'':'none';}); // isCuotaMes
+  if(regBarsWrap)regBarsWrap.style.display=isJul26?'':'none';
+  var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display=isJul26?'':'none';
+  if(isJul26){rT0_Jul26();}else{rT0_Month(fYr,fMo);}
 }
 
-function rT0_CuotaMes(){
-  var cMo=D.cuota_mes||'Aug'; var cYr=String(D.cuota_año||2026);
-  var mesNm=(MES_ES[cMo]||cMo)+' '+cYr;
+function rT0_Jul26(){
   var reg=getChip('f0reg');
   var ries=getChip('f0ries').toLowerCase();
   var q=(document.getElementById('f0q')||{}).value||'';q=q.toLowerCase();
@@ -553,25 +551,24 @@ function rT0_CuotaMes(){
   var totOH=rows.reduce(function(a,r){return a+r.oh_total;},0);
   var totFalt=rows.reduce(function(a,r){return a+r.faltante;},0);
   var totProy=rows.reduce(function(a,r){return a+r.proy;},0);
-  /* Ventas reales: base_data incluye todas las tiendas */
-  var bMes=D.base_data&&D.base_data.byMonth[cMo+'|'+cYr];
-  var totVBase=bMes?(reg?(bMes.by_region[reg]||0):bMes.total):totV;
-  /* Si no hay datos en base_data para el mes cuota, usar ventas de cuota_jul */
-  if(!totVBase)totVBase=totV;
+  /* Ventas reales julio: base_data incluye todas las tiendas (no solo prime) */
+  var _cuMo=(D.cuota_mes||'Sep'),_cuYr=String(D.cuota_año||2026);
+  var bJul=D.base_data&&D.base_data.byMonth[_cuMo+'|'+_cuYr];
+  var totVBase=bJul?(reg?(bJul.by_region[reg]||0):bJul.total):totV;
   var alc=totC?Math.round(totVBase/totC*1000)/10:0;
   var cobOH=totVBase?Math.round(totOH/totVBase*1000)/10:0;
   var ac=alc>=100?'green':alc>=70?'yellow':'red';
   /* KPIs */
   document.getElementById('k0').innerHTML=
-    kpi('Cuota '+mesNm,'',n(totC),'piezas accesorios')+
-    kpi('Ventas '+mesNm,'blue',n(totVBase),'piezas vendidas')+
+    kpi('Cuota '+(MES_ES[_cuMo]||_cuMo),'',n(totC),'piezas accesorios')+
+    kpi('Ventas '+(MES_ES[_cuMo]||_cuMo),'blue',n(totVBase),'piezas vendidas')+
     kpi('Alcance Total',ac,alc+'%','vs cuota')+
     kpi('OH Inventario','',n(totOH),'piezas on-hand')+
     kpi('Cobertura OH','purple',cobOH+'%','OH vs ventas')+
     kpi('Faltante Cuota','red',n(totFalt),'piezas por alcanzar')+
     kpi('Proyección Cierre','yellow',n(totProy),'');
   /* Chart titles */
-  var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas vs Cuota por Región — '+mesNm;
+  var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas vs Cuota — '+(MES_ES[_cuMo]||_cuMo)+' '+_cuYr;
   var cot=document.getElementById('c0ohTitle');if(cot)cot.textContent='Inventario OH por Región';
   /* Charts — ventas de base_data (todas las tiendas), cuota y OH de prime */
   var regMap={};
@@ -581,9 +578,9 @@ function rT0_CuotaMes(){
     regMap[r.region].oh+=r.oh_total;
   });
   /* Parchear ventas por región desde base_data */
-  if(bMes&&bMes.by_region){
-    Object.keys(bMes.by_region).forEach(function(rg){
-      if(regMap[rg])regMap[rg].v=bMes.by_region[rg]||0;
+  if(bJul&&bJul.by_region){
+    Object.keys(bJul.by_region).forEach(function(rg){
+      if(regMap[rg])regMap[rg].v=bJul.by_region[rg]||0;
     });
   }
   var rK=Object.keys(regMap).sort();
@@ -607,7 +604,7 @@ function rT0_CuotaMes(){
   });
   document.getElementById('regBarsBody').innerHTML=barsHTML;
   /* Section header */
-  var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle por Tienda — '+mesNm;
+  var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle por Tienda — '+(MES_ES[_cuMo]||_cuMo)+' '+_cuYr;
   /* Table */
   document.getElementById('t0cnt').textContent='Total: '+rows.length+' tiendas';
   document.getElementById('th0').innerHTML=
@@ -940,6 +937,17 @@ function renderMatrix(){
   var fReg=getChip('f3reg');
   var q=(document.getElementById('f3q').value||'').toLowerCase();
   var regs=fReg?[fReg]:(D.oh_regiones||D.regiones);
+  /* Build clase label lookup: sub_cat|clase → short product description */
+  var _claseLabel={};
+  (D.oh_productos||[]).forEach(function(p){
+    var k=p.sub_categoria+'|'+p.clase;
+    if(!_claseLabel[k]){
+      var nm=p.producto||'';
+      // Strip brand prefix (first word if ALL_CAPS) and truncate
+      nm=nm.replace(/^Quikcell\s*/i,'').replace(/^Q\s*/i,'');
+      _claseLabel[k]=nm.length>40?nm.substring(0,38)+'…':nm;
+    }
+  });
   var rows=Object.values(D._rMap||{}).filter(function(r){
     if(fCat&&r.categoria!==fCat)return false;
     return true;
@@ -982,7 +990,8 @@ function renderMatrix(){
     html+='<td class="right" style="font-weight:700;color:var(--acc2)">'+n(sg.total)+'</td></tr>';
     Object.keys(sg.clases).sort(function(a,b){return sg.clases[b].total-sg.clases[a].total;}).forEach(function(cla){
       var kg=sg.clases[cla];
-      html+='<tr><td style="padding-left:16px;color:var(--tx2);font-size:11px"></td><td style="color:var(--tx);padding-left:10px">'+cla+'</td>';
+      var _cLbl=_claseLabel[sub+'|'+cla]||cla;
+      html+='<tr><td style="padding-left:16px;color:var(--tx2);font-size:11px"></td><td style="color:var(--tx);padding-left:10px;font-size:11px" title="Código: '+cla+'">'+_cLbl+'</td>';
       regs.forEach(function(rg){var v=kg.by_region[rg]||0;html+='<td class="right" style="color:'+(v>0?'var(--tx)':'var(--tx2)')+'">'+n(v)+'</td>';});
       html+='<td class="right" style="color:var(--acc2)">'+n(kg.total)+'</td></tr>';
     });
@@ -1066,29 +1075,46 @@ function rT4(){
       }]
     });
   }
+  /* Category columns for yB breakdown */
+  var catCols=['Cables','Cases iPhone','Charger','Liquid','Micas','Accesories'];
+  /* Filter to only cats with any data */
+  var activeCats=catCols.filter(function(cat){
+    return ym.some(function(m){var mo=bd.byMonth[m+'|'+yB];return mo&&(mo.by_cat||{})[cat]>0;});
+  });
   var tbl='<table><thead><tr>';
   tbl+='<th>Mes</th>';
   tbl+='<th class="right" style="color:rgba(59,130,246,.8)">'+yA+'</th>';
   tbl+='<th class="right" style="color:rgba(34,197,94,.8)">'+yB+'</th>';
-  tbl+='<th class="right">Δ Uds</th><th class="right">% Cambio</th>';
+  tbl+='<th class="right">Δ Uds</th><th class="right">% YoY</th>';
+  activeCats.forEach(function(cat){tbl+='<th class="right" style="color:var(--tx2);font-size:11px">'+cat+'</th>';});
   tbl+='</tr></thead><tbody>';
   var tD=totB-totA,tP=totA?Math.round(tD/totA*1000)/10:null,tCls=tD>=0?'delta-pos':'delta-neg';
+  /* Total row: sum category totals across all months in yB */
   tbl+='<tr class="total-row">';
   tbl+='<td><strong>TOTAL</strong></td>';
   tbl+='<td class="right blue">'+n(totA)+'</td>';
   tbl+='<td class="right green">'+n(totB)+'</td>';
   tbl+='<td class="right '+tCls+'">'+(tD>=0?'+':'')+n(tD)+'</td>';
   tbl+='<td class="right '+tCls+'">'+(tP!==null?(tP>=0?'+':'')+n(tP,1)+'%':'—')+'</td>';
+  activeCats.forEach(function(cat){
+    var catTot=ym.reduce(function(s,m){var mo=bd.byMonth[m+'|'+yB];return s+((mo&&(mo.by_cat||{})[cat])||0);},0);
+    tbl+='<td class="right" style="font-size:12px">'+n(catTot)+'</td>';
+  });
   tbl+='</tr>';
   ym.forEach(function(m,i){
     var a=dataA[i]||0,b=dataB[i]||0,d=b-a;
     var p=a?Math.round(d/a*1000)/10:null,cls=d>=0?'delta-pos':'delta-neg';
+    var moB=bd.byMonth[m+'|'+yB];
     tbl+='<tr>';
     tbl+='<td style="font-weight:600">'+(MES_ES[m]||m)+'</td>';
     tbl+='<td class="right">'+n(a)+'</td>';
     tbl+='<td class="right">'+n(b)+'</td>';
     tbl+='<td class="right '+cls+'">'+(d>=0?'+':'')+n(d)+'</td>';
     tbl+='<td class="right '+cls+'">'+(p!==null?(p>=0?'+':'')+n(p,1)+'%':'—')+'</td>';
+    activeCats.forEach(function(cat){
+      var v=(moB&&(moB.by_cat||{})[cat])||0;
+      tbl+='<td class="right" style="color:'+(v>0?'var(--tx)':'var(--tx2)')+';font-size:12px">'+n(v)+'</td>';
+    });
     tbl+='</tr>';
   });
   tbl+='</tbody></table>';
@@ -1134,7 +1160,7 @@ function exportXLSX(){
     ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Vista_General.xlsx';
   }else if(activeTab===1){
     /* Cuota del Mes */
-    var hd=['Región','Sub-Región','Clave','Tienda','Cuota','Ventas Jul','Proy Cierre','Alcance%','OH Total','Cases OH','Cables OH','Chargers OH','Liquid OH','Micas OH','Resurtido','Faltante','Riesgo'];
+    var hd=['Región','Sub-Región','Clave','Tienda','Cuota','Ventas '+(D.cuota_mes||'Mes'),'Proy Cierre','Alcance%','OH Total','Cases OH','Cables OH','Chargers OH','Liquid OH','Micas OH','Resurtido','Faltante','Riesgo'];
     var data=D.cuota_jul.map(function(r){return[r.region,r.sub_region,r.clave,r.tienda,r.cuota,r.ventas,r.proy,r.alcance,r.oh_total,r.oh_cases,r.oh_cables,r.oh_chargers,r.oh_liquid,r.oh_micas,r.resurtido,r.faltante,r.riesgo];});
     ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cuota_Mes.xlsx';
   }else if(activeTab===2){
