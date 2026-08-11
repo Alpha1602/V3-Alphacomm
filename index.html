@@ -410,24 +410,14 @@ function initCuotaFilter(){
     var prev2=prev&&prev.previousElementSibling; // .filter-sep
     if(prev2&&prev2.classList&&prev2.classList.contains('filter-sep'))prev2.style.display='none';
   }
-  /* Also hide AÑO filter if only one year available */
+  /* Only show cuota year chip — hide historical years from P2 filter */
   var cuotaYr=String(D.cuota_año||2026);
-  var yearSet={};
-  D.base_data.sorted.forEach(function(k){yearSet[k.split('|')[1]]=1;});
-  var years=Object.keys(yearSet).sort();
   var g0yr=document.getElementById('f0yr');
   if(g0yr){
     g0yr.setAttribute('data-val',cuotaYr);
-    if(years.length<=1){
-      /* Solo un año: ocultar también el filtro de año */
-      g0yr.style.display='none';
-      var prevL=g0yr.previousElementSibling;
-      if(prevL)prevL.style.display='none';
-    } else {
-      g0yr.innerHTML=years.map(function(y){
-        return '<div class="chip'+(y===cuotaYr?' active':'')+'" onclick="setChip(\'f0yr\',\''+y+'\',this)">'+y+'</div>';
-      }).join('');
-    }
+    g0yr.style.display='none';               // hide year filter too — P2 is always current period
+    var prevL=g0yr.previousElementSibling;
+    if(prevL)prevL.style.display='none';
   }
 }
 
@@ -957,76 +947,63 @@ function renderMatrix(){
   var fReg=getChip('f3reg');
   var q=(document.getElementById('f3q').value||'').toLowerCase();
   var regs=fReg?[fReg]:(D.oh_regiones||D.regiones);
-  /* Build clase label lookup: sub_cat|clase → full product description */
-  var _claseLabel={};
-  (D.oh_productos||[]).forEach(function(p){
-    var k=p.sub_categoria+'|'+p.clase;
-    if(!_claseLabel[k]){
-      var nm=p.producto||'';
-      nm=nm.replace(/^Quikcell\s*/i,'').replace(/^Q\s*/i,'');
-      _claseLabel[k]=nm; // full name, no truncation
-    }
-  });
-  /* Disambiguate duplicate names within same sub_cat by appending clase code */
-  var _seenLbl={};
-  Object.keys(_claseLabel).forEach(function(k){
-    var lbl=_claseLabel[k],sub=k.split('|')[0];
-    var sk=sub+'||'+lbl;
-    if(!_seenLbl[sk])_seenLbl[sk]=[];
-    _seenLbl[sk].push(k);
-  });
-  Object.keys(_seenLbl).forEach(function(sk){
-    var ks=_seenLbl[sk];
-    if(ks.length>1){
-      ks.forEach(function(k){_claseLabel[k]+=' [Cód. '+k.split('|')[1]+']';});
-    }
-  });
-  var rows=Object.values(D._rMap||{}).filter(function(r){
-    if(fCat&&r.categoria!==fCat)return false;
+  /* Use oh_productos — one row per unique SKU, names from Data items */
+  var prods=(D.oh_productos||[]).filter(function(p){
+    if(fCat&&p.categoria!==fCat)return false;
+    if(q&&!p.producto.toLowerCase().includes(q)&&
+          !p.sub_categoria.toLowerCase().includes(q)&&
+          !p.clase.toLowerCase().includes(q)&&
+          !(p.codigo||'').toLowerCase().includes(q))return false;
     return true;
   });
-  if(q){
-    var matchPks={};
-    D.oh_productos.forEach(function(p){
-      if(fCat&&p.categoria!==fCat)return;
-      if(p.producto.toLowerCase().includes(q)||p.sub_categoria.toLowerCase().includes(q)){
-        var sk=p.sub_categoria+'|'+p.clase+'|'+p.categoria;matchPks[sk]=true;
-      }
-    });
-    rows=rows.filter(function(r){return matchPks[r.sub_categoria+'|'+r.clase+'|'+r.categoria];});
-  }
-  if(!rows.length){document.getElementById('pivot').innerHTML='<p style="color:var(--tx2);padding:20px">Sin datos</p>';return;}
+  if(!prods.length){document.getElementById('pivot').innerHTML='<p style="color:var(--tx2);padding:20px">Sin datos</p>';return;}
+  /* Group by sub_categoria (descriptive from Data items) */
   var tree={};
-  rows.forEach(function(r){
-    var sub=r.sub_categoria,cla=r.clase;
-    if(!tree[sub])tree[sub]={total:0,clases:{}};
-    if(!tree[sub].clases[cla])tree[sub].clases[cla]={total:0,by_region:{}};
-    tree[sub].clases[cla].total+=r.cantidad;
-    tree[sub].total+=r.cantidad;
-    regs.forEach(function(rg){tree[sub].clases[cla].by_region[rg]=(tree[sub].clases[cla].by_region[rg]||0)+(r.by_region[rg]||0);
-      if(!tree[sub].by_region)tree[sub].by_region={};
-      tree[sub].by_region[rg]=(tree[sub].by_region[rg]||0)+(r.by_region[rg]||0);});
+  prods.forEach(function(p){
+    var sub=p.sub_categoria;
+    if(!tree[sub])tree[sub]={total:0,by_region:{},clase:p.clase,categoria:p.categoria,productos:[]};
+    tree[sub].total+=p.cantidad;
+    tree[sub].productos.push(p);
+    regs.forEach(function(rg){
+      tree[sub].by_region[rg]=(tree[sub].by_region[rg]||0)+(p.by_region[rg]||0);
+    });
   });
-  var grand=Object.values(tree).reduce(function(a,v){return a+v.total;},0);
+  var grand=prods.reduce(function(a,p){return a+p.cantidad;},0);
   var subKeys=Object.keys(tree).sort(function(a,b){return tree[b].total-tree[a].total;});
   var html='<div class="tbl-wrap" style="max-height:calc(100vh - 430px);overflow-y:auto"><table>';
-  html+='<thead><tr><th style="min-width:140px">Sub Categoría</th><th style="min-width:110px">Clase</th>';
-  regs.forEach(function(rg){html+='<th class="right" style="min-width:80px">'+rg+'</th>';});
-  html+='<th class="right" style="min-width:70px">TOTAL</th></tr></thead><tbody>';
-  html+='<tr class="total-row"><td colspan="2"><strong>TOTAL</strong></td>';
-  regs.forEach(function(rg){var t=rows.reduce(function(a,r){return a+(r.by_region[rg]||0);},0);html+='<td class="right">'+n(t)+'</td>';});
+  html+='<thead><tr>';
+  html+='<th style="min-width:130px">Sub Categoría</th>';
+  html+='<th style="min-width:180px">Producto</th>';
+  html+='<th style="min-width:70px;color:var(--tx2)">Clase</th>';
+  html+='<th style="min-width:100px;color:var(--tx2)">SKU</th>';
+  regs.forEach(function(rg){html+='<th class="right" style="min-width:72px">'+rg+'</th>';});
+  html+='<th class="right" style="min-width:65px">TOTAL</th></tr></thead><tbody>';
+  html+='<tr class="total-row"><td colspan="4"><strong>TOTAL</strong></td>';
+  regs.forEach(function(rg){
+    var t=prods.reduce(function(a,p){return a+(p.by_region[rg]||0);},0);
+    html+='<td class="right">'+n(t)+'</td>';
+  });
   html+='<td class="right" style="color:var(--acc2)">'+n(grand)+'</td></tr>';
   subKeys.forEach(function(sub){
     var sg=tree[sub];
-    html+='<tr style="background:var(--bg3)"><td style="font-weight:700;color:var(--tx)">'+sub+'</td><td style="color:var(--tx2);font-size:11px">'+Object.keys(sg.clases).length+' clases</td>';
-    regs.forEach(function(rg){html+='<td class="right" style="font-weight:700">'+n(sg.by_region&&sg.by_region[rg]||0)+'</td>';});
+    html+='<tr style="background:var(--bg3)">';
+    html+='<td style="font-weight:700;color:var(--tx)">'+sub+'</td>';
+    html+='<td style="color:var(--tx2);font-size:11px">'+sg.productos.length+' producto'+(sg.productos.length!==1?'s':'')+'</td>';
+    html+='<td></td><td></td>';
+    regs.forEach(function(rg){html+='<td class="right" style="font-weight:700">'+n(sg.by_region[rg]||0)+'</td>';});
     html+='<td class="right" style="font-weight:700;color:var(--acc2)">'+n(sg.total)+'</td></tr>';
-    Object.keys(sg.clases).sort(function(a,b){return sg.clases[b].total-sg.clases[a].total;}).forEach(function(cla){
-      var kg=sg.clases[cla];
-      var _cLbl=_claseLabel[sub+'|'+cla]||cla;
-      html+='<tr><td style="padding-left:16px;color:var(--tx2);font-size:11px"></td><td style="color:var(--tx);padding-left:10px;font-size:11px" title="Código: '+cla+'">'+_cLbl+'</td>';
-      regs.forEach(function(rg){var v=kg.by_region[rg]||0;html+='<td class="right" style="color:'+(v>0?'var(--tx)':'var(--tx2)')+'">'+n(v)+'</td>';});
-      html+='<td class="right" style="color:var(--acc2)">'+n(kg.total)+'</td></tr>';
+    sg.productos.slice().sort(function(a,b){return b.cantidad-a.cantidad;}).forEach(function(p){
+      var nm=p.producto.replace(/^Quikcell\s*/i,'').replace(/^Q\s*/i,'');
+      html+='<tr>';
+      html+='<td style="padding-left:14px;color:var(--tx2);font-size:11px"></td>';
+      html+='<td style="color:var(--tx);font-size:11px" title="'+p.producto+'">'+nm+'</td>';
+      html+='<td style="color:var(--acc);font-size:11px">'+p.clase+'</td>';
+      html+='<td style="color:var(--tx2);font-size:10px;font-family:monospace">'+(p.codigo||'—')+'</td>';
+      regs.forEach(function(rg){
+        var v=p.by_region[rg]||0;
+        html+='<td class="right" style="color:'+(v>0?'var(--tx)':'var(--tx2)')+';font-size:12px">'+n(v)+'</td>';
+      });
+      html+='<td class="right" style="color:var(--acc2)">'+n(p.cantidad)+'</td></tr>';
     });
   });
   html+='</tbody></table></div>';

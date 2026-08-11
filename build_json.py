@@ -62,40 +62,68 @@ for r in get_sheet('3.AR','1.AR').iter_rows(values_only=True, min_row=4):
 print(f"1.AR: {len(ar_clean)} registros")
 
 # ── 4. OH DETALLE → oh_tienda, oh_productos, _rMap ───────────────────────
-# header row 2: 0=tienda,1=clave,2=regional,3=región,4=codigo,5=sku_alpha(catAlpha),
-#               6=descripcion(prod),7=modelo(sub_cat),8=subinv(clase),10=cantidad
+# Columns: 0=tienda,1=clave,2=regional,3=región,4=codigo(SKU),5=cat_alpha,
+#          6=descripcion,7=modelo,8=subinv(numeric),10=cantidad
+# Cols 12-14 from OH + Data items sheet provide descriptive names
+
+# Load Data items lookup: codigo/sku → {desc, cat, subcat, clase}
+try:
+    sh_di = get_sheet('Data items')
+    di_map = {}
+    for dr in sh_di.iter_rows(values_only=True, min_row=3):
+        sku  = s(dr[1])   # SKU Retail
+        item = s(dr[2])   # ITEM code
+        entry = {'desc':   s(dr[4]) or '',   # Descripción oficial
+                 'cat':    s(dr[5]) or '',   # Categoría
+                 'subcat': s(dr[6]) or '',   # Sub Categoría (descriptiva)
+                 'clase':  s(dr[7]) or ''}  # Clase (descriptiva, ej. "6 ft")
+        if sku:  di_map[sku]  = entry
+        if item: di_map[item] = entry
+    print(f"   Data items: {len(di_map)} entradas cargadas")
+except Exception as e:
+    di_map = {}
+    print(f"   Data items: no encontrada ({e})")
+
 sh4 = get_sheet('5.OH detalle', 'OH detalle')
-t_map = {}   # clave → {clave,tienda,region,gerente,cantidad,cats:{}}
-p_map = {}   # pk   → {producto,sub_categoria,clase,categoria,cantidad,by_region:{}}
-r_map = {}   # sk   → {sub_categoria,clase,categoria,cantidad,by_region:{}}
+t_map = {}   # clave → {clave,tienda,region,cantidad,cats:{}}
+p_map = {}   # codigo → {producto,sub_categoria,clase,categoria,cantidad,by_region,codigo}
+r_map = {}   # sub_cat|clase|cat → {sub_categoria,clase,categoria,cantidad,by_region}
 reg_set4 = {}
 
 for r in sh4.iter_rows(values_only=True, min_row=4):
-    reg = s(r[3]); clv = s(r[1]); tda = s(r[0])
-    cat_alpha = s(r[5]) or 'Accesories'
-    prod = s(r[6]) or cat_alpha
-    sub_cat = s(r[7]) or cat_alpha
-    qty = fi(r[10])
-    clase = s(r[8]) or 'General'
+    reg    = s(r[3]); clv = s(r[1]); tda = s(r[0])
+    codigo = s(r[4])        # SKU / item code (N.XXXXXXX)
+    qty    = fi(r[10])
     if not clv or qty <= 0: continue
     reg_set4[reg] = 1
+
+    # Look up Data items for canonical/descriptive names
+    di = di_map.get(codigo, {})
+    cat_alpha = di.get('cat') or s(r[5]) or 'Accesories'
+    prod      = di.get('desc') or s(r[6]) or cat_alpha
+    sub_cat   = di.get('subcat') or s(r[7]) or cat_alpha
+    clase     = di.get('clase') or s(r[8]) or 'General'
 
     if clv not in t_map:
         t_map[clv] = {'clave':clv,'tienda':tda,'region':reg,'gerente':'','cantidad':0,'cats':{}}
     t_map[clv]['cantidad'] += qty
-    t_map[clv]['cats'][cat_alpha] = t_map[clv]['cats'].get(cat_alpha,0) + qty
+    t_map[clv]['cats'][cat_alpha] = t_map[clv]['cats'].get(cat_alpha, 0) + qty
 
-    pk = prod+'|'+sub_cat+'|'+clase+'|'+cat_alpha
+    # p_map: one entry per unique SKU/product
+    pk = codigo
     if pk not in p_map:
-        p_map[pk] = {'producto':prod,'sub_categoria':sub_cat,'clase':clase,'categoria':cat_alpha,'cantidad':0,'by_region':{}}
+        p_map[pk] = {'producto':prod,'sub_categoria':sub_cat,'clase':clase,
+                     'categoria':cat_alpha,'cantidad':0,'by_region':{},'codigo':codigo}
     p_map[pk]['cantidad'] += qty
-    p_map[pk]['by_region'][reg] = p_map[pk]['by_region'].get(reg,0) + qty
+    p_map[pk]['by_region'][reg] = p_map[pk]['by_region'].get(reg, 0) + qty
 
-    sk = sub_cat+'|'+clase+'|'+cat_alpha
+    # r_map: descriptive sub_cat|clase pivot (all human-readable now)
+    sk = sub_cat + '|' + clase + '|' + cat_alpha
     if sk not in r_map:
-        r_map[sk] = {'sub_categoria':sub_cat,'clase':clase,'categoria':cat_alpha,'cantidad':0,'by_region':{}}
+        r_map[sk] = {'sub_categoria':sub_cat,'clase':clase,'categoria':cat_alpha,
+                     'cantidad':0,'by_region':{}}
     r_map[sk]['cantidad'] += qty
-    r_map[sk]['by_region'][reg] = r_map[sk]['by_region'].get(reg,0) + qty
+    r_map[sk]['by_region'][reg] = r_map[sk]['by_region'].get(reg, 0) + qty
 
 oh_tienda = sorted(t_map.values(), key=lambda x: x['clave'])
 oh_productos = sorted(p_map.values(), key=lambda x: -x['cantidad'])
