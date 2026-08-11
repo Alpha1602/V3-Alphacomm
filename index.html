@@ -373,7 +373,8 @@ function autoLoad(){
       D.oh_regiones=data.oh_regiones; D._rMap=data.rMap;
       D.base_data=data.base_data; D.base_regiones=data.base_regiones;
       var now=new Date();
-      document.getElementById('hdrSub').textContent='Datos al '+now.toLocaleDateString('es-MX')+' '+now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+      var _genAt=data.generated_at?new Date(data.generated_at):now;
+      document.getElementById('hdrSub').textContent='Datos al '+_genAt.toLocaleDateString('es-MX')+' '+_genAt.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
       initFilters();
       initHistorico();
       initCuotaFilter();

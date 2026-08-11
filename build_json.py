@@ -1,4 +1,4 @@
-import openpyxl, json, os, sys
+import openpyxl, json, os, sys, datetime
 
 EXCEL = sys.argv[1] if len(sys.argv) > 1 else "/sessions/tender-amazing-curie/mnt/uploads/Sales YoY .3.xlsx"
 wb = openpyxl.load_workbook(EXCEL, read_only=True, data_only=True)
@@ -247,7 +247,8 @@ data = {
     'regiones': regiones, 'proy_total': proy_total,
     'oh_tienda': oh_tienda, 'oh_productos': oh_productos,
     'oh_regiones': oh_regiones, 'rMap': r_map,
-    'base_data': base_data, 'base_regiones': base_regiones
+    'base_data': base_data, 'base_regiones': base_regiones,
+    'generated_at': datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
 }
 
 out = sys.argv[2] if len(sys.argv) > 2 else '/sessions/brave-zealous-einstein/mnt/2.Prime/data.json'
