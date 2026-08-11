@@ -423,18 +423,23 @@ function initCuotaFilter(){
 
 function initARFilter(){
   if(!D.base_data)return;
-  var yearSet={};
-  D.base_data.sorted.forEach(function(k){yearSet[k.split('|')[1]]=1;});
-  var years=Object.keys(yearSet).sort();
-  var latestYr=years[years.length-1]||'2026';
-  var g1yr=document.getElementById('f1yr');
-  if(g1yr){
-    g1yr.setAttribute('data-val',latestYr);
-    g1yr.innerHTML=years.map(function(y){
-      return '<div class="chip'+(y===latestYr?' active':'')+'" onclick="setChip(\'f1yr\',\''+y+'\',this)">'+y+'</div>';
-    }).join('');
+  /* Siempre usar el mes actual — ocultar chips de año y mes en P3 */
+  var sorted=D.base_data.sorted;
+  var latestKey=sorted[sorted.length-1]||'Aug|2026';
+  var lp=latestKey.split('|');
+  var latestYr=lp[1],latestMo=lp[0];
+  function hideChipGroup(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    el.setAttribute('data-val',id==='f1yr'?latestYr:latestMo);
+    el.style.display='none';
+    var prev=el.previousElementSibling;
+    if(prev){prev.style.display='none';
+      var prev2=prev.previousElementSibling;
+      if(prev2&&prev2.classList&&prev2.classList.contains('filter-sep'))prev2.style.display='none';}
   }
-  updateARMonthChips(latestYr);
+  hideChipGroup('f1yr');
+  hideChipGroup('f1mo');
 }
 
 function updateARMonthChips(yr){
@@ -613,7 +618,7 @@ function rT0_Jul26(){
   document.getElementById('t0cnt').textContent='Total: '+rows.length+' tiendas';
   document.getElementById('th0').innerHTML=
     th('t0','region','Región')+th('t0','sub_region','Sub-Región')+th('t0','tienda','Tienda')+
-    th('t0','cuota','Cuota',true)+th('t0','ventas','Ventas Jul',true)+
+    th('t0','cuota','Cuota',true)+th('t0','ventas','Ventas del mes',true)+
     th('t0','proy','Proy Cierre',true)+'<th>Alcance</th>'+
     th('t0','oh_total','OH Total',true)+th('t0','oh_cases','Cases',true)+
     th('t0','oh_cables','Cables',true)+th('t0','oh_chargers','Chargers',true)+
@@ -739,11 +744,11 @@ function rT0_Month(yr,mo){
 /* ═══ TAB 2: ATTACH RATE Y PROTECCIÓN ═══ */
 function rT1(){
   var reg=getChip('f1reg');
-  var fYr=getChip('f1yr')||'2026';
-  var fMo=getChip('f1mo')||'Aug';
   var q=(document.getElementById('f1q')||{}).value||'';q=q.toLowerCase();
-  /* Determine current month (latest in base_data) */
+  /* Always use current month (latest in base_data) — no manual chip selection */
   var latestKey=D.base_data?D.base_data.sorted[D.base_data.sorted.length-1]:'Aug|2026';
+  var fYr=latestKey.split('|')[1]||'2026';
+  var fMo=latestKey.split('|')[0]||'Aug';
   var lp=latestKey.split('|');
   var isCurrentMonth=(fYr===lp[1]&&fMo===lp[0]);
   var mesNm=(MES_ES[fMo]||fMo)+' '+fYr;
@@ -972,13 +977,12 @@ function renderMatrix(){
   var subKeys=Object.keys(tree).sort(function(a,b){return tree[b].total-tree[a].total;});
   var html='<div class="tbl-wrap" style="max-height:calc(100vh - 430px);overflow-y:auto"><table>';
   html+='<thead><tr>';
-  html+='<th style="min-width:130px">Sub Categoría</th>';
-  html+='<th style="min-width:180px">Producto</th>';
-  html+='<th style="min-width:70px;color:var(--tx2)">Clase</th>';
-  html+='<th style="min-width:100px;color:var(--tx2)">SKU</th>';
+  html+='<th style="min-width:110px;color:var(--tx2);font-family:monospace">SKU</th>';
+  html+='<th style="min-width:190px">Producto</th>';
+  html+='<th style="min-width:80px">Clase</th>';
   regs.forEach(function(rg){html+='<th class="right" style="min-width:72px">'+rg+'</th>';});
   html+='<th class="right" style="min-width:65px">TOTAL</th></tr></thead><tbody>';
-  html+='<tr class="total-row"><td colspan="4"><strong>TOTAL</strong></td>';
+  html+='<tr class="total-row"><td colspan="3"><strong>TOTAL</strong></td>';
   regs.forEach(function(rg){
     var t=prods.reduce(function(a,p){return a+(p.by_region[rg]||0);},0);
     html+='<td class="right">'+n(t)+'</td>';
@@ -987,18 +991,17 @@ function renderMatrix(){
   subKeys.forEach(function(sub){
     var sg=tree[sub];
     html+='<tr style="background:var(--bg3)">';
+    html+='<td style="font-weight:700;color:var(--acc);font-size:11px;font-family:monospace">'+sub+'</td>';
     html+='<td style="font-weight:700;color:var(--tx)">'+sub+'</td>';
     html+='<td style="color:var(--tx2);font-size:11px">'+sg.productos.length+' producto'+(sg.productos.length!==1?'s':'')+'</td>';
-    html+='<td></td><td></td>';
     regs.forEach(function(rg){html+='<td class="right" style="font-weight:700">'+n(sg.by_region[rg]||0)+'</td>';});
     html+='<td class="right" style="font-weight:700;color:var(--acc2)">'+n(sg.total)+'</td></tr>';
     sg.productos.slice().sort(function(a,b){return b.cantidad-a.cantidad;}).forEach(function(p){
       var nm=p.producto.replace(/^Quikcell\s*/i,'').replace(/^Q\s*/i,'');
       html+='<tr>';
-      html+='<td style="padding-left:14px;color:var(--tx2);font-size:11px"></td>';
+      html+='<td style="color:var(--tx2);font-size:10px;font-family:monospace;padding-left:14px">'+(p.codigo||'—')+'</td>';
       html+='<td style="color:var(--tx);font-size:11px" title="'+p.producto+'">'+nm+'</td>';
       html+='<td style="color:var(--acc);font-size:11px">'+p.clase+'</td>';
-      html+='<td style="color:var(--tx2);font-size:10px;font-family:monospace">'+(p.codigo||'—')+'</td>';
       regs.forEach(function(rg){
         var v=p.by_region[rg]||0;
         html+='<td class="right" style="color:'+(v>0?'var(--tx)':'var(--tx2)')+';font-size:12px">'+n(v)+'</td>';
