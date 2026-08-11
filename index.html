@@ -619,14 +619,19 @@ function rT0_Jul26(){
   /* Section header */
   var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle Cuota '+(MES_ES[_cuMo]||_cuMo)+' '+_cuYr+' — Datos '+(MES_ES[_dataMo]||_dataMo);
   /* Table */
+  /* OH category columns sorted by total sum desc */
+  var _ohDefs=[{k:'oh_cables',lb:'Cables'},{k:'oh_cases',lb:'Cases'},{k:'oh_chargers',lb:'Chargers'},{k:'oh_liquid',lb:'Liquid Glass'},{k:'oh_micas',lb:'Screen Prot.'}];
+  var ohCols=_ohDefs.sort(function(a,b){
+    var sa=rows.reduce(function(s,r){return s+r[a.k];},0);
+    var sb=rows.reduce(function(s,r){return s+r[b.k];},0);
+    return sb-sa;
+  });
   document.getElementById('t0cnt').textContent='Total: '+rows.length+' tiendas';
   document.getElementById('th0').innerHTML=
     th('t0','region','Región')+th('t0','sub_region','Sub-Región')+th('t0','tienda','Tienda')+
     th('t0','cuota','Cuota',true)+th('t0','ventas','Ventas del mes',true)+
     th('t0','proy','Proy Cierre',true)+'<th>Alcance</th>'+
-    th('t0','oh_total','OH Total',true)+th('t0','oh_cases','Cases',true)+
-    th('t0','oh_cables','Cables',true)+th('t0','oh_chargers','Chargers',true)+
-    th('t0','oh_liquid','Liquid Glass',true)+th('t0','oh_micas','Screen Prot.',true)+
+    th('t0','oh_total','OH Total',true)+ohCols.map(function(c){return th('t0',c.k,c.lb,true);}).join('')+
     th('t0','resurtido','Resurtido',true)+th('t0','faltante','Faltante',true)+
     th('t0','riesgo','Riesgo');
   var totRow='<tr class="total-row"><td colspan="3"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
@@ -634,11 +639,7 @@ function rT0_Jul26(){
     '<td class="right yellow">'+n(totProy)+'</td>'+
     '<td>'+pb(alc)+'</td>'+
     '<td class="right">'+n(totOH)+'</td>'+
-    '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_cases;},0))+'</td>'+
-    '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_cables;},0))+'</td>'+
-    '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_chargers;},0))+'</td>'+
-    '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_liquid;},0))+'</td>'+
-    '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_micas;},0))+'</td>'+
+    ohCols.map(function(c){return '<td class="right">'+n(rows.reduce(function(a,r){return a+r[c.k];},0))+'</td>';}).join('')+
     '<td class="right">'+n(rows.reduce(function(a,r){return a+r.resurtido;},0))+'</td>'+
     '<td class="right red">'+n(totFalt)+'</td><td></td></tr>';
   document.getElementById('tb0').innerHTML=totRow+sortRows(rows,'t0').map(function(r){
@@ -648,9 +649,7 @@ function rT0_Jul26(){
       '<td class="right">'+n(r.cuota)+'</td><td class="right">'+n(r.ventas)+'</td>'+
       '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.proy)+'</td>'+
       '<td>'+pb(a)+'</td>'+
-      '<td class="right">'+n(r.oh_total)+'</td><td class="right">'+n(r.oh_cases)+'</td>'+
-      '<td class="right">'+n(r.oh_cables)+'</td><td class="right">'+n(r.oh_chargers)+'</td>'+
-      '<td class="right">'+n(r.oh_liquid)+'</td><td class="right">'+n(r.oh_micas)+'</td>'+
+      '<td class="right">'+n(r.oh_total)+'</td>'+ohCols.map(function(c){return '<td class="right">'+n(r[c.k])+'</td>';}).join('')+
       '<td class="right">'+n(r.resurtido)+'</td><td class="right">'+n(r.faltante)+'</td>'+
       '<td class="'+rClr(r.riesgo)+'">'+r.riesgo+'</td></tr>';
   }).join('')||'<tr><td colspan="16" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
@@ -1097,6 +1096,10 @@ function rT4(){
   /* Filter to only cats with any data */
   var activeCats=catCols.filter(function(cat){
     return ym.some(function(m){var mo=bd.byMonth[m+'|'+yB];return mo&&(mo.by_cat||{})[cat]>0;});
+  }).sort(function(a,b){
+    var sa=ym.reduce(function(s,m){var mo=bd.byMonth[m+'|'+yB];return s+((mo&&(mo.by_cat||{})[a])||0);},0);
+    var sb=ym.reduce(function(s,m){var mo=bd.byMonth[m+'|'+yB];return s+((mo&&(mo.by_cat||{})[b])||0);},0);
+    return sb-sa;
   });
   var tbl='<table><thead><tr>';
   tbl+='<th>Mes</th>';
