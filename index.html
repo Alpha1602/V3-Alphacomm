@@ -520,20 +520,17 @@ function initFilters(){
 
 /* ═══ TAB 1: CUOTA DEL MES ═══ */
 function rT0(){
-  var fYr=getChip('f0yr')||String(D.cuota_año||2026);
-  var fMo=getChip('f0mo')||(D.cuota_mes||'Sep');
-  var isJul26=(fYr===String(D.cuota_año||2026)&&fMo===(D.cuota_mes||'Sep'));  // isCuotaMes
-  /* Show/hide July-only controls */
+  /* Siempre mostrar vista de cuota si hay datos disponibles */
   var riesSep=document.getElementById('f0riesSep');
   var riesLbl=document.getElementById('f0riesLbl');
   var riesGrp=document.getElementById('f0ries');
   var qSep=document.getElementById('f0qSep');
   var qInp=document.getElementById('f0q');
   var regBarsWrap=document.getElementById('regBarsWrap');
-  [riesSep,riesLbl,riesGrp,qSep,qInp].forEach(function(el){if(el)el.style.display=isJul26?'':'none';}); // isCuotaMes
-  if(regBarsWrap)regBarsWrap.style.display=isJul26?'':'none';
-  var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display=isJul26?'':'none';
-  if(isJul26){rT0_Jul26();}else{rT0_Month(fYr,fMo);}
+  [riesSep,riesLbl,riesGrp,qSep,qInp].forEach(function(el){if(el)el.style.display='';});
+  if(regBarsWrap)regBarsWrap.style.display='';
+  var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display='';
+  rT0_Jul26();
 }
 
 function rT0_Jul26(){
@@ -744,10 +741,16 @@ function rT1(){
   var isCurrentMonth=(fYr===lp[1]&&fMo===lp[0]);
   var mesNm=(MES_ES[fMo]||fMo)+' '+fYr;
   /* AR data (always from ar_clean = current period) */
+  /* Build proy lookup from cuota_jul (when ar_clean.proy is 0 due to uncached formulas) */
+  var _proyCuota={};
+  (D.cuota_jul||[]).forEach(function(c){if(c.proy)_proyCuota[c.clave]=c.proy;});
   var rows=D.ar_clean.filter(function(r){
     if(reg&&r.region!==reg)return false;
     if(q&&!r.tienda.toLowerCase().includes(q)&&!r.gerente.toLowerCase().includes(q)&&!r.clave.toLowerCase().includes(q))return false;
     return true;
+  }).map(function(r){
+    /* Use cuota_jul proy as fallback when ar_clean.proy is 0 */
+    return (!r.proy && _proyCuota[r.clave]) ? Object.assign({},r,{proy:_proyCuota[r.clave]}) : r;
   });
   var totA=rows.reduce(function(a,r){return a+r.alphacomm;},0);
   var totE=rows.reduce(function(a,r){return a+r.equipo;},0);
@@ -937,15 +940,28 @@ function renderMatrix(){
   var fReg=getChip('f3reg');
   var q=(document.getElementById('f3q').value||'').toLowerCase();
   var regs=fReg?[fReg]:(D.oh_regiones||D.regiones);
-  /* Build clase label lookup: sub_cat|clase → short product description */
+  /* Build clase label lookup: sub_cat|clase → full product description */
   var _claseLabel={};
   (D.oh_productos||[]).forEach(function(p){
     var k=p.sub_categoria+'|'+p.clase;
     if(!_claseLabel[k]){
       var nm=p.producto||'';
-      // Strip brand prefix (first word if ALL_CAPS) and truncate
       nm=nm.replace(/^Quikcell\s*/i,'').replace(/^Q\s*/i,'');
-      _claseLabel[k]=nm.length>40?nm.substring(0,38)+'…':nm;
+      _claseLabel[k]=nm; // full name, no truncation
+    }
+  });
+  /* Disambiguate duplicate names within same sub_cat by appending clase code */
+  var _seenLbl={};
+  Object.keys(_claseLabel).forEach(function(k){
+    var lbl=_claseLabel[k],sub=k.split('|')[0];
+    var sk=sub+'||'+lbl;
+    if(!_seenLbl[sk])_seenLbl[sk]=[];
+    _seenLbl[sk].push(k);
+  });
+  Object.keys(_seenLbl).forEach(function(sk){
+    var ks=_seenLbl[sk];
+    if(ks.length>1){
+      ks.forEach(function(k){_claseLabel[k]+=' [Cód. '+k.split('|')[1]+']';});
     }
   });
   var rows=Object.values(D._rMap||{}).filter(function(r){
