@@ -133,7 +133,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 
 <header>
   <div class="hdr-left">
-    <h1>📱 Dashboard Prime — Julio 2026</h1>
+    <h1>📱 Dashboard Prime</h1>
     <span id="hdrSub">Datos: Cargando…</span>
   </div>
   <div class="hdr-btns">
@@ -567,17 +567,20 @@ function rT0_Jul26(){
   var alc=totC?Math.round(totVBase/totC*1000)/10:0;
   var cobOH=totVBase?Math.round(totOH/totVBase*1000)/10:0;
   var ac=alc>=100?'green':alc>=70?'yellow':'red';
+  var alcProy=totC?Math.round(totProy/totC*1000)/10:0;
+  var apc=alcProy>=100?'green':alcProy>=90?'yellow':'red';
   /* KPIs */
   document.getElementById('k0').innerHTML=
-    kpi('Cuota '+(MES_ES[_cuMo]||_cuMo)+' '+_cuYr,'',n(totC),'piezas accesorios')+
+    kpi('Cuota '+(MES_ES[_dataMo]||_dataMo)+' '+_cuYr,'',n(totC),'piezas accesorios')+
     kpi('Ventas '+(MES_ES[_dataMo]||_dataMo),'blue',n(totVBase),'piezas vendidas')+
     kpi('Alcance Total',ac,alc+'%','vs cuota')+
     kpi('OH Inventario','',n(totOH),'piezas on-hand')+
     kpi('Cobertura OH','purple',cobOH+'%','OH vs ventas')+
     kpi('Faltante Cuota','red',n(totFalt),'piezas por alcanzar')+
-    kpi('Proyección Cierre','yellow',n(totProy),'');
+    kpi('Proyección Cierre','yellow',n(totProy),'')+
+    kpi('Alcance Proyección',apc,alcProy+'%','proy vs cuota');
   /* Chart titles */
-  var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas vs Cuota — '+(MES_ES[_cuMo]||_cuMo)+' '+_cuYr;
+  var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas vs Cuota — '+(MES_ES[_dataMo]||_dataMo)+' '+_cuYr;
   var cot=document.getElementById('c0ohTitle');if(cot)cot.textContent='Inventario OH por Región';
   /* Charts — ventas de base_data (todas las tiendas), cuota y OH de prime */
   var regMap={};
