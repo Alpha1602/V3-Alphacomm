@@ -401,20 +401,34 @@ function initHistorico(){
 /* ═══ INIT CUOTA DEL MES CHIPS ═══ */
 function initCuotaFilter(){
   if(!D.base_data)return;
+  /* Hide MES filter — Pestaña 2 siempre muestra el período de cuota actual */
+  var f0mo=document.getElementById('f0mo');
+  if(f0mo){
+    f0mo.style.display='none';
+    var prev=f0mo.previousElementSibling; // label "Mes"
+    if(prev)prev.style.display='none';
+    var prev2=prev&&prev.previousElementSibling; // .filter-sep
+    if(prev2&&prev2.classList&&prev2.classList.contains('filter-sep'))prev2.style.display='none';
+  }
+  /* Also hide AÑO filter if only one year available */
   var cuotaYr=String(D.cuota_año||2026);
-  var cuotaMo=D.cuota_mes||'Sep';
   var yearSet={};
   D.base_data.sorted.forEach(function(k){yearSet[k.split('|')[1]]=1;});
-  yearSet[cuotaYr]=1;
   var years=Object.keys(yearSet).sort();
   var g0yr=document.getElementById('f0yr');
   if(g0yr){
     g0yr.setAttribute('data-val',cuotaYr);
-    g0yr.innerHTML=years.map(function(y){
-      return '<div class="chip'+(y===cuotaYr?' active':'')+'" onclick="setChip(\'f0yr\',\''+y+'\',this)">'+y+'</div>';
-    }).join('');
+    if(years.length<=1){
+      /* Solo un año: ocultar también el filtro de año */
+      g0yr.style.display='none';
+      var prevL=g0yr.previousElementSibling;
+      if(prevL)prevL.style.display='none';
+    } else {
+      g0yr.innerHTML=years.map(function(y){
+        return '<div class="chip'+(y===cuotaYr?' active':'')+'" onclick="setChip(\'f0yr\',\''+y+'\',this)">'+y+'</div>';
+      }).join('');
+    }
   }
-  updateMonthChips(cuotaYr,cuotaMo);
 }
 
 function initARFilter(){
@@ -550,15 +564,18 @@ function rT0_Jul26(){
   var totProy=rows.reduce(function(a,r){return a+r.proy;},0);
   /* Ventas reales julio: base_data incluye todas las tiendas (no solo prime) */
   var _cuMo=(D.cuota_mes||'Sep'),_cuYr=String(D.cuota_año||2026);
-  var bJul=D.base_data&&D.base_data.byMonth[_cuMo+'|'+_cuYr];
+  /* Mes real de datos = último mes disponible en base_data (puede diferir de cuota_mes) */
+  var _sorted=D.base_data&&D.base_data.sorted;
+  var _dataMo=_sorted&&_sorted.length?_sorted[_sorted.length-1].split('|')[0]:_cuMo;
+  var bJul=D.base_data&&D.base_data.byMonth[_dataMo+'|'+_cuYr];
   var totVBase=bJul?(reg?(bJul.by_region[reg]||0):bJul.total):totV;
   var alc=totC?Math.round(totVBase/totC*1000)/10:0;
   var cobOH=totVBase?Math.round(totOH/totVBase*1000)/10:0;
   var ac=alc>=100?'green':alc>=70?'yellow':'red';
   /* KPIs */
   document.getElementById('k0').innerHTML=
-    kpi('Cuota '+(MES_ES[_cuMo]||_cuMo),'',n(totC),'piezas accesorios')+
-    kpi('Ventas '+(MES_ES[_cuMo]||_cuMo),'blue',n(totVBase),'piezas vendidas')+
+    kpi('Cuota '+(MES_ES[_cuMo]||_cuMo)+' '+_cuYr,'',n(totC),'piezas accesorios')+
+    kpi('Ventas '+(MES_ES[_dataMo]||_dataMo),'blue',n(totVBase),'piezas vendidas')+
     kpi('Alcance Total',ac,alc+'%','vs cuota')+
     kpi('OH Inventario','',n(totOH),'piezas on-hand')+
     kpi('Cobertura OH','purple',cobOH+'%','OH vs ventas')+
@@ -601,7 +618,7 @@ function rT0_Jul26(){
   });
   document.getElementById('regBarsBody').innerHTML=barsHTML;
   /* Section header */
-  var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle por Tienda — '+(MES_ES[_cuMo]||_cuMo)+' '+_cuYr;
+  var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle Cuota '+(MES_ES[_cuMo]||_cuMo)+' '+_cuYr+' — Datos '+(MES_ES[_dataMo]||_dataMo);
   /* Table */
   document.getElementById('t0cnt').textContent='Total: '+rows.length+' tiendas';
   document.getElementById('th0').innerHTML=
