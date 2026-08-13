@@ -195,13 +195,16 @@ print(f"LG-Cases: {len(lg_region)} regiones, {len(lg_tienda)} tiendas")
 # ── 6. 2.BASE (historical) ────────────────────────────────────────────────
 MO = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
 bm = {}; bRegSet = {}; bCatSet = {}; count = 0
+# Acumuladores por tienda/clave para LG y Cases (leídos directo de 6.Base)
+lg_by_clave   = {}  # clave → {mes|año: units_liquid}
+cs_by_clave   = {}  # clave → {mes|año: units_cases}
 sh5 = get_sheet('6.Base', '2.Base')
 for i, r in enumerate(sh5.iter_rows(values_only=True, min_row=4)):
     mes = s(r[8]); units = fi(r[7])
     if not mes or units <= 0: continue
     año = fi(r[9]) or 2025
     key = mes+'|'+str(año)
-    reg = s(r[0]); cat = s(r[10])
+    reg = s(r[0]); cat = s(r[10]); clv = s(r[3])
     if key not in bm:
         bm[key] = {'mes':mes,'año':año,'total':0,'by_region':{},'by_cat':{},'by_rc':{}}
     bm[key]['total'] += units
@@ -214,6 +217,15 @@ for i, r in enumerate(sh5.iter_rows(values_only=True, min_row=4)):
     if reg and cat:
         rc = reg+'|'+cat
         bm[key]['by_rc'][rc] = bm[key]['by_rc'].get(rc,0) + units
+    # Acumular LG y Cases por clave para parchear lg_tienda después
+    if clv:
+        cl = cat.lower()
+        if 'liquid' in cl:
+            lg_by_clave.setdefault(clv, {})
+            lg_by_clave[clv][key] = lg_by_clave[clv].get(key, 0) + units
+        elif 'case' in cl:
+            cs_by_clave.setdefault(clv, {})
+            cs_by_clave[clv][key] = cs_by_clave[clv].get(key, 0) + units
     count += 1
     if count % 20000 == 0: print(f"  2.Base: {count} filas…")
 
@@ -237,6 +249,53 @@ if complete_keys:
 else:
     cuota_mes, cuota_año = 'Aug', 2026
 print(f"Cuota mes detectado: {cuota_mes}|{cuota_año}")
+
+# ── 7a. PARCHAR lg_tienda CON VENTAS REALES DE 6.BASE ─────────────────────
+# Las fórmulas SUMIFS de 4.Cuota LG-Cases pueden tener caché desactualizado.
+# Se reemplazan lg_v y cases_v con la suma directa de 6.Base por clave/mes.
+# El mes de ventas = mes anterior al cuota_mes (mes activo de venta).
+cur_mo_list = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+_cur_idx = cur_mo_list.index(cuota_mes) - 1
+_cur_yr  = cuota_año if _cur_idx >= 0 else cuota_año - 1
+_cur_mo  = cur_mo_list[_cur_idx]
+_cur_key = _cur_mo + '|' + str(_cur_yr)
+
+# Verificar si 6.Base tiene desglose real de categorías para el mes actual
+# (si todos los registros son "Alphacomm", extract_primemx.py aún no fue corregido)
+total_lg_base  = sum(v for d in lg_by_clave.values() for k, v in d.items() if k == _cur_key)
+total_cs_base  = sum(v for d in cs_by_clave.values() for k, v in d.items() if k == _cur_key)
+base_has_cats  = (total_lg_base + total_cs_base) > 0
+
+lg_patched = cs_patched = 0
+if base_has_cats:
+    # 6.Base tiene categorías reales → usarlas (caso normal post-fix)
+    for t in lg_tienda:
+        clv = t['clave']
+        new_lg = lg_by_clave.get(clv, {}).get(_cur_key, 0)
+        new_cs = cs_by_clave.get(clv, {}).get(_cur_key, 0)
+        if new_lg != t['lg_v']: t['lg_v'] = new_lg; lg_patched += 1
+        if new_cs != t['cases_v']: t['cases_v'] = new_cs; cs_patched += 1
+        t['lg_alc']    = round(new_lg / t['lg_cuota'] * 100, 1) if t['lg_cuota'] else 0.0
+        t['cases_alc'] = round(new_cs / t['cases_cuota'] * 100, 1) if t['cases_cuota'] else 0.0
+    # Recalcular totales y region summary
+    lg_totals = {
+        'lg_v':        sum(t['lg_v'] for t in lg_tienda),
+        'lg_cuota':    lg_totals.get('lg_cuota', 0),
+        'cases_v':     sum(t['cases_v'] for t in lg_tienda),
+        'cases_cuota': lg_totals.get('cases_cuota', 0)
+    }
+    for reg_row in lg_region:
+        reg = reg_row['region']
+        reg_row['lg_v']      = sum(t['lg_v']    for t in lg_tienda if t['region'] == reg)
+        reg_row['cases_v']   = sum(t['cases_v'] for t in lg_tienda if t['region'] == reg)
+        reg_row['lg_alc']    = round(reg_row['lg_v']    / reg_row['lg_cuota']    * 100, 1) if reg_row['lg_cuota']    else 0.0
+        reg_row['cases_alc'] = round(reg_row['cases_v'] / reg_row['cases_cuota'] * 100, 1) if reg_row['cases_cuota'] else 0.0
+    print(f"LG tienda parche (6.Base): LG={lg_totals['lg_v']} Cases={lg_totals['cases_v']}")
+else:
+    # 6.Base no tiene desglose de categorías para el mes actual (extract_primemx.py pendiente de fix)
+    # Conservar valores cacheados de 4.Cuota LG-Cases (la hoja Excel los tiene aunque stale)
+    print(f"LG tienda: 6.Base sin categorías para {_cur_key} → conservando caché de 4.Cuota LG-Cases "
+          f"(LG={lg_totals.get('lg_v',0)} Cases={lg_totals.get('cases_v',0)})")
 
 # ── 7b. PARCHAR MES ACTUAL CON DATOS DE 3.AR ──────────────────────────────
 # 6.Base puede tener datos incompletos para el mes en curso.
