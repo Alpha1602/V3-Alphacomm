@@ -238,6 +238,30 @@ else:
     cuota_mes, cuota_año = 'Aug', 2026
 print(f"Cuota mes detectado: {cuota_mes}|{cuota_año}")
 
+# ── 7b. PARCHAR MES ACTUAL CON DATOS DE 3.AR ──────────────────────────────
+# 6.Base puede tener datos incompletos para el mes en curso.
+# Se reemplaza total y by_region con la suma de ar_clean (fuente más confiable).
+cur_mo_idx = mo_list.index(cuota_mes) - 1
+cur_yr_patch = cuota_año if cur_mo_idx >= 0 else cuota_año - 1
+cur_mo_patch = mo_list[cur_mo_idx]
+cur_key = cur_mo_patch + '|' + str(cur_yr_patch)
+
+ar_total_cur = sum(r['alphacomm'] for r in ar_clean)
+ar_by_region = {}
+for r in ar_clean:
+    ar_by_region[r['region']] = ar_by_region.get(r['region'], 0) + r['alphacomm']
+
+if cur_key not in bm:
+    bm[cur_key] = {'mes': cur_mo_patch, 'año': cur_yr_patch,
+                   'total': 0, 'by_region': {}, 'by_cat': {}, 'by_rc': {}}
+    sorted_keys = sorted(bm.keys(), key=lambda k:(int(k.split('|')[1]), MO.get(k.split('|')[0],0)))
+    base_data['sorted'] = sorted_keys
+
+old_total = bm[cur_key]['total']
+bm[cur_key]['total'] = ar_total_cur
+bm[cur_key]['by_region'] = ar_by_region
+print(f"Parche {cur_key}: {old_total} → {ar_total_cur} (fuente: 3.AR)")
+
 # ── 8. EXPORTAR ───────────────────────────────────────────────────────────
 data = {
     'cuota_mes': cuota_mes, 'cuota_año': cuota_año,
