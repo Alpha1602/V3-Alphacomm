@@ -256,11 +256,15 @@ print(f"Cuota mes detectado: {cuota_mes}|{cuota_año}")
 # El mes activo de ventas = cuota_mes (el mes que se está midiendo en 3.AR).
 _cur_key = cuota_mes + '|' + str(cuota_año)
 
-# Verificar si 6.Base tiene desglose real de categorías para el mes actual
-# (si todos los registros son "Alphacomm", extract_primemx.py aún no fue corregido)
+# Verificar si 6.Base tiene desglose COMPLETO de LG/Cases para el mes actual.
+# Comparar contra el total cacheado del Excel (lg_totals viene de 4.Cuota LG-Cases).
+# Si 6.Base tiene < 80% de lo que indica el Excel, los datos son parciales → fallback.
 total_lg_base  = sum(v for d in lg_by_clave.values() for k, v in d.items() if k == _cur_key)
 total_cs_base  = sum(v for d in cs_by_clave.values() for k, v in d.items() if k == _cur_key)
-base_has_cats  = (total_lg_base + total_cs_base) > 0
+excel_lg_ref   = lg_totals.get('lg_v', 0) + lg_totals.get('cases_v', 0)
+base_lg_total  = total_lg_base + total_cs_base
+# Usar 6.Base solo si cubre ≥80% de lo que el Excel indica (datos completos post-fix)
+base_has_cats  = base_lg_total > 0 and (excel_lg_ref == 0 or base_lg_total >= excel_lg_ref * 0.8)
 
 lg_patched = cs_patched = 0
 if base_has_cats:
