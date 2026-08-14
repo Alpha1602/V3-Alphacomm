@@ -253,12 +253,8 @@ print(f"Cuota mes detectado: {cuota_mes}|{cuota_año}")
 # ── 7a. PARCHAR lg_tienda CON VENTAS REALES DE 6.BASE ─────────────────────
 # Las fórmulas SUMIFS de 4.Cuota LG-Cases pueden tener caché desactualizado.
 # Se reemplazan lg_v y cases_v con la suma directa de 6.Base por clave/mes.
-# El mes de ventas = mes anterior al cuota_mes (mes activo de venta).
-cur_mo_list = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-_cur_idx = cur_mo_list.index(cuota_mes) - 1
-_cur_yr  = cuota_año if _cur_idx >= 0 else cuota_año - 1
-_cur_mo  = cur_mo_list[_cur_idx]
-_cur_key = _cur_mo + '|' + str(_cur_yr)
+# El mes activo de ventas = cuota_mes (el mes que se está midiendo en 3.AR).
+_cur_key = cuota_mes + '|' + str(cuota_año)
 
 # Verificar si 6.Base tiene desglose real de categorías para el mes actual
 # (si todos los registros son "Alphacomm", extract_primemx.py aún no fue corregido)
@@ -298,12 +294,9 @@ else:
           f"(LG={lg_totals.get('lg_v',0)} Cases={lg_totals.get('cases_v',0)})")
 
 # ── 7b. PARCHAR MES ACTUAL CON DATOS DE 3.AR ──────────────────────────────
-# 6.Base puede tener datos incompletos para el mes en curso.
-# Se reemplaza total y by_region con la suma de ar_clean (fuente más confiable).
-cur_mo_idx = mo_list.index(cuota_mes) - 1
-cur_yr_patch = cuota_año if cur_mo_idx >= 0 else cuota_año - 1
-cur_mo_patch = mo_list[cur_mo_idx]
-cur_key = cur_mo_patch + '|' + str(cur_yr_patch)
+# 3.AR refleja las ventas del cuota_mes (mes en curso que se está midiendo).
+# Solo se reemplaza si 3.AR tiene más unidades que 6.Base (datos más completos).
+cur_key = cuota_mes + '|' + str(cuota_año)
 
 ar_total_cur = sum(r['alphacomm'] for r in ar_clean)
 ar_by_region = {}
@@ -311,15 +304,18 @@ for r in ar_clean:
     ar_by_region[r['region']] = ar_by_region.get(r['region'], 0) + r['alphacomm']
 
 if cur_key not in bm:
-    bm[cur_key] = {'mes': cur_mo_patch, 'año': cur_yr_patch,
+    bm[cur_key] = {'mes': cuota_mes, 'año': cuota_año,
                    'total': 0, 'by_region': {}, 'by_cat': {}, 'by_rc': {}}
     sorted_keys = sorted(bm.keys(), key=lambda k:(int(k.split('|')[1]), MO.get(k.split('|')[0],0)))
     base_data['sorted'] = sorted_keys
 
-old_total = bm[cur_key]['total']
-bm[cur_key]['total'] = ar_total_cur
-bm[cur_key]['by_region'] = ar_by_region
-print(f"Parche {cur_key}: {old_total} → {ar_total_cur} (fuente: 3.AR)")
+old_total = bm[cur_key].get('total', 0)
+if ar_total_cur > old_total:
+    bm[cur_key]['total'] = ar_total_cur
+    bm[cur_key]['by_region'] = ar_by_region
+    print(f"Parche {cur_key}: {old_total} → {ar_total_cur} (fuente: 3.AR)")
+else:
+    print(f"Sin parche {cur_key}: 6.Base={old_total} >= AR={ar_total_cur} (6.Base más completo)")
 
 # ── 8. EXPORTAR ───────────────────────────────────────────────────────────
 data = {
