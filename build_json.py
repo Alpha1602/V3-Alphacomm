@@ -248,7 +248,15 @@ if complete_keys:
     cuota_año = int(lyr) + (1 if idx == 11 else 0)
 else:
     cuota_mes, cuota_año = 'Aug', 2026
-print(f"Cuota mes detectado: {cuota_mes}|{cuota_año}")
+print(f"Cuota mes detectado (raw): {cuota_mes}|{cuota_año}")
+# No avanzar más allá del mes actual del calendario
+_today = datetime.date.today()
+_cur_mo = mo_list[_today.month - 1]
+_cur_yr = _today.year
+if cuota_año > _cur_yr or (cuota_año == _cur_yr and MO[cuota_mes] > _today.month):
+    cuota_mes, cuota_año = _cur_mo, _cur_yr
+    print(f"Ajustado al mes actual: {cuota_mes}|{cuota_año}")
+print(f"Cuota mes final: {cuota_mes}|{cuota_año}")
 
 # ── 7a. PARCHAR lg_tienda CON VENTAS REALES DE 6.BASE ─────────────────────
 # Las fórmulas SUMIFS de 4.Cuota LG-Cases pueden tener caché desactualizado.
