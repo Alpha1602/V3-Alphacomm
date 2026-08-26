@@ -44,7 +44,7 @@ print(f"📅 Fecha de corte: {cut_date.strftime('%d %b %Y')} → '{month_str}' {
 print("\n[1/5] Leyendo PrimeMX...")
 wb_pm = openpyxl.load_workbook(PRIMEMX, read_only=True, data_only=True)
 dt_data  = [r[:10] for r in wb_pm['Detalle por Tienda'].iter_rows(values_only=True, min_row=5) if r[0]]
-dcm_data = [r[:8]  for r in wb_pm['Detalle Completo Modelos'].iter_rows(values_only=True, min_row=5) if r[0]]
+dcm_data = [r[:9]  for r in wb_pm['Detalle Completo Modelos'].iter_rows(values_only=True, min_row=5) if r[0]]
 wb_pm.close()
 print(f"   {len(dt_data)} tiendas · {len(dcm_data)} líneas de modelos")
 
@@ -104,9 +104,9 @@ for r in dcm_data:
     gerente  = r[2]
     clave    = str(r[3]).strip() if r[3] else ''
     nombre   = r[4]
-    sku      = str(r[5]).strip() if len(r) > 5 and r[5] else ''
-    qty      = int(round(float(r[6]))) if len(r) > 6 and r[6] else 0
-    costo_u  = float(r[7]) if len(r) > 7 and r[7] else 0.0
+    sku      = str(r[6]).strip() if len(r) > 6 and r[6] else ''
+    qty      = int(round(float(r[7]))) if len(r) > 7 and r[7] else 0
+    costo_u  = float(r[8]) if len(r) > 8 and isinstance(r[8], (int, float)) else 0.0
     if not clave or qty <= 0:
         continue
     info  = sku_cat.get(sku, {})
@@ -121,7 +121,7 @@ for r in dcm_data:
                      cat, sub, clase, costo_u, round(qty * costo_u, 2), None))
 
 # Fallback: tiendas que están en DT pero sin detalle en DCM → agregar como Alphacomm
-dcm_claves = {str(r[3]).strip() for r in dcm_data if r[3] and (int(round(float(r[6]))) if len(r) > 6 and r[6] else 0) > 0}
+dcm_claves = {str(r[3]).strip() for r in dcm_data if r[3] and (int(round(float(r[7]))) if len(r) > 7 and r[7] else 0) > 0}
 for r in dt_data:
     clave = str(r[3]).strip() if r[3] else ''
     alphacomm = int(r[5] or 0) if r[5] else 0
