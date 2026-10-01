@@ -1042,14 +1042,19 @@ function rT4(){
   var totA=dataA.reduce(function(s,v){return s+v;},0);
   var totB=dataB.reduce(function(s,v){return s+v;},0);
   var bestA=Math.max.apply(null,dataA),bestB=Math.max.apply(null,dataB);
-  var bestMonth=ym[dataB.indexOf(Math.max.apply(null,dataB))]||ym[dataA.indexOf(Math.max.apply(null,dataA))];
+  /* Mejor mes: mes con valor más alto; si empate o B>A usa yB, si A>B usa yA con su mes correcto */
+  var allMax=Math.max(bestA,bestB);
+  var bestMonth=allMax===bestB
+    ? ym[dataB.indexOf(bestB)]
+    : ym[dataA.indexOf(bestA)];
+  var bestYr=allMax===bestB?yB:yA;
   var yoyDelta=totA?Math.round((totB-totA)/totA*1000)/10:null;
   var avgA=ym.length?Math.round(totA/ym.length):0,avgB=ym.length?Math.round(totB/ym.length):0;
   var k4h=kpi('Total '+yA,'blue',n(totA),'unidades');
   k4h+=kpi('Total '+yB,totB>=totA?'green':'red',n(totB),'unidades');
   k4h+=kpi('Prom. Mensual','',n(avgB),yB+' / mes');
   if(yoyDelta!==null)k4h+=kpi('Crec. '+yA+' → '+yB,yoyDelta>=0?'green':'red',(yoyDelta>=0?'+':'')+n(yoyDelta,1)+'%','año completo');
-  if(bestMonth)k4h+=kpi('Mejor Mes','purple',n(Math.max(bestA,bestB)),(MES_ES[bestMonth]||bestMonth));
+  if(bestMonth)k4h+=kpi('Mejor Mes','purple',n(allMax),(MES_ES[bestMonth]||bestMonth)+' '+bestYr);
   document.getElementById('k4').innerHTML=k4h;
   if(charts['cYoY'])charts['cYoY'].destroy();
   var ctx=document.getElementById('cYoY');
