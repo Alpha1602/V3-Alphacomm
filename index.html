@@ -24,7 +24,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:10px 20px
 .btn{background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
 .btn:hover{background:var(--acc);border-color:var(--acc);color:#fff}
 .btn svg{width:14px;height:14px;flex-shrink:0}
-.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;gap:2px;position:sticky;top:52px;z-index:99}
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--bd);padding:0 20px;gap:2px}
 .tab{padding:10px 18px;cursor:pointer;border-bottom:3px solid transparent;color:var(--tx2);font-size:13px;font-weight:500;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:8px}
 .tab .tab-ico{font-size:18px;line-height:1}
 .tab:hover{color:var(--tx)}
@@ -133,7 +133,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 
 <header>
   <div class="hdr-left">
-    <h1>📱 Dashboard Prime</h1>
+    <h1 id="dashTitle">📱 Dashboard Prime</h1>
     <span id="hdrSub">Datos: Cargando…</span>
   </div>
   <div class="hdr-btns">
@@ -187,7 +187,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
     <canvas id="cYoY" style="max-height:300px"></canvas>
   </div>
   <div class="sec-hdr" style="margin-top:16px"><h2>Detalle mensual</h2></div>
-  <div class="tbl-wrap" style="max-height:calc(100vh - 530px);overflow-y:auto" id="h4tbl"></div>
+  <div class="tbl-wrap" style="max-height:320px;overflow-y:auto" id="h4tbl"></div>
 </div>
 
 <!-- TAB 1: CUOTA DEL MES -->
@@ -252,8 +252,8 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   <div class="kpi-grid" id="k1"></div>
   <!-- Charts (solo mes actual) -->
   <div id="arChartsWrap" class="ar-charts">
-    <div class="chart-card"><h3>Alphacomm vs Proyección por Región</h3><canvas id="c1alpha"></canvas></div>
-    <div class="chart-card"><h3>Equipo por Región</h3><canvas id="c1equipo"></canvas></div>
+    <div class="chart-card"><h3 id="c1alphaTitle">Alphacomm vs Total Accesorios por Región</h3><canvas id="c1alpha"></canvas></div>
+    <div class="chart-card"><h3 id="c1equipoTitle">% Attach Rate por Región</h3><canvas id="c1equipo"></canvas></div>
   </div>
   <!-- Tabla de crecimiento mensual -->
   <div class="sec-hdr" style="margin-top:14px">
@@ -333,7 +333,7 @@ var MES_ES={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul
 var MONTHS12=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 /* ═══ STORE ═══ */
-var D={cuota_mes:null,cuota_año:null,cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[]};
+var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[]};
 var charts={};
 var activeTab=0;
 var srt={t0:{col:null,dir:-1},t1:{col:null,dir:-1},t2lg:{col:null,dir:-1},t2cs:{col:null,dir:-1}};
@@ -364,17 +364,20 @@ function autoLoad(){
   fetch('./data.json?v='+Date.now())
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(data){
-      D.cuota_mes=data.cuota_mes; D.cuota_año=data.cuota_año;
       D.cuota_jul=data.cuota_jul; D.ar_clean=data.ar_clean;
+      D.primemx_summary=data.primemx_summary||{}; D.ar_region=data.ar_region||[];
       D.lg_region=data.lg_region; D.lg_tienda=data.lg_tienda;
       D.lg_totals=data.lg_totals; D.cat_totals=data.cat_totals;
       D.regiones=data.regiones; D.proy_total=data.proy_total;
       D.oh_tienda=data.oh_tienda; D.oh_productos=data.oh_productos;
       D.oh_regiones=data.oh_regiones; D._rMap=data.rMap;
       D.base_data=data.base_data; D.base_regiones=data.base_regiones;
+      D.cuota_mes=data.cuota_mes||'Aug'; D.cuota_año=data.cuota_año||2026;
+      /* Título dinámico */
+      var tEl=document.getElementById('dashTitle');
+      if(tEl)tEl.textContent='📱 Dashboard Prime — '+(MES_ES[D.cuota_mes]||D.cuota_mes)+' '+D.cuota_año;
       var now=new Date();
-      var _genAt=data.generated_at?new Date(data.generated_at):now;
-      document.getElementById('hdrSub').textContent='Datos al '+_genAt.toLocaleDateString('es-MX')+' '+_genAt.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+      document.getElementById('hdrSub').textContent='Datos al '+now.toLocaleDateString('es-MX')+' '+now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
       initFilters();
       initHistorico();
       initCuotaFilter();
@@ -402,45 +405,34 @@ function initHistorico(){
 /* ═══ INIT CUOTA DEL MES CHIPS ═══ */
 function initCuotaFilter(){
   if(!D.base_data)return;
-  /* Hide MES filter — Pestaña 2 siempre muestra el período de cuota actual */
-  var f0mo=document.getElementById('f0mo');
-  if(f0mo){
-    f0mo.style.display='none';
-    var prev=f0mo.previousElementSibling; // label "Mes"
-    if(prev)prev.style.display='none';
-    var prev2=prev&&prev.previousElementSibling; // .filter-sep
-    if(prev2&&prev2.classList&&prev2.classList.contains('filter-sep'))prev2.style.display='none';
-  }
-  /* Only show cuota year chip — hide historical years from P2 filter */
-  var cuotaYr=String(D.cuota_año||2026);
+  var yearSet={};
+  D.base_data.sorted.forEach(function(k){yearSet[k.split('|')[1]]=1;});
+  var years=Object.keys(yearSet).sort();
+  var latestYr=years[years.length-1]||'2026';
   var g0yr=document.getElementById('f0yr');
   if(g0yr){
-    g0yr.setAttribute('data-val',cuotaYr);
-    g0yr.style.display='none';               // hide year filter too — P2 is always current period
-    var prevL=g0yr.previousElementSibling;
-    if(prevL)prevL.style.display='none';
+    g0yr.setAttribute('data-val',latestYr);
+    g0yr.innerHTML=years.map(function(y){
+      return '<div class="chip'+(y===latestYr?' active':'')+'" onclick="setChip(\'f0yr\',\''+y+'\',this)">'+y+'</div>';
+    }).join('');
   }
+  updateMonthChips(latestYr);
 }
 
 function initARFilter(){
   if(!D.base_data)return;
-  /* Siempre usar el mes actual — ocultar chips de año y mes en P3 */
-  var sorted=D.base_data.sorted;
-  var latestKey=sorted[sorted.length-1]||'Aug|2026';
-  var lp=latestKey.split('|');
-  var latestYr=lp[1],latestMo=lp[0];
-  function hideChipGroup(id){
-    var el=document.getElementById(id);
-    if(!el)return;
-    el.setAttribute('data-val',id==='f1yr'?latestYr:latestMo);
-    el.style.display='none';
-    var prev=el.previousElementSibling;
-    if(prev){prev.style.display='none';
-      var prev2=prev.previousElementSibling;
-      if(prev2&&prev2.classList&&prev2.classList.contains('filter-sep'))prev2.style.display='none';}
+  var yearSet={};
+  D.base_data.sorted.forEach(function(k){yearSet[k.split('|')[1]]=1;});
+  var years=Object.keys(yearSet).sort();
+  var latestYr=years[years.length-1]||'2026';
+  var g1yr=document.getElementById('f1yr');
+  if(g1yr){
+    g1yr.setAttribute('data-val',latestYr);
+    g1yr.innerHTML=years.map(function(y){
+      return '<div class="chip'+(y===latestYr?' active':'')+'" onclick="setChip(\'f1yr\',\''+y+'\',this)">'+y+'</div>';
+    }).join('');
   }
-  hideChipGroup('f1yr');
-  hideChipGroup('f1mo');
+  updateARMonthChips(latestYr);
 }
 
 function updateARMonthChips(yr){
@@ -449,7 +441,7 @@ function updateARMonthChips(yr){
     .filter(function(k){return k.split('|')[1]===yr;})
     .map(function(k){return k.split('|')[0];})
     .sort(function(a,b){return MONTHS12.indexOf(a)-MONTHS12.indexOf(b);});
-  var lastMo=mos[mos.length-1]||'Aug';
+  var lastMo=mos[mos.length-1]||'Sep';
   var g1mo=document.getElementById('f1mo');
   if(!g1mo)return;
   g1mo.setAttribute('data-val',lastMo);
@@ -458,21 +450,20 @@ function updateARMonthChips(yr){
   }).join('');
 }
 
-function updateMonthChips(yr,defaultMo){
+function updateMonthChips(yr){
   if(!D.base_data)return;
-  var cuotaMo=D.cuota_mes||'Sep';
-  var cuotaYr=String(D.cuota_año||2026);
-  var moSet={};
-  D.base_data.sorted.filter(function(k){return k.split('|')[1]===yr;})
-    .forEach(function(k){moSet[k.split('|')[0]]=1;});
-  if(yr===cuotaYr)moSet[cuotaMo]=1;
-  var mos=Object.keys(moSet).sort(function(a,b){return MONTHS12.indexOf(a)-MONTHS12.indexOf(b);});
-  var selMo=defaultMo||(yr===cuotaYr?cuotaMo:(mos[mos.length-1]||'Aug'));
+  var mos=D.base_data.sorted
+    .filter(function(k){return k.split('|')[1]===yr;})
+    .map(function(k){return k.split('|')[0];})
+    .sort(function(a,b){return MONTHS12.indexOf(a)-MONTHS12.indexOf(b);});
+  /* Default al mes de cuota si el año seleccionado coincide, sino el último disponible */
+  var defMo=(yr===String(D.cuota_año||2026))?(D.cuota_mes||mos[mos.length-1]):mos[mos.length-1];
+  if(!defMo)defMo=mos[mos.length-1]||'Aug';
   var g0mo=document.getElementById('f0mo');
   if(!g0mo)return;
-  g0mo.setAttribute('data-val',selMo);
+  g0mo.setAttribute('data-val',defMo);
   g0mo.innerHTML=mos.map(function(m){
-    return '<div class="chip'+(m===selMo?' active':'')+'" onclick="setChip(\'f0mo\',\''+m+'\',this)">'+(MES_ES[m]||m)+'</div>';
+    return '<div class="chip'+(m===defMo?' active':'')+'" onclick="setChip(\'f0mo\',\''+m+'\',this)">'+(MES_ES[m]||m)+'</div>';
   }).join('');
 }
 
@@ -530,20 +521,25 @@ function initFilters(){
 
 /* ═══ TAB 1: CUOTA DEL MES ═══ */
 function rT0(){
-  /* Siempre mostrar vista de cuota si hay datos disponibles */
+  var fYr=getChip('f0yr')||String(D.cuota_año||2026);
+  var fMo=getChip('f0mo')||(D.cuota_mes||'Aug');
+  var isCuotaMes=(fYr===String(D.cuota_año||2026)&&fMo===(D.cuota_mes||'Aug'));
+  /* Show/hide cuota-month-only controls */
   var riesSep=document.getElementById('f0riesSep');
   var riesLbl=document.getElementById('f0riesLbl');
   var riesGrp=document.getElementById('f0ries');
   var qSep=document.getElementById('f0qSep');
   var qInp=document.getElementById('f0q');
   var regBarsWrap=document.getElementById('regBarsWrap');
-  [riesSep,riesLbl,riesGrp,qSep,qInp].forEach(function(el){if(el)el.style.display='';});
-  if(regBarsWrap)regBarsWrap.style.display='';
-  var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display='';
-  rT0_Jul26();
+  [riesSep,riesLbl,riesGrp,qSep,qInp].forEach(function(el){if(el)el.style.display=isCuotaMes?'':'none';});
+  if(regBarsWrap)regBarsWrap.style.display=isCuotaMes?'':'none';
+  var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display=isCuotaMes?'':'none';
+  if(isCuotaMes){rT0_CuotaMes();}else{rT0_Month(fYr,fMo);}
 }
 
-function rT0_Jul26(){
+function rT0_CuotaMes(){
+  var cMo=D.cuota_mes||'Aug'; var cYr=String(D.cuota_año||2026);
+  var mesNm=(MES_ES[cMo]||cMo)+' '+cYr;
   var reg=getChip('f0reg');
   var ries=getChip('f0ries').toLowerCase();
   var q=(document.getElementById('f0q')||{}).value||'';q=q.toLowerCase();
@@ -558,30 +554,25 @@ function rT0_Jul26(){
   var totOH=rows.reduce(function(a,r){return a+r.oh_total;},0);
   var totFalt=rows.reduce(function(a,r){return a+r.faltante;},0);
   var totProy=rows.reduce(function(a,r){return a+r.proy;},0);
-  /* Ventas reales julio: base_data incluye todas las tiendas (no solo prime) */
-  var _cuMo=(D.cuota_mes||'Sep'),_cuYr=String(D.cuota_año||2026);
-  /* Mes real de datos = último mes disponible en base_data (puede diferir de cuota_mes) */
-  var _sorted=D.base_data&&D.base_data.sorted;
-  var _dataMo=_sorted&&_sorted.length?_sorted[_sorted.length-1].split('|')[0]:_cuMo;
-  var bJul=D.base_data&&D.base_data.byMonth[_dataMo+'|'+_cuYr];
-  var totVBase=bJul?(reg?(bJul.by_region[reg]||0):bJul.total):totV;
+  /* Ventas reales: base_data incluye todas las tiendas */
+  var bMes=D.base_data&&D.base_data.byMonth[cMo+'|'+cYr];
+  var totVBase=bMes?(reg?(bMes.by_region[reg]||0):bMes.total):totV;
+  /* Si no hay datos en base_data para el mes cuota, usar ventas de cuota_jul */
+  if(!totVBase)totVBase=totV;
   var alc=totC?Math.round(totVBase/totC*1000)/10:0;
   var cobOH=totVBase?Math.round(totOH/totVBase*1000)/10:0;
   var ac=alc>=100?'green':alc>=70?'yellow':'red';
-  var alcProy=totC?Math.round(totProy/totC*1000)/10:0;
-  var apc=alcProy>=100?'green':alcProy>=90?'yellow':'red';
   /* KPIs */
   document.getElementById('k0').innerHTML=
-    kpi('Cuota '+(MES_ES[_dataMo]||_dataMo)+' '+_cuYr,'',n(totC),'piezas accesorios')+
-    kpi('Ventas '+(MES_ES[_dataMo]||_dataMo),'blue',n(totVBase),'piezas vendidas')+
+    kpi('Cuota '+mesNm,'',n(totC),'piezas accesorios')+
+    kpi('Ventas '+mesNm,'blue',n(totVBase),'piezas vendidas')+
     kpi('Alcance Total',ac,alc+'%','vs cuota')+
     kpi('OH Inventario','',n(totOH),'piezas on-hand')+
     kpi('Cobertura OH','purple',cobOH+'%','OH vs ventas')+
     kpi('Faltante Cuota','red',n(totFalt),'piezas por alcanzar')+
-    kpi('Proyección Cierre','yellow',n(totProy),'')+
-    kpi('Alcance Proyección',apc,alcProy+'%','proy vs cuota');
+    kpi('Proyección Cierre','yellow',n(totProy),'');
   /* Chart titles */
-  var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas vs Cuota — '+(MES_ES[_dataMo]||_dataMo)+' '+_cuYr;
+  var ct=document.getElementById('c0regTitle');if(ct)ct.textContent='Ventas vs Cuota por Región — '+mesNm;
   var cot=document.getElementById('c0ohTitle');if(cot)cot.textContent='Inventario OH por Región';
   /* Charts — ventas de base_data (todas las tiendas), cuota y OH de prime */
   var regMap={};
@@ -591,9 +582,9 @@ function rT0_Jul26(){
     regMap[r.region].oh+=r.oh_total;
   });
   /* Parchear ventas por región desde base_data */
-  if(bJul&&bJul.by_region){
-    Object.keys(bJul.by_region).forEach(function(rg){
-      if(regMap[rg])regMap[rg].v=bJul.by_region[rg]||0;
+  if(bMes&&bMes.by_region){
+    Object.keys(bMes.by_region).forEach(function(rg){
+      if(regMap[rg])regMap[rg].v=bMes.by_region[rg]||0;
     });
   }
   var rK=Object.keys(regMap).sort();
@@ -617,21 +608,16 @@ function rT0_Jul26(){
   });
   document.getElementById('regBarsBody').innerHTML=barsHTML;
   /* Section header */
-  var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle Cuota '+(MES_ES[_cuMo]||_cuMo)+' '+_cuYr+' — Datos '+(MES_ES[_dataMo]||_dataMo);
+  var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle por Tienda — '+mesNm;
   /* Table */
-  /* OH category columns sorted by total sum desc */
-  var _ohDefs=[{k:'oh_cables',lb:'Cables'},{k:'oh_cases',lb:'Cases'},{k:'oh_chargers',lb:'Chargers'},{k:'oh_liquid',lb:'Liquid Glass'},{k:'oh_micas',lb:'Screen Prot.'}];
-  var ohCols=_ohDefs.sort(function(a,b){
-    var sa=rows.reduce(function(s,r){return s+r[a.k];},0);
-    var sb=rows.reduce(function(s,r){return s+r[b.k];},0);
-    return sb-sa;
-  });
   document.getElementById('t0cnt').textContent='Total: '+rows.length+' tiendas';
   document.getElementById('th0').innerHTML=
     th('t0','region','Región')+th('t0','sub_region','Sub-Región')+th('t0','tienda','Tienda')+
-    th('t0','cuota','Cuota',true)+th('t0','ventas','Ventas del mes',true)+
+    th('t0','cuota','Cuota',true)+th('t0','ventas','Ventas Jul',true)+
     th('t0','proy','Proy Cierre',true)+'<th>Alcance</th>'+
-    th('t0','oh_total','OH Total',true)+ohCols.map(function(c){return th('t0',c.k,c.lb,true);}).join('')+
+    th('t0','oh_total','OH Total',true)+th('t0','oh_cases','Cases',true)+
+    th('t0','oh_cables','Cables',true)+th('t0','oh_chargers','Chargers',true)+
+    th('t0','oh_liquid','Liquid Glass',true)+th('t0','oh_micas','Screen Prot.',true)+
     th('t0','resurtido','Resurtido',true)+th('t0','faltante','Faltante',true)+
     th('t0','riesgo','Riesgo');
   var totRow='<tr class="total-row"><td colspan="3"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
@@ -639,7 +625,11 @@ function rT0_Jul26(){
     '<td class="right yellow">'+n(totProy)+'</td>'+
     '<td>'+pb(alc)+'</td>'+
     '<td class="right">'+n(totOH)+'</td>'+
-    ohCols.map(function(c){return '<td class="right">'+n(rows.reduce(function(a,r){return a+r[c.k];},0))+'</td>';}).join('')+
+    '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_cases;},0))+'</td>'+
+    '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_cables;},0))+'</td>'+
+    '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_chargers;},0))+'</td>'+
+    '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_liquid;},0))+'</td>'+
+    '<td class="right">'+n(rows.reduce(function(a,r){return a+r.oh_micas;},0))+'</td>'+
     '<td class="right">'+n(rows.reduce(function(a,r){return a+r.resurtido;},0))+'</td>'+
     '<td class="right red">'+n(totFalt)+'</td><td></td></tr>';
   document.getElementById('tb0').innerHTML=totRow+sortRows(rows,'t0').map(function(r){
@@ -649,7 +639,9 @@ function rT0_Jul26(){
       '<td class="right">'+n(r.cuota)+'</td><td class="right">'+n(r.ventas)+'</td>'+
       '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.proy)+'</td>'+
       '<td>'+pb(a)+'</td>'+
-      '<td class="right">'+n(r.oh_total)+'</td>'+ohCols.map(function(c){return '<td class="right">'+n(r[c.k])+'</td>';}).join('')+
+      '<td class="right">'+n(r.oh_total)+'</td><td class="right">'+n(r.oh_cases)+'</td>'+
+      '<td class="right">'+n(r.oh_cables)+'</td><td class="right">'+n(r.oh_chargers)+'</td>'+
+      '<td class="right">'+n(r.oh_liquid)+'</td><td class="right">'+n(r.oh_micas)+'</td>'+
       '<td class="right">'+n(r.resurtido)+'</td><td class="right">'+n(r.faltante)+'</td>'+
       '<td class="'+rClr(r.riesgo)+'">'+r.riesgo+'</td></tr>';
   }).join('')||'<tr><td colspan="16" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
@@ -744,134 +736,156 @@ function rT0_Month(yr,mo){
   document.getElementById('tb0').innerHTML=totRow+rows_html;
 }
 
-/* ═══ TAB 2: ATTACH RATE Y PROTECCIÓN ═══ */
+/* ═══ TAB 2: ATTACH RATE Y PROTECCIÓN (PrimeMX) ═══ */
 function rT1(){
   var reg=getChip('f1reg');
+  var fYr=getChip('f1yr')||'2026';
+  var fMo=getChip('f1mo')||'Sep';
   var q=(document.getElementById('f1q')||{}).value||'';q=q.toLowerCase();
-  /* Always use current month (latest in base_data) — no manual chip selection */
-  var latestKey=D.base_data?D.base_data.sorted[D.base_data.sorted.length-1]:'Aug|2026';
-  var fYr=latestKey.split('|')[1]||'2026';
-  var fMo=latestKey.split('|')[0]||'Aug';
+  var latestKey=D.base_data?D.base_data.sorted[D.base_data.sorted.length-1]:'Sep|2026';
   var lp=latestKey.split('|');
   var isCurrentMonth=(fYr===lp[1]&&fMo===lp[0]);
   var mesNm=(MES_ES[fMo]||fMo)+' '+fYr;
-  /* AR data (always from ar_clean = current period) */
-  /* Build proy lookup from cuota_jul (when ar_clean.proy is 0 due to uncached formulas) */
-  var _proyCuota={};
-  (D.cuota_jul||[]).forEach(function(c){if(c.proy)_proyCuota[c.clave]=c.proy;});
-  var rows=D.ar_clean.filter(function(r){
-    if(reg&&r.region!==reg)return false;
-    if(q&&!r.tienda.toLowerCase().includes(q)&&!r.gerente.toLowerCase().includes(q)&&!r.clave.toLowerCase().includes(q))return false;
-    return true;
-  }).map(function(r){
-    /* Use cuota_jul proy as fallback when ar_clean.proy is 0 */
-    return (!r.proy && _proyCuota[r.clave]) ? Object.assign({},r,{proy:_proyCuota[r.clave]}) : r;
-  });
-  var totA=rows.reduce(function(a,r){return a+r.alphacomm;},0);
-  var totE=rows.reduce(function(a,r){return a+r.equipo;},0);
-  var totP=rows.reduce(function(a,r){return a+r.proy;},0);
-  var arPct=totE?Math.round(totA/totE*1000)/10:0;
-  var arcls=arPct>=100?'green':arPct>=70?'yellow':'red';
-  /* MoM / YoY from base_data for selected month */
+  var pm=D.primemx_summary||{};
+
+  /* Base data helper (para trend y YoY/MoM) */
   function getBaseV(key){
     if(!D.base_data)return 0;
     var m=D.base_data.byMonth[key];if(!m)return 0;
-    return reg?(m.by_region[reg]||0):m.total;
+    /* Para meses históricos el filtro de región usa nombres históricos */
+    if(reg){
+      /* Mapeo PrimeMX reg → histórico */
+      var histReg={'BAJIO':'BAJIO-NORTE 2','NORTE 2':'BAJIO-NORTE 2'}[reg]||reg;
+      return m.by_region[histReg]||m.by_region[reg]||0;
+    }
+    return m.total;
   }
   var curKey=fMo+'|'+fYr;
   var pyYr=String(parseInt(fYr)-1);
   var moIdx=MONTHS12.indexOf(fMo);
   var prevMo=moIdx>0?MONTHS12[moIdx-1]:'Dec';
   var prevYr=moIdx>0?fYr:String(parseInt(fYr)-1);
-  var curV=getBaseV(curKey),pyV=getBaseV(fMo+'|'+pyYr),pmV=getBaseV(prevMo+'|'+prevYr);
+  var curV=getBaseV(curKey),pyV=getBaseV(fMo+'|'+pyYr),pmV2=getBaseV(prevMo+'|'+prevYr);
   var yoyD=pyV?Math.round((curV-pyV)/pyV*1000)/10:null;
-  var momD=pmV?Math.round((curV-pmV)/pmV*1000)/10:null;
-  /* KPIs */
+  var momD=pmV2?Math.round((curV-pmV2)/pmV2*1000)/10:null;
+
+  /* ── KPIs ── */
   var kpis='';
-  kpis+=kpi('Attach Rate',arcls,n(arPct,1)+'%','accesorios / dispositivo');
-  if(yoyD!==null)kpis+=kpi('Crec. YoY',yoyD>=0?'green':'red',(yoyD>=0?'+':'')+n(yoyD,1)+'%',mesNm+' vs '+fMo+' '+pyYr);
-  if(momD!==null)kpis+=kpi('Crec. MoM',momD>=0?'green':'red',(momD>=0?'+':'')+n(momD,1)+'%',mesNm+' vs '+(MES_ES[prevMo]||prevMo)+' '+prevYr);
   if(isCurrentMonth){
-    kpis+=kpi('Alphacomm','blue',n(totA),'accesorios período');
-    kpis+=kpi('Equipo','',n(totE),'dispositivos período');
-    kpis+=kpi('Proyección Cierre','yellow',n(totP),'pzs estimadas');
+    /* Datos PrimeMX del período actual */
+    var pctA=reg?(function(){var rr=D.ar_region.find(function(x){return x.region===reg;});return rr?rr.pct_alpha:pm.pct_alpha||0;})():pm.pct_alpha||0;
+    var arR=reg?(function(){var rr=D.ar_region.find(function(x){return x.region===reg;});return rr?rr.ar_ratio:pm.ar_ratio||0;})():pm.ar_ratio||0;
+    var pctCls=pctA>=90?'green':pctA>=80?'yellow':'red';
+    kpis+=kpi('% Alpha del Total',pctCls,n(pctA,1)+'%','Alphacomm / total accesorios');
+    kpis+=kpi('Alphacomm/Equipo','purple',n(arR*100,0)+'%','accesorios por dispositivo');
+    if(yoyD!==null)kpis+=kpi('Crec. YoY',yoyD>=0?'green':'red',(yoyD>=0?'+':'')+n(yoyD,1)+'%',mesNm+' vs Sep '+pyYr);
+    if(momD!==null)kpis+=kpi('Crec. MoM',momD>=0?'green':'red',(momD>=0?'+':'')+n(momD,1)+'%',mesNm+' vs '+(MES_ES[prevMo]||prevMo)+' '+prevYr);
+    var totAlpha=reg?(function(){var rr=D.ar_region.find(function(x){return x.region===reg;});return rr?rr.alphacomm:pm.alpha_units||0;})():pm.alpha_units||0;
+    var totAcc=reg?(function(){var rr=D.ar_region.find(function(x){return x.region===reg;});return rr?rr.total_acc:pm.total_acc||0;})():pm.total_acc||0;
+    var totEq=reg?(function(){var rr=D.ar_region.find(function(x){return x.region===reg;});return rr?rr.equipo:pm.equipo||0;})():pm.equipo||0;
+    kpis+=kpi('Ventas Alphacomm','blue',n(totAlpha),'uds · '+mesNm);
+    kpis+=kpi('Total Accesorios','',n(totAcc),'todas las marcas');
+    kpis+=kpi('Venta de Equipo','',n(totEq),'dispositivos');
+    if(!reg)kpis+=kpi('PDVs con Venta','green',n(pm.pdvs_con||0),(pm.pdvs_sin||0)+' sin venta');
+    kpis+=kpi('Período','',pm.periodo||mesNm,'corte PrimeMX');
   } else {
-    kpis+=kpi('Ventas '+mesNm,'blue',n(curV),'uds accesorios (base)');
+    /* Mes histórico */
+    kpis+=kpi('Ventas Alphacomm','blue',n(curV),'uds · '+mesNm);
+    if(yoyD!==null)kpis+=kpi('Crec. YoY',yoyD>=0?'green':'red',(yoyD>=0?'+':'')+n(yoyD,1)+'%',mesNm+' vs '+fMo+' '+pyYr);
+    if(momD!==null)kpis+=kpi('Crec. MoM',momD>=0?'green':'red',(momD>=0?'+':'')+n(momD,1)+'%',mesNm+' vs '+(MES_ES[prevMo]||prevMo)+' '+prevYr);
   }
-  kpis+=kpi('Tiendas','',rows.length,'activas');
   document.getElementById('k1').innerHTML=kpis;
-  /* Charts: only for current month */
+
+  /* ── Gráficas: solo mes actual ── */
   var chartsWrap=document.getElementById('arChartsWrap');
   if(chartsWrap)chartsWrap.style.display=isCurrentMonth?'':'none';
   if(isCurrentMonth){
-    var regMap={};
-    rows.forEach(function(r){if(!regMap[r.region])regMap[r.region]={a:0,e:0,p:0};regMap[r.region].a+=r.alphacomm;regMap[r.region].e+=r.equipo;regMap[r.region].p+=r.proy;});
-    var rK=Object.keys(regMap).sort();
+    var src=(reg?D.ar_region.filter(function(x){return x.region===reg;}):D.ar_region).sort(function(a,b){return a.region.localeCompare(b.region);});
+    var rK=src.map(function(x){return x.region;});
     var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
     mkChart('c1alpha','bar',rK,[
-      {label:'Alphacomm',data:rK.map(function(k){return regMap[k].a;}),backgroundColor:'#6c63ff',borderRadius:3},
-      {label:'Proyección',data:rK.map(function(k){return regMap[k].p;}),backgroundColor:'rgba(234,179,8,.3)',borderRadius:3,borderColor:'#eab308',borderWidth:1}
+      {label:'Alphacomm',data:src.map(function(x){return x.alphacomm;}),backgroundColor:'#6c63ff',borderRadius:3},
+      {label:'Total Acc',data:src.map(function(x){return x.total_acc;}),backgroundColor:'rgba(160,160,184,.2)',borderRadius:3,borderColor:'#a0a0b8',borderWidth:1}
     ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
     mkChart('c1equipo','bar',rK,[
-      {label:'Equipo',data:rK.map(function(k){return regMap[k].e;}),backgroundColor:rK.map(function(k,i){return PAL[i%PAL.length];}),borderRadius:4}
-    ],{scales:{x:axO,y:axO},plugins:{legend:{display:false}}});
+      {label:'% Alpha',data:src.map(function(x){return x.pct_alpha;}),backgroundColor:src.map(function(x){return x.pct_alpha>=90?'#22c55e':x.pct_alpha>=80?'#eab308':'#ef4444';}),borderRadius:4}
+    ],{scales:{x:axO,y:{...axO,min:0,max:100,ticks:{...axO.ticks,callback:function(v){return v+'%';}}}},
+       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.y+'%';}}}}});
   }
-  /* Monthly trend table */
+
+  /* ── Tabla tendencia mensual ── */
   if(D.base_data){
     var hdr=document.getElementById('arTrendHdr');
-    if(hdr)hdr.textContent='Tendencia '+fYr+' — Crecimiento MoM y YoY vs '+pyYr;
+    if(hdr)hdr.textContent='Tendencia Alphacomm '+fYr+' — MoM y YoY vs '+pyYr;
     var months=D.base_data.sorted.filter(function(k){return k.split('|')[1]===fYr;})
       .sort(function(a,b){return MONTHS12.indexOf(a.split('|')[0])-MONTHS12.indexOf(b.split('|')[0]);});
     var tbl='<table><thead><tr>'+
       '<th>Mes</th>'+
-      '<th class="right">Ventas '+fYr+'</th>'+
+      '<th class="right">Alphacomm '+fYr+'</th>'+
       '<th class="right">Mes Anterior</th>'+
       '<th class="right">% MoM</th>'+
       '<th class="right">'+pyYr+'</th>'+
       '<th class="right">% YoY</th>'+
       '</tr></thead><tbody>';
     months.forEach(function(k){
-      var p=k.split('|');var mo=p[0];
+      var mo=k.split('|')[0];
       var v=getBaseV(k);
       var miIdx=MONTHS12.indexOf(mo);
-      var pm2=miIdx>0?MONTHS12[miIdx-1]:'Dec';var py2=miIdx>0?fYr:String(parseInt(fYr)-1);
-      var pmV2=getBaseV(pm2+'|'+py2);
-      var pyV2=getBaseV(mo+'|'+pyYr);
-      var mom=pmV2?Math.round((v-pmV2)/pmV2*1000)/10:null;
-      var yoy=pyV2?Math.round((v-pyV2)/pyV2*1000)/10:null;
+      var pm3=miIdx>0?MONTHS12[miIdx-1]:'Dec';var py3=miIdx>0?fYr:String(parseInt(fYr)-1);
+      var pmV3=getBaseV(pm3+'|'+py3);
+      var pyV3=getBaseV(mo+'|'+pyYr);
+      var mom3=pmV3?Math.round((v-pmV3)/pmV3*1000)/10:null;
+      var yoy3=pyV3?Math.round((v-pyV3)/pyV3*1000)/10:null;
       var isSel=(mo===fMo);
       tbl+='<tr style="'+(isSel?'background:rgba(108,99,255,.15)':'')+'">';
-      tbl+='<td style="font-weight:'+(isSel?'700':'600')+'">'+( MES_ES[mo]||mo)+'</td>';
+      tbl+='<td style="font-weight:'+(isSel?'700':'600')+'">'+(MES_ES[mo]||mo)+'</td>';
       tbl+='<td class="right"'+(isSel?' style="font-weight:700"':'')+'>'+n(v)+'</td>';
-      tbl+='<td class="right" style="color:var(--tx2)">'+n(pmV2)+'</td>';
-      tbl+='<td class="right '+(mom!==null&&mom>=0?'delta-pos':'delta-neg')+'">'+
-        (mom!==null?(mom>=0?'+':'')+n(mom,1)+'%':'—')+'</td>';
-      tbl+='<td class="right" style="color:var(--tx2)">'+n(pyV2)+'</td>';
-      tbl+='<td class="right '+(yoy!==null&&yoy>=0?'delta-pos':'delta-neg')+'">'+
-        (yoy!==null?(yoy>=0?'+':'')+n(yoy,1)+'%':'—')+'</td>';
+      tbl+='<td class="right" style="color:var(--tx2)">'+n(pmV3)+'</td>';
+      tbl+='<td class="right '+(mom3!==null&&mom3>=0?'delta-pos':'delta-neg')+'">'+(mom3!==null?(mom3>=0?'+':'')+n(mom3,1)+'%':'—')+'</td>';
+      tbl+='<td class="right" style="color:var(--tx2)">'+n(pyV3)+'</td>';
+      tbl+='<td class="right '+(yoy3!==null&&yoy3>=0?'delta-pos':'delta-neg')+'">'+(yoy3!==null?(yoy3>=0?'+':'')+n(yoy3,1)+'%':'—')+'</td>';
       tbl+='</tr>';
     });
     tbl+='</tbody></table>';
     document.getElementById('arMonthlyTbl').innerHTML=tbl;
   }
-  /* Tienda detail: only current month */
+
+  /* ── Detalle por tienda (solo mes actual) ── */
   var tSection=document.getElementById('arTiendaSection');
   if(tSection)tSection.style.display=isCurrentMonth?'':'none';
   if(isCurrentMonth){
-    document.getElementById('t1cnt').textContent='Total: '+rows.length+' tiendas';
+    var rows=D.ar_clean.filter(function(r){
+      if(reg&&r.region!==reg)return false;
+      if(q&&!r.tienda.toLowerCase().includes(q)&&!r.clave.toLowerCase().includes(q))return false;
+      return true;
+    });
+    var totA2=rows.reduce(function(a,r){return a+r.alphacomm;},0);
+    var totAcc2=rows.reduce(function(a,r){return a+r.total_acc;},0);
+    var totE2=rows.reduce(function(a,r){return a+r.equipo;},0);
+    var totPct=totAcc2?Math.round(totA2/totAcc2*1000)/10:0;
+    var totAR=totE2?Math.round(totA2/totE2*1000)/10:0;
+    document.getElementById('t1cnt').textContent='Total: '+rows.length+' tiendas | '+pm.periodo;
     document.getElementById('th1').innerHTML=
-      th('t1','region','Región')+th('t1','gerente','Gerente')+th('t1','clave','Clave')+th('t1','tienda','Tienda')+
-      th('t1','alphacomm','Alphacomm',true)+th('t1','equipo','Equipo',true)+th('t1','proy','Proy Cierre',true);
-    var totRow1='<tr class="total-row"><td colspan="4"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
-      '<td class="right blue">'+n(totA)+'</td><td class="right">'+n(totE)+'</td>'+
-      '<td class="right yellow">'+n(totP)+'</td></tr>';
+      th('t1','region','Región')+th('t1','clave','Clave')+th('t1','tienda','Tienda')+
+      th('t1','alphacomm','Alphacomm',true)+th('t1','total_acc','Total Acc',true)+
+      th('t1','pct_alpha','% Alpha',true)+th('t1','equipo','Equipo',true)+th('t1','ar_ratio','Alpha/Eq',true);
+    var pctCls2=totPct>=90?'var(--green)':totPct>=80?'var(--yellow)':'var(--red)';
+    var totRow1='<tr class="total-row"><td colspan="3"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
+      '<td class="right blue">'+n(totA2)+'</td>'+
+      '<td class="right">'+n(totAcc2)+'</td>'+
+      '<td class="right" style="color:'+pctCls2+';font-weight:700">'+n(totPct,1)+'%</td>'+
+      '<td class="right">'+n(totE2)+'</td>'+
+      '<td class="right" style="color:var(--acc2)">'+n(totAR,2)+'</td></tr>';
     document.getElementById('tb1').innerHTML=totRow1+sortRows(rows,'t1').map(function(r){
-      var pC=r.proy>0?(r.alphacomm>=r.proy?'var(--green)':r.alphacomm>=r.proy*.7?'var(--yellow)':'var(--red)'):'var(--tx2)';
-      return '<tr><td>'+r.region+'</td><td>'+r.gerente+'</td><td>'+r.clave+'</td><td>'+r.tienda+'</td>'+
+      var pC=r.pct_alpha>=90?'var(--green)':r.pct_alpha>=80?'var(--yellow)':'var(--red)';
+      return '<tr>'+
+        '<td>'+r.region+'</td><td>'+r.clave+'</td><td>'+r.tienda+'</td>'+
         '<td class="right" style="color:var(--blue);font-weight:600">'+n(r.alphacomm)+'</td>'+
+        '<td class="right">'+n(r.total_acc)+'</td>'+
+        '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.pct_alpha,1)+'%</td>'+
         '<td class="right">'+n(r.equipo)+'</td>'+
-        '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.proy)+'</td></tr>';
-    }).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
+        '<td class="right" style="color:var(--acc2)">'+n(r.ar_ratio,2)+'</td></tr>';
+    }).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
   }
 }
 
@@ -955,61 +969,51 @@ function renderMatrix(){
   var fReg=getChip('f3reg');
   var q=(document.getElementById('f3q').value||'').toLowerCase();
   var regs=fReg?[fReg]:(D.oh_regiones||D.regiones);
-  /* Use oh_productos — one row per unique SKU, names from Data items */
-  var prods=(D.oh_productos||[]).filter(function(p){
-    if(fCat&&p.categoria!==fCat)return false;
-    if(q&&!p.producto.toLowerCase().includes(q)&&
-          !p.sub_categoria.toLowerCase().includes(q)&&
-          !p.clase.toLowerCase().includes(q)&&
-          !(p.codigo||'').toLowerCase().includes(q))return false;
+  var rows=Object.values(D._rMap||{}).filter(function(r){
+    if(fCat&&r.categoria!==fCat)return false;
     return true;
   });
-  if(!prods.length){document.getElementById('pivot').innerHTML='<p style="color:var(--tx2);padding:20px">Sin datos</p>';return;}
-  /* Group by sub_categoria (descriptive from Data items) */
-  var tree={};
-  prods.forEach(function(p){
-    var sub=p.sub_categoria;
-    if(!tree[sub])tree[sub]={total:0,by_region:{},clase:p.clase,categoria:p.categoria,productos:[]};
-    tree[sub].total+=p.cantidad;
-    tree[sub].productos.push(p);
-    regs.forEach(function(rg){
-      tree[sub].by_region[rg]=(tree[sub].by_region[rg]||0)+(p.by_region[rg]||0);
+  if(q){
+    var matchPks={};
+    D.oh_productos.forEach(function(p){
+      if(fCat&&p.categoria!==fCat)return;
+      if(p.producto.toLowerCase().includes(q)||p.sub_categoria.toLowerCase().includes(q)){
+        var sk=p.sub_categoria+'|'+p.clase+'|'+p.categoria;matchPks[sk]=true;
+      }
     });
+    rows=rows.filter(function(r){return matchPks[r.sub_categoria+'|'+r.clase+'|'+r.categoria];});
+  }
+  if(!rows.length){document.getElementById('pivot').innerHTML='<p style="color:var(--tx2);padding:20px">Sin datos</p>';return;}
+  var tree={};
+  rows.forEach(function(r){
+    var sub=r.sub_categoria,cla=r.clase;
+    if(!tree[sub])tree[sub]={total:0,clases:{}};
+    if(!tree[sub].clases[cla])tree[sub].clases[cla]={total:0,by_region:{}};
+    tree[sub].clases[cla].total+=r.cantidad;
+    tree[sub].total+=r.cantidad;
+    regs.forEach(function(rg){tree[sub].clases[cla].by_region[rg]=(tree[sub].clases[cla].by_region[rg]||0)+(r.by_region[rg]||0);
+      if(!tree[sub].by_region)tree[sub].by_region={};
+      tree[sub].by_region[rg]=(tree[sub].by_region[rg]||0)+(r.by_region[rg]||0);});
   });
-  var grand=prods.reduce(function(a,p){return a+p.cantidad;},0);
+  var grand=Object.values(tree).reduce(function(a,v){return a+v.total;},0);
   var subKeys=Object.keys(tree).sort(function(a,b){return tree[b].total-tree[a].total;});
   var html='<div class="tbl-wrap" style="max-height:calc(100vh - 430px);overflow-y:auto"><table>';
-  html+='<thead><tr>';
-  html+='<th style="min-width:110px;color:var(--tx2);font-family:monospace">SKU</th>';
-  html+='<th style="min-width:190px">Producto</th>';
-  html+='<th style="min-width:80px">Clase</th>';
-  regs.forEach(function(rg){html+='<th class="right" style="min-width:72px">'+rg+'</th>';});
-  html+='<th class="right" style="min-width:65px">TOTAL</th></tr></thead><tbody>';
-  html+='<tr class="total-row"><td colspan="3"><strong>TOTAL</strong></td>';
-  regs.forEach(function(rg){
-    var t=prods.reduce(function(a,p){return a+(p.by_region[rg]||0);},0);
-    html+='<td class="right">'+n(t)+'</td>';
-  });
+  html+='<thead><tr><th style="min-width:140px">Sub Categoría</th><th style="min-width:110px">Clase</th>';
+  regs.forEach(function(rg){html+='<th class="right" style="min-width:80px">'+rg+'</th>';});
+  html+='<th class="right" style="min-width:70px">TOTAL</th></tr></thead><tbody>';
+  html+='<tr class="total-row"><td colspan="2"><strong>TOTAL</strong></td>';
+  regs.forEach(function(rg){var t=rows.reduce(function(a,r){return a+(r.by_region[rg]||0);},0);html+='<td class="right">'+n(t)+'</td>';});
   html+='<td class="right" style="color:var(--acc2)">'+n(grand)+'</td></tr>';
   subKeys.forEach(function(sub){
     var sg=tree[sub];
-    html+='<tr style="background:var(--bg3)">';
-    html+='<td style="font-weight:700;color:var(--acc);font-size:11px;font-family:monospace">'+sub+'</td>';
-    html+='<td style="font-weight:700;color:var(--tx)">'+sub+'</td>';
-    html+='<td style="color:var(--tx2);font-size:11px">'+sg.productos.length+' producto'+(sg.productos.length!==1?'s':'')+'</td>';
-    regs.forEach(function(rg){html+='<td class="right" style="font-weight:700">'+n(sg.by_region[rg]||0)+'</td>';});
+    html+='<tr style="background:var(--bg3)"><td style="font-weight:700;color:var(--tx)">'+sub+'</td><td style="color:var(--tx2);font-size:11px">'+Object.keys(sg.clases).length+' clases</td>';
+    regs.forEach(function(rg){html+='<td class="right" style="font-weight:700">'+n(sg.by_region&&sg.by_region[rg]||0)+'</td>';});
     html+='<td class="right" style="font-weight:700;color:var(--acc2)">'+n(sg.total)+'</td></tr>';
-    sg.productos.slice().sort(function(a,b){return b.cantidad-a.cantidad;}).forEach(function(p){
-      var nm=p.producto.replace(/^Quikcell\s*/i,'').replace(/^Q\s*/i,'');
-      html+='<tr>';
-      html+='<td style="color:var(--tx2);font-size:10px;font-family:monospace;padding-left:14px">'+(p.codigo||'—')+'</td>';
-      html+='<td style="color:var(--tx);font-size:11px" title="'+p.producto+'">'+nm+'</td>';
-      html+='<td style="color:var(--acc);font-size:11px">'+p.clase+'</td>';
-      regs.forEach(function(rg){
-        var v=p.by_region[rg]||0;
-        html+='<td class="right" style="color:'+(v>0?'var(--tx)':'var(--tx2)')+';font-size:12px">'+n(v)+'</td>';
-      });
-      html+='<td class="right" style="color:var(--acc2)">'+n(p.cantidad)+'</td></tr>';
+    Object.keys(sg.clases).sort(function(a,b){return sg.clases[b].total-sg.clases[a].total;}).forEach(function(cla){
+      var kg=sg.clases[cla];
+      html+='<tr><td style="padding-left:16px;color:var(--tx2);font-size:11px"></td><td style="color:var(--tx);padding-left:10px">'+cla+'</td>';
+      regs.forEach(function(rg){var v=kg.by_region[rg]||0;html+='<td class="right" style="color:'+(v>0?'var(--tx)':'var(--tx2)')+'">'+n(v)+'</td>';});
+      html+='<td class="right" style="color:var(--acc2)">'+n(kg.total)+'</td></tr>';
     });
   });
   html+='</tbody></table></div>';
@@ -1040,9 +1044,7 @@ function rT4(){
   var bestA=Math.max.apply(null,dataA),bestB=Math.max.apply(null,dataB);
   var bestMonth=ym[dataB.indexOf(Math.max.apply(null,dataB))]||ym[dataA.indexOf(Math.max.apply(null,dataA))];
   var yoyDelta=totA?Math.round((totB-totA)/totA*1000)/10:null;
-  var ymWithB=ym.filter(function(m){return dB[m]>0;});
-  var avgDen=ymWithB.length||ym.length;
-  var avgA=avgDen?Math.round(totA/avgDen):0,avgB=avgDen?Math.round(totB/avgDen):0;
+  var avgA=ym.length?Math.round(totA/ym.length):0,avgB=ym.length?Math.round(totB/ym.length):0;
   var k4h=kpi('Total '+yA,'blue',n(totA),'unidades');
   k4h+=kpi('Total '+yB,totB>=totA?'green':'red',n(totB),'unidades');
   k4h+=kpi('Prom. Mensual','',n(avgB),yB+' / mes');
@@ -1093,50 +1095,29 @@ function rT4(){
       }]
     });
   }
-  /* Category columns for yB breakdown */
-  var catCols=['Cables','Cases iPhone','Charger','Liquid','Micas','Accesories'];
-  /* Filter to only cats with any data */
-  var activeCats=catCols.filter(function(cat){
-    return ym.some(function(m){var mo=bd.byMonth[m+'|'+yB];return mo&&(mo.by_cat||{})[cat]>0;});
-  }).sort(function(a,b){
-    var sa=ym.reduce(function(s,m){var mo=bd.byMonth[m+'|'+yB];return s+((mo&&(mo.by_cat||{})[a])||0);},0);
-    var sb=ym.reduce(function(s,m){var mo=bd.byMonth[m+'|'+yB];return s+((mo&&(mo.by_cat||{})[b])||0);},0);
-    return sb-sa;
-  });
   var tbl='<table><thead><tr>';
   tbl+='<th>Mes</th>';
   tbl+='<th class="right" style="color:rgba(59,130,246,.8)">'+yA+'</th>';
   tbl+='<th class="right" style="color:rgba(34,197,94,.8)">'+yB+'</th>';
-  tbl+='<th class="right">Δ Uds</th><th class="right">% YoY</th>';
-  activeCats.forEach(function(cat){tbl+='<th class="right" style="color:var(--tx2);font-size:11px">'+cat+'</th>';});
+  tbl+='<th class="right">Δ Uds</th><th class="right">% Cambio</th>';
   tbl+='</tr></thead><tbody>';
   var tD=totB-totA,tP=totA?Math.round(tD/totA*1000)/10:null,tCls=tD>=0?'delta-pos':'delta-neg';
-  /* Total row: sum category totals across all months in yB */
   tbl+='<tr class="total-row">';
   tbl+='<td><strong>TOTAL</strong></td>';
   tbl+='<td class="right blue">'+n(totA)+'</td>';
   tbl+='<td class="right green">'+n(totB)+'</td>';
   tbl+='<td class="right '+tCls+'">'+(tD>=0?'+':'')+n(tD)+'</td>';
   tbl+='<td class="right '+tCls+'">'+(tP!==null?(tP>=0?'+':'')+n(tP,1)+'%':'—')+'</td>';
-  activeCats.forEach(function(cat){
-    var catTot=ym.reduce(function(s,m){var mo=bd.byMonth[m+'|'+yB];return s+((mo&&(mo.by_cat||{})[cat])||0);},0);
-    tbl+='<td class="right" style="font-size:12px">'+n(catTot)+'</td>';
-  });
   tbl+='</tr>';
   ym.forEach(function(m,i){
     var a=dataA[i]||0,b=dataB[i]||0,d=b-a;
     var p=a?Math.round(d/a*1000)/10:null,cls=d>=0?'delta-pos':'delta-neg';
-    var moB=bd.byMonth[m+'|'+yB];
     tbl+='<tr>';
     tbl+='<td style="font-weight:600">'+(MES_ES[m]||m)+'</td>';
     tbl+='<td class="right">'+n(a)+'</td>';
     tbl+='<td class="right">'+n(b)+'</td>';
     tbl+='<td class="right '+cls+'">'+(d>=0?'+':'')+n(d)+'</td>';
     tbl+='<td class="right '+cls+'">'+(p!==null?(p>=0?'+':'')+n(p,1)+'%':'—')+'</td>';
-    activeCats.forEach(function(cat){
-      var v=(moB&&(moB.by_cat||{})[cat])||0;
-      tbl+='<td class="right" style="color:'+(v>0?'var(--tx)':'var(--tx2)')+';font-size:12px">'+n(v)+'</td>';
-    });
     tbl+='</tr>';
   });
   tbl+='</tbody></table>';
@@ -1182,7 +1163,7 @@ function exportXLSX(){
     ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Vista_General.xlsx';
   }else if(activeTab===1){
     /* Cuota del Mes */
-    var hd=['Región','Sub-Región','Clave','Tienda','Cuota','Ventas '+(D.cuota_mes||'Mes'),'Proy Cierre','Alcance%','OH Total','Cases OH','Cables OH','Chargers OH','Liquid OH','Micas OH','Resurtido','Faltante','Riesgo'];
+    var hd=['Región','Sub-Región','Clave','Tienda','Cuota','Ventas Jul','Proy Cierre','Alcance%','OH Total','Cases OH','Cables OH','Chargers OH','Liquid OH','Micas OH','Resurtido','Faltante','Riesgo'];
     var data=D.cuota_jul.map(function(r){return[r.region,r.sub_region,r.clave,r.tienda,r.cuota,r.ventas,r.proy,r.alcance,r.oh_total,r.oh_cases,r.oh_cables,r.oh_chargers,r.oh_liquid,r.oh_micas,r.resurtido,r.faltante,r.riesgo];});
     ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cuota_Mes.xlsx';
   }else if(activeTab===2){
