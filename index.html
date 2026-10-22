@@ -159,7 +159,8 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   <div class="tab active" onclick="switchTab(0)"><span class="tab-ico">📊</span> 2025 vs 2026</div>
   <div class="tab" onclick="switchTab(1)"><span class="tab-ico">📋</span> Cuota del Mes</div>
   <div class="tab" onclick="switchTab(2)"><span class="tab-ico">📈</span> Attach Rate y Protección</div>
-  <div class="tab" onclick="switchTab(3)"><span class="tab-ico">📦</span> Inventario</div>
+  <div class="tab" onclick="switchTab(3)"><span class="tab-ico">🧩</span> Share por Categoría</div>
+  <div class="tab" onclick="switchTab(4)"><span class="tab-ico">📦</span> Inventario</div>
 </div>
 
 <!-- TAB 0: VISTA GENERAL (Histórico YoY) -->
@@ -247,13 +248,9 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   </div>
   <!-- KPIs -->
   <div class="kpi-grid" id="k1"></div>
-  <!-- Gráficas región (solo mes actual) -->
+  <!-- Attach Rate por región + ranking -->
   <div id="arChartsWrap" class="ar-charts">
-    <div class="chart-card"><h3 id="c1equipoTitle">Attach Rate por Región</h3><canvas id="c1equipo"></canvas></div>
-    <div class="chart-card"><h3 id="c1alphaTitle">Alphacomm vs Equipos por Región</h3><canvas id="c1alpha"></canvas></div>
-  </div>
-  <div id="arInsights" class="ar-charts">
-    <div class="chart-card"><h3>Distribución de tiendas por Attach Rate</h3><canvas id="c1dist"></canvas></div>
+    <div class="chart-card"><h3 id="c1equipoTitle">Attach Rate % por Región</h3><canvas id="c1equipo"></canvas></div>
     <div class="lg-panel"><h3 style="color:#22c55e">🏆 Mejor Attach Rate <span style="font-weight:400;color:var(--tx2);font-size:11px">(≥50 equipos)</span></h3><div id="arTop"></div></div>
   </div>
   <div id="arOppWrap" class="lg-panel" style="margin-bottom:16px">
@@ -281,8 +278,27 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   </div>
 </div>
 
-<!-- TAB 3: INVENTARIO (fuente: Dashboard PrimeMX) -->
+<!-- TAB 3: SHARE POR CATEGORÍA -->
 <div class="pane" id="pane3">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+    <div class="filters">
+      <label>Ver</label>
+      <div class="chip-group" id="f5mode" data-val="pct">
+        <div class="chip active" onclick="setChip('f5mode','pct',this)">% Share</div>
+        <div class="chip" onclick="setChip('f5mode','uds',this)">Unidades</div>
+      </div>
+    </div>
+    <div id="shMeta" style="font-size:11px;color:var(--tx2);font-style:italic"></div>
+  </div>
+  <div class="kpi-grid" id="k5"></div>
+  <div class="chart-card" style="margin-top:12px"><h3 id="c5title">Mix de categorías por región</h3><canvas id="c5"></canvas></div>
+  <div class="sec-hdr" style="margin-top:14px"><h2>Share por categoría — 7 regiones</h2></div>
+  <div class="tbl-wrap" id="shTbl"></div>
+  <div style="color:var(--tx2);font-size:11px;margin-top:6px">Color: verde = share arriba del nacional, rojo = abajo (diferencia en puntos porcentuales). Fuente: reporte Ventas Alphacomm (Reales + Cantados).</div>
+</div>
+
+<!-- TAB 4: INVENTARIO (fuente: Dashboard PrimeMX) -->
+<div class="pane" id="pane4">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
     <div class="filters">
       <label>Región</label>
@@ -342,7 +358,7 @@ function autoLoad(){
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(data){
       D.cuota_jul=data.cuota_jul; D.ar_clean=data.ar_clean;
-      D.cuota_oct=data.cuota_oct||null;
+      D.cuota_oct=data.cuota_oct||null; D.share_cat=data.share_cat||null;
       D.primemx_summary=data.primemx_summary||{}; D.ar_region=data.ar_region||[];
       D.lg_region=data.lg_region; D.lg_tienda=data.lg_tienda;
       D.lg_totals=data.lg_totals; D.cat_totals=data.cat_totals;
@@ -473,6 +489,7 @@ function setChip(id,val,el){
   else if(id==='f0mo')rT0();
   else if(id==='f1reg'||id==='f1mo')rT1();
   else if(id==='f1yr'){updateARMonthChips(val);rT1();}
+  else if(id==='f5mode')rT5();
   else if(id==='f3reg'){rT3();renderMatrix();}
   else if(id==='f3cat')renderMatrix();
   else if(id==='f4cat'||id==='f4reg')rT4();
@@ -863,7 +880,7 @@ function rT1(){
 
   /* ── Gráficas: solo mes actual ── */
   var chartsWrap=document.getElementById('arChartsWrap');
-  ['arChartsWrap','arInsights','arOppWrap'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=isCurrentMonth?'':'none';});
+  ['arChartsWrap','arOppWrap'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=isCurrentMonth?'':'none';});
   if(isCurrentMonth){
     var base=D.ar_clean.filter(arMatch);
     var gR={};base.forEach(function(r){var g=gR[r.region]||(gR[r.region]={a:0,e:0});g.a+=r.alphacomm;g.e+=r.equipo;});
@@ -872,20 +889,12 @@ function rT1(){
     var totA=base.reduce(function(x,r){return x+r.alphacomm;},0),totE=base.reduce(function(x,r){return x+r.equipo;},0);
     var avgAR=totE?Math.round(totA/totE*1000)/10:0;
     var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
+    if(!window._arLblReg){window._arLblReg=1;Chart.register({id:'arLbl',afterDatasetsDraw:function(ch){if(ch.canvas.id!=='c1equipo')return;var c=ch.ctx,m=ch.getDatasetMeta(0);c.save();c.fillStyle='#fff';c.font='700 13px sans-serif';c.textAlign='center';m.data.forEach(function(b,i){c.fillText(ch.data.datasets[0].data[i]+'%',b.x,b.y-6);});c.restore();}});}
     mkChart('c1equipo','bar',rK,[
       {label:'Attach Rate %',data:arV,backgroundColor:arV.map(function(v){return v>=avgAR?'#22c55e':v>=avgAR*0.9?'#eab308':'#ef4444';}),borderRadius:4,order:2},
       {type:'line',label:'Promedio '+avgAR+'%',data:rK.map(function(){return avgAR;}),borderColor:'#a78bfa',borderDash:[6,4],borderWidth:2,pointRadius:0,order:1}
-    ],{scales:{x:axO,y:{...axO,beginAtZero:true,ticks:{...axO.ticks,callback:function(v){return v+'%';}}}},
+    ],{layout:{padding:{top:20}},scales:{x:axO,y:{...axO,beginAtZero:true,ticks:{...axO.ticks,callback:function(v){return v+'%';}}}},
        plugins:{legend:{labels:{color:'#a0a0b8'}},tooltip:{callbacks:{label:function(c){return c.dataset.label.split(' ')[0]+': '+c.parsed.y+'%';}}}}});
-    mkChart('c1alpha','bar',rK,[
-      {label:'Equipos',data:rK.map(function(k){return gR[k].e;}),backgroundColor:'rgba(160,160,184,.25)',borderColor:'#a0a0b8',borderWidth:1,borderRadius:3},
-      {label:'Alphacomm',data:rK.map(function(k){return gR[k].a;}),backgroundColor:'#6c63ff',borderRadius:3}
-    ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
-    /* Distribución de tiendas */
-    var bk=[['<20%',0,20],['20-30%',20,30],['30-40%',30,40],['40-50%',40,50],['50-60%',50,60],['≥60%',60,1e9]];
-    var cnt=bk.map(function(b){return base.filter(function(r){var v=r.equipo?r.alphacomm/r.equipo*100:0;return r.equipo>0&&v>=b[1]&&v<b[2];}).length;});
-    mkChart('c1dist','bar',bk.map(function(b){return b[0];}),[{label:'Tiendas',data:cnt,backgroundColor:['#ef4444','#f97316','#eab308','#84cc16','#22c55e','#14b8a6'],borderRadius:4}],
-      {scales:{x:axO,y:axO},plugins:{legend:{display:false}}});
     /* Rankings */
     var enr=base.map(function(r){var at=r.equipo?r.alphacomm/r.equipo*100:0;return {r:r,at:at,opp:Math.max(r.equipo*totA/Math.max(totE,1)-r.alphacomm,0)};});
     function miniTbl(list,cols){
@@ -972,7 +981,52 @@ function rT1(){
   }
 }
 
-/* ═══ TAB 3: INVENTARIO (PrimeMX) ═══ */
+/* ═══ TAB 3: SHARE POR CATEGORÍA ═══ */
+var CAT_CLR={'Cables':'#6c63ff','Charger':'#38bdf8','Cases iPhone':'#22c55e','Liquid':'#f97316','Micas':'#ec4899','Accesorios':'#eab308'};
+function rT5(){
+  var sc=D.share_cat;
+  var el=document.getElementById('shTbl');
+  if(!sc){el.innerHTML='<div style="padding:20px;color:var(--tx2)">Sin datos de share por categoría</div>';return;}
+  var mode=getChip('f5mode')||'pct';
+  var cats=sc.categorias.filter(function(c){return (sc.total[c]||0)>0;});
+  var tot=cats.reduce(function(a,c){return a+sc.total[c];},0);
+  document.getElementById('shMeta').textContent=sc.periodo;
+  var kp='';
+  kp+=kpi('Total Alphacomm','blue',n(tot),'uds · '+sc.periodo);
+  cats.forEach(function(c){kp+=kpi(c,'',n(tot?sc.total[c]/tot*100:0,1)+'%',n(sc.total[c])+' uds');});
+  document.getElementById('k5').innerHTML=kp;
+  var regs=sc.regiones.slice().sort(function(a,b){return a.region.localeCompare(b.region);});
+  var natPct={};cats.forEach(function(c){natPct[c]=tot?sc.total[c]/tot*100:0;});
+  /* Gráfica 100% apilada */
+  var labels=regs.map(function(r){return r.region;}).concat(['NACIONAL']);
+  var rowsAll=regs.map(function(r){return {t:cats.reduce(function(a,c){return a+(r.cats[c]||0);},0),v:r.cats};}).concat([{t:tot,v:sc.total}]);
+  var ds=cats.map(function(c){return {label:c,data:rowsAll.map(function(r){return r.t?Math.round((r.v[c]||0)/r.t*1000)/10:0;}),backgroundColor:CAT_CLR[c]||'#888',borderRadius:2};});
+  var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
+  if(!window._shLblReg){window._shLblReg=1;Chart.register({id:'shLbl',afterDatasetsDraw:function(ch){if(ch.canvas.id!=='c5')return;var c=ch.ctx;c.save();c.fillStyle='#fff';c.font='600 11px sans-serif';c.textAlign='center';c.textBaseline='middle';
+    ch.data.datasets.forEach(function(d,di){ch.getDatasetMeta(di).data.forEach(function(b,i){var v=d.data[i];if(v>=5){c.fillText(v+'%',(b.base+b.x)/2,b.y);}});});c.restore();}});}
+  mkChart('c5','bar',labels,ds,{indexAxis:'y',scales:{x:{...axO,stacked:true,max:100,ticks:{...axO.ticks,callback:function(v){return v+'%';}}},y:{...axO,stacked:true}},
+    plugins:{legend:{labels:{color:'#a0a0b8'}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.x+'%';}}}}});
+  /* Tabla */
+  var h='<table><thead><tr><th>Región</th><th class="right">Total uds</th>'+cats.map(function(c){return '<th class="right" style="color:'+(CAT_CLR[c]||'#fff')+'">'+c+'</th>';}).join('')+'</tr></thead><tbody>';
+  regs.forEach(function(r){
+    var t=cats.reduce(function(a,c){return a+(r.cats[c]||0);},0);
+    h+='<tr><td style="font-weight:600">'+r.region+'</td><td class="right">'+n(t)+'</td>';
+    cats.forEach(function(c){
+      var u=r.cats[c]||0,pc=t?u/t*100:0,df=pc-natPct[c];
+      var a=Math.min(Math.abs(df)/15,1)*0.35;
+      var bg=df>=0?'rgba(34,197,94,'+a+')':'rgba(239,68,68,'+a+')';
+      var main=mode==='pct'?n(pc,1)+'%':n(u);
+      var sub=mode==='pct'?n(u)+' uds':n(pc,1)+'%';
+      h+='<td class="right" style="background:'+bg+'"><div style="font-weight:700">'+main+'</div><div style="font-size:10px;color:var(--tx2)">'+sub+' · <span style="color:'+(df>=0?'var(--green)':'var(--red)')+'">'+(df>=0?'+':'')+n(df,1)+' pp</span></div></td>';
+    });
+    h+='</tr>';
+  });
+  h+='<tr class="total-row"><td><strong>NACIONAL</strong></td><td class="right">'+n(tot)+'</td>'+cats.map(function(c){var u=sc.total[c];return '<td class="right"><div style="font-weight:700">'+(mode==='pct'?n(natPct[c],1)+'%':n(u))+'</div><div style="font-size:10px;color:var(--tx2)">'+(mode==='pct'?n(u)+' uds':n(natPct[c],1)+'%')+'</div></td>';}).join('')+'</tr>';
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+
+/* ═══ TAB 4: INVENTARIO (PrimeMX) ═══ */
 function wosColor(wos){return wos===null?'var(--tx2)':wos<4?'#ef4444':wos<6?'#f59e0b':wos<8?'#fb923c':'#10b981';}
 function rT3(){
   var inv=D.inventario;
@@ -1183,7 +1237,8 @@ function switchTab(idx){
   if(idx===0)setTimeout(function(){rT4();},60);
   if(idx===1)setTimeout(function(){rT0();},60);
   if(idx===2)setTimeout(function(){rT1();},60);
-  if(idx===3)setTimeout(function(){rT3();renderMatrix();},60);
+  if(idx===3)setTimeout(function(){rT5();},60);
+  if(idx===4)setTimeout(function(){rT3();renderMatrix();},60);
 }
 
 /* ═══ EXPORT IMAGEN ═══ */
@@ -1225,6 +1280,12 @@ function exportXLSX(){
     var hd=['Región','Gerente','Clave','Tienda','Alphacomm','Equipo','Attach %'];
     var data=D.ar_clean.map(function(r){return[r.region,r.gerente,r.clave,r.tienda,r.alphacomm,r.equipo,r.equipo?Math.round(r.alphacomm/r.equipo*1000)/10:0];});
     ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='AR_Proteccion.xlsx';
+  }else if(activeTab===3){
+    var sc=D.share_cat||{categorias:[],regiones:[],total:{}};
+    var hd=['Región','Total'].concat(sc.categorias);
+    var data=sc.regiones.map(function(r){return [r.region,r.total].concat(sc.categorias.map(function(c){return r.cats[c]||0;}));});
+    data.push(['NACIONAL',sc.categorias.reduce(function(a,c){return a+(sc.total[c]||0);},0)].concat(sc.categorias.map(function(c){return sc.total[c]||0;})));
+    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Share_Categoria.xlsx';
   }else{
     var hd=['Categoría','Sub-Categoría','Clase','Producto','Cantidad'];
     var data=D.oh_productos.map(function(p){return[p.categoria,p.sub_categoria,p.clase,p.producto,p.cantidad];});

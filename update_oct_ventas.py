@@ -34,6 +34,22 @@ if bm is not None:
         q = r[10] or 0; rg = HM.get(r[12], r[12]); ds = (r[1] or r[0]).strip()
         br[rg] += q; bc[ds] += q; brc[rg+'|'+ds] += q
     bm.update(total=tot, by_region=dict(br), by_cat=dict(bc), by_rc=dict(brc))
+# share por categoría y región (7 regiones, mes en curso)
+def cat_of(desc):
+    t = (desc or '').upper()
+    if 'LIQUID' in t: return 'Liquid'
+    if 'MICA' in t or 'VIDRIO' in t or 'TEMPERED' in t: return 'Micas'
+    if 'CABLE' in t: return 'Cables'
+    if 'CARG' in t or 'CHARGER' in t: return 'Charger'
+    if any(w in t for w in ('FUNDA', 'CASE', 'SPECK', 'SPK', 'BDLSP')): return 'Cases iPhone'
+    return 'Accesorios'
+CATS = ['Cables', 'Charger', 'Cases iPhone', 'Liquid', 'Micas', 'Accesorios']
+sr = collections.defaultdict(collections.Counter); st = collections.Counter()
+for r in rows:
+    q = r[10] or 0; c = cat_of(r[1] or r[0]); sr[r[12]][c] += q; st[c] += q
+d['share_cat'] = {'periodo': f"oct-26 · corte día {cut.day}", 'fecha_corte': cut.strftime('%Y-%m-%d'), 'categorias': CATS,
+    'total': {c: st.get(c, 0) for c in CATS},
+    'regiones': [{'region': rg, 'total': sum(sr[rg].values()), 'cats': {c: sr[rg].get(c, 0) for c in CATS}} for rg in sorted(sr)]}
 # AR
 pdv = [r for r in list(wb['Equipos por PDV'].iter_rows(values_only=True))[4:] if r[2]]
 oar = {x['clave']: x for x in d['ar_clean']}; seen = set()
