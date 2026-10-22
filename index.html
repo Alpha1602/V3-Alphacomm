@@ -159,8 +159,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   <div class="tab active" onclick="switchTab(0)"><span class="tab-ico">📊</span> 2025 vs 2026</div>
   <div class="tab" onclick="switchTab(1)"><span class="tab-ico">📋</span> Cuota del Mes</div>
   <div class="tab" onclick="switchTab(2)"><span class="tab-ico">📈</span> Attach Rate y Protección</div>
-  <div class="tab" onclick="switchTab(3)"><span class="tab-ico">💧</span> Cuota Cases &amp; Liquid Glass</div>
-  <div class="tab" onclick="switchTab(4)"><span class="tab-ico">📦</span> Inventario</div>
+  <div class="tab" onclick="switchTab(3)"><span class="tab-ico">📦</span> Inventario</div>
 </div>
 
 <!-- TAB 0: VISTA GENERAL (Histórico YoY) -->
@@ -248,10 +247,18 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   </div>
   <!-- KPIs -->
   <div class="kpi-grid" id="k1"></div>
-  <!-- Charts (solo mes actual) -->
+  <!-- Gráficas región (solo mes actual) -->
   <div id="arChartsWrap" class="ar-charts">
-    <div class="chart-card"><h3 id="c1alphaTitle">Alphacomm vs Total Accesorios por Región</h3><canvas id="c1alpha"></canvas></div>
-    <div class="chart-card"><h3 id="c1equipoTitle">% Attach Rate por Región</h3><canvas id="c1equipo"></canvas></div>
+    <div class="chart-card"><h3 id="c1equipoTitle">Attach Rate por Región</h3><canvas id="c1equipo"></canvas></div>
+    <div class="chart-card"><h3 id="c1alphaTitle">Alphacomm vs Equipos por Región</h3><canvas id="c1alpha"></canvas></div>
+  </div>
+  <div id="arInsights" class="ar-charts">
+    <div class="chart-card"><h3>Distribución de tiendas por Attach Rate</h3><canvas id="c1dist"></canvas></div>
+    <div class="lg-panel"><h3 style="color:#22c55e">🏆 Mejor Attach Rate <span style="font-weight:400;color:var(--tx2);font-size:11px">(≥50 equipos)</span></h3><div id="arTop"></div></div>
+  </div>
+  <div id="arOppWrap" class="lg-panel" style="margin-bottom:16px">
+    <h3 style="color:#f59e0b">🎯 Mayor oportunidad <span style="font-weight:400;color:var(--tx2);font-size:11px" id="arOppSub"></span></h3>
+    <div id="arOpp" style="overflow-x:auto"></div>
   </div>
   <!-- Tabla de crecimiento mensual -->
   <div class="sec-hdr" style="margin-top:14px">
@@ -261,7 +268,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   <!-- Detalle por tienda (solo mes actual) -->
   <div id="arTiendaSection">
     <div class="sec-hdr" style="margin-top:14px">
-      <h2>Detalle AR por Tienda — Período Actual</h2>
+      <h2>Detalle Attach Rate por Tienda</h2>
       <div class="filters" style="margin-bottom:0">
         <input id="f1q" oninput="rT1()" placeholder="🔍 Tienda / gerente…">
       </div>
@@ -274,37 +281,8 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   </div>
 </div>
 
-<!-- TAB 3: CUOTA CASES & LIQUID GLASS -->
+<!-- TAB 3: INVENTARIO (fuente: Dashboard PrimeMX) -->
 <div class="pane" id="pane3">
-  <div class="filters">
-    <label>Región</label>
-    <div class="chip-group" id="f2reg"></div>
-  </div>
-  <div class="kpi-grid" id="k2"></div>
-  <div class="charts-row">
-    <div class="chart-card"><h3>Participación LG por Región</h3><canvas id="cLgPie"></canvas></div>
-    <div class="chart-card"><h3>LG vs Cases por Región</h3><canvas id="cLgBar"></canvas></div>
-  </div>
-  <div class="lg-split">
-    <div class="lg-panel lg-clr">
-      <h3>💧 Liquid Glass</h3>
-      <div class="tbl-wrap" style="max-height:calc(100vh - 390px);overflow-y:auto"><table>
-        <thead><tr id="thLg"></tr></thead>
-        <tbody id="tbLg"></tbody>
-      </table></div>
-    </div>
-    <div class="lg-panel cs-clr">
-      <h3>📱 Cases iPhone</h3>
-      <div class="tbl-wrap" style="max-height:calc(100vh - 390px);overflow-y:auto"><table>
-        <thead><tr id="thCs"></tr></thead>
-        <tbody id="tbCs"></tbody>
-      </table></div>
-    </div>
-  </div>
-</div>
-
-<!-- TAB 4: INVENTARIO (fuente: Dashboard PrimeMX) -->
-<div class="pane" id="pane4">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
     <div class="filters">
       <label>Región</label>
@@ -334,7 +312,7 @@ var MONTHS12=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov',
 var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[],inventario:null};
 var charts={};
 var activeTab=0;
-var srt={t0:{col:null,dir:-1},t1:{col:null,dir:-1},t2lg:{col:null,dir:-1},t2cs:{col:null,dir:-1}};
+var srt={t0:{col:null,dir:-1},t1:{col:null,dir:-1}};
 
 /* ═══ UTILS ═══ */
 function n(v,dec){dec=dec||0;v=parseFloat(v)||0;return v.toLocaleString('es-MX',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
@@ -472,7 +450,7 @@ function updateMonthChips(yr){
 /* ═══ SORT ═══ */
 function sortCol(key,col){
   if(srt[key].col===col)srt[key].dir*=-1;else{srt[key].col=col;srt[key].dir=-1;}
-  if(key==='t0')rT0();else if(key==='t1')rT1();else rT2();
+  if(key==='t0')rT0();else if(key==='t1')rT1();
 }
 function sortRows(rows,key){
   var col=srt[key].col,dir=srt[key].dir;if(!col)return rows;
@@ -495,7 +473,6 @@ function setChip(id,val,el){
   else if(id==='f0mo')rT0();
   else if(id==='f1reg'||id==='f1mo')rT1();
   else if(id==='f1yr'){updateARMonthChips(val);rT1();}
-  else if(id==='f2reg')rT2();
   else if(id==='f3reg'){rT3();renderMatrix();}
   else if(id==='f3cat')renderMatrix();
   else if(id==='f4cat'||id==='f4reg')rT4();
@@ -504,7 +481,7 @@ function setChip(id,val,el){
 /* ═══ INIT FILTERS (region chips for tabs) ═══ */
 function initFilters(){
   var regs=D.regiones;
-  ['f0reg','f1reg','f2reg'].forEach(function(id){
+  ['f0reg','f1reg'].forEach(function(id){
     var grp=document.getElementById(id);
     grp.setAttribute('data-val','');
     grp.innerHTML='<div class="chip active" onclick="setChip(\''+id+'\',\'\',this)">Todas</div>'+
@@ -828,13 +805,14 @@ function rT0_Month(yr,mo){
 function rT1(){
   var reg=getChip('f1reg');
   var fYr=getChip('f1yr')||'2026';
-  var fMo=getChip('f1mo')||'Sep';
+  var fMo=getChip('f1mo')||(D.cuota_mes||'Sep');
   var q=(document.getElementById('f1q')||{}).value||'';q=q.toLowerCase();
   var latestKey=D.base_data?D.base_data.sorted[D.base_data.sorted.length-1]:'Sep|2026';
   var lp=latestKey.split('|');
   var isCurrentMonth=(fYr===lp[1]&&fMo===lp[0]);
   var mesNm=(MES_ES[fMo]||fMo)+' '+fYr;
   var pm=D.primemx_summary||{};
+  function arMatch(r){return !reg||r.region===reg||(reg==='BAJIO-NORTE 2'&&(r.region==='BAJIO'||r.region==='NORTE 2'));}
 
   /* Base data helper (para trend y YoY/MoM) */
   function getBaseV(key){
@@ -860,22 +838,21 @@ function rT1(){
   /* ── KPIs ── */
   var kpis='';
   if(isCurrentMonth){
-    /* Datos PrimeMX del período actual */
-    var pctA=reg?(function(){var rr=D.ar_region.find(function(x){return x.region===reg;});return rr?rr.pct_alpha:pm.pct_alpha||0;})():pm.pct_alpha||0;
-    var arR=reg?(function(){var rr=D.ar_region.find(function(x){return x.region===reg;});return rr?rr.ar_ratio:pm.ar_ratio||0;})():pm.ar_ratio||0;
-    var pctCls=pctA>=90?'green':pctA>=80?'yellow':'red';
-    kpis+=kpi('% Alpha del Total',pctCls,n(pctA,1)+'%','Alphacomm / total accesorios');
-    kpis+=kpi('Alphacomm/Equipo','purple',n(arR*100,0)+'%','accesorios por dispositivo');
-    if(yoyD!==null)kpis+=kpi('Crec. YoY',yoyD>=0?'green':'red',(yoyD>=0?'+':'')+n(yoyD,1)+'%',mesNm+' vs Sep '+pyYr);
-    if(momD!==null)kpis+=kpi('Crec. MoM',momD>=0?'green':'red',(momD>=0?'+':'')+n(momD,1)+'%',mesNm+' vs '+(MES_ES[prevMo]||prevMo)+' '+prevYr);
-    var totAlpha=reg?(function(){var rr=D.ar_region.find(function(x){return x.region===reg;});return rr?rr.alphacomm:pm.alpha_units||0;})():pm.alpha_units||0;
-    var totAcc=reg?(function(){var rr=D.ar_region.find(function(x){return x.region===reg;});return rr?rr.total_acc:pm.total_acc||0;})():pm.total_acc||0;
-    var totEq=reg?(function(){var rr=D.ar_region.find(function(x){return x.region===reg;});return rr?rr.equipo:pm.equipo||0;})():pm.equipo||0;
-    kpis+=kpi('Ventas Alphacomm','blue',n(totAlpha),'uds · '+mesNm);
-    kpis+=kpi('Total Accesorios','',n(totAcc),'todas las marcas');
-    kpis+=kpi('Venta de Equipo','',n(totEq),'dispositivos');
-    if(!reg)kpis+=kpi('PDVs con Venta','green',n(pm.pdvs_con||0),(pm.pdvs_sin||0)+' sin venta');
-    kpis+=kpi('Período','',pm.periodo||mesNm,'corte PrimeMX');
+    var avt1=(D.cuota_oct&&D.cuota_oct.avance_tiempo)||0;
+    var ARrows=D.ar_clean.filter(arMatch);
+    var A1=ARrows.reduce(function(a,r){return a+r.alphacomm;},0);
+    var E1=ARrows.reduce(function(a,r){return a+r.equipo;},0);
+    var AR1=E1?A1/E1:0;
+    var con1=ARrows.filter(function(r){return r.alphacomm>0;}).length;
+    var opp1=ARrows.reduce(function(a,r){var g=r.equipo*AR1-r.alphacomm;return a+(g>0?g:0);},0);
+    kpis+=kpi('Attach Rate','purple',n(AR1*100,1)+'%','Alphacomm por cada 100 equipos');
+    kpis+=kpi('Ventas Alphacomm','blue',n(A1),'uds · '+(pm.periodo||mesNm));
+    kpis+=kpi('Venta de Equipo','',n(E1),'Pospago + Renovación');
+    kpis+=kpi('Cobertura PDV',con1/Math.max(ARrows.length,1)>=0.95?'green':'yellow',n(con1)+' / '+n(ARrows.length),n(ARrows.length-con1)+' sin venta Alphacomm');
+    if(avt1){var proy1=Math.round(A1/avt1);var pv=getBaseV(prevMo+'|'+prevYr);
+      kpis+=kpi('Proyección cierre','yellow',n(proy1),pv?((proy1>=pv?'+':'')+n((proy1-pv)/pv*100,1)+'% vs '+(MES_ES[prevMo]||prevMo)):'al '+Math.round(avt1*100)+'% del mes');}
+    kpis+=kpi('Oportunidad','green','+'+n(opp1),'uds si tiendas bajo promedio lo igualan');
+    if(yoyD!==null&&!avt1)kpis+=kpi('Crec. YoY',yoyD>=0?'green':'red',(yoyD>=0?'+':'')+n(yoyD,1)+'%',mesNm+' vs '+(MES_ES[fMo]||fMo)+' '+pyYr);
   } else {
     /* Mes histórico */
     kpis+=kpi('Ventas Alphacomm','blue',n(curV),'uds · '+mesNm);
@@ -886,19 +863,40 @@ function rT1(){
 
   /* ── Gráficas: solo mes actual ── */
   var chartsWrap=document.getElementById('arChartsWrap');
-  if(chartsWrap)chartsWrap.style.display=isCurrentMonth?'':'none';
+  ['arChartsWrap','arInsights','arOppWrap'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=isCurrentMonth?'':'none';});
   if(isCurrentMonth){
-    var src=(reg?D.ar_region.filter(function(x){return x.region===reg;}):D.ar_region).sort(function(a,b){return a.region.localeCompare(b.region);});
-    var rK=src.map(function(x){return x.region;});
+    var base=D.ar_clean.filter(arMatch);
+    var gR={};base.forEach(function(r){var g=gR[r.region]||(gR[r.region]={a:0,e:0});g.a+=r.alphacomm;g.e+=r.equipo;});
+    var rK=Object.keys(gR).sort();
+    var arV=rK.map(function(k){return gR[k].e?Math.round(gR[k].a/gR[k].e*1000)/10:0;});
+    var totA=base.reduce(function(x,r){return x+r.alphacomm;},0),totE=base.reduce(function(x,r){return x+r.equipo;},0);
+    var avgAR=totE?Math.round(totA/totE*1000)/10:0;
     var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
-    mkChart('c1alpha','bar',rK,[
-      {label:'Alphacomm',data:src.map(function(x){return x.alphacomm;}),backgroundColor:'#6c63ff',borderRadius:3},
-      {label:'Total Acc',data:src.map(function(x){return x.total_acc;}),backgroundColor:'rgba(160,160,184,.2)',borderRadius:3,borderColor:'#a0a0b8',borderWidth:1}
-    ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
     mkChart('c1equipo','bar',rK,[
-      {label:'% Alpha',data:src.map(function(x){return x.pct_alpha;}),backgroundColor:src.map(function(x){return x.pct_alpha>=90?'#22c55e':x.pct_alpha>=80?'#eab308':'#ef4444';}),borderRadius:4}
-    ],{scales:{x:axO,y:{...axO,min:0,max:100,ticks:{...axO.ticks,callback:function(v){return v+'%';}}}},
-       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.y+'%';}}}}});
+      {label:'Attach Rate %',data:arV,backgroundColor:arV.map(function(v){return v>=avgAR?'#22c55e':v>=avgAR*0.9?'#eab308':'#ef4444';}),borderRadius:4,order:2},
+      {type:'line',label:'Promedio '+avgAR+'%',data:rK.map(function(){return avgAR;}),borderColor:'#a78bfa',borderDash:[6,4],borderWidth:2,pointRadius:0,order:1}
+    ],{scales:{x:axO,y:{...axO,beginAtZero:true,ticks:{...axO.ticks,callback:function(v){return v+'%';}}}},
+       plugins:{legend:{labels:{color:'#a0a0b8'}},tooltip:{callbacks:{label:function(c){return c.dataset.label.split(' ')[0]+': '+c.parsed.y+'%';}}}}});
+    mkChart('c1alpha','bar',rK,[
+      {label:'Equipos',data:rK.map(function(k){return gR[k].e;}),backgroundColor:'rgba(160,160,184,.25)',borderColor:'#a0a0b8',borderWidth:1,borderRadius:3},
+      {label:'Alphacomm',data:rK.map(function(k){return gR[k].a;}),backgroundColor:'#6c63ff',borderRadius:3}
+    ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
+    /* Distribución de tiendas */
+    var bk=[['<20%',0,20],['20-30%',20,30],['30-40%',30,40],['40-50%',40,50],['50-60%',50,60],['≥60%',60,1e9]];
+    var cnt=bk.map(function(b){return base.filter(function(r){var v=r.equipo?r.alphacomm/r.equipo*100:0;return r.equipo>0&&v>=b[1]&&v<b[2];}).length;});
+    mkChart('c1dist','bar',bk.map(function(b){return b[0];}),[{label:'Tiendas',data:cnt,backgroundColor:['#ef4444','#f97316','#eab308','#84cc16','#22c55e','#14b8a6'],borderRadius:4}],
+      {scales:{x:axO,y:axO},plugins:{legend:{display:false}}});
+    /* Rankings */
+    var enr=base.map(function(r){var at=r.equipo?r.alphacomm/r.equipo*100:0;return {r:r,at:at,opp:Math.max(r.equipo*totA/Math.max(totE,1)-r.alphacomm,0)};});
+    function miniTbl(list,cols){
+      return '<table><thead><tr><th>#</th><th>Tienda</th>'+cols.map(function(c){return '<th class="right">'+c[0]+'</th>';}).join('')+'</tr></thead><tbody>'+
+        list.map(function(x,i){return '<tr><td style="color:var(--tx2)">'+(i+1)+'</td><td>'+x.r.tienda+'<div style="color:var(--tx2);font-size:10px">'+x.r.region+'</div></td>'+cols.map(function(c){return '<td class="right">'+c[1](x)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
+    }
+    var top=enr.filter(function(x){return x.r.equipo>=50;}).sort(function(a,b){return b.at-a.at;}).slice(0,10);
+    document.getElementById('arTop').innerHTML=miniTbl(top,[['Alpha',function(x){return n(x.r.alphacomm);}],['Equipos',function(x){return n(x.r.equipo);}],['AR',function(x){return '<strong style="color:var(--green)">'+n(x.at,1)+'%</strong>';}]]);
+    var opp=enr.sort(function(a,b){return b.opp-a.opp;}).slice(0,10);
+    document.getElementById('arOppSub').textContent='— tiendas con más equipos vendidos y attach bajo el promedio ('+n(avgAR,1)+'%)';
+    document.getElementById('arOpp').innerHTML=miniTbl(opp,[['Alpha',function(x){return n(x.r.alphacomm);}],['Equipos',function(x){return n(x.r.equipo);}],['AR',function(x){return '<span style="color:var(--red)">'+n(x.at,1)+'%</span>';}],['Uds potenciales',function(x){return '<strong style="color:var(--yellow)">+'+n(x.opp)+'</strong>';}]]);
   }
 
   /* ── Tabla tendencia mensual ── */
@@ -942,90 +940,39 @@ function rT1(){
   var tSection=document.getElementById('arTiendaSection');
   if(tSection)tSection.style.display=isCurrentMonth?'':'none';
   if(isCurrentMonth){
-    var rows=D.ar_clean.filter(function(r){
-      if(reg&&r.region!==reg)return false;
-      if(q&&!r.tienda.toLowerCase().includes(q)&&!r.clave.toLowerCase().includes(q))return false;
+    var allB=D.ar_clean.filter(arMatch);
+    var aT=allB.reduce(function(x,r){return x+r.alphacomm;},0),eT=allB.reduce(function(x,r){return x+r.equipo;},0);
+    var avg2=eT?aT/eT*100:0;
+    var rows=allB.filter(function(r){
+      if(q&&!r.tienda.toLowerCase().includes(q)&&!r.clave.toLowerCase().includes(q)&&!(r.gerente||'').toLowerCase().includes(q))return false;
       return true;
-    });
+    }).map(function(r){var at=r.equipo?r.alphacomm/r.equipo*100:0;return Object.assign({},r,{attach:Math.round(at*10)/10,dif:Math.round((at-avg2)*10)/10,opp:Math.round(Math.max(r.equipo*avg2/100-r.alphacomm,0))});});
     var totA2=rows.reduce(function(a,r){return a+r.alphacomm;},0);
-    var totAcc2=rows.reduce(function(a,r){return a+r.total_acc;},0);
     var totE2=rows.reduce(function(a,r){return a+r.equipo;},0);
-    var totPct=totAcc2?Math.round(totA2/totAcc2*1000)/10:0;
     var totAR=totE2?Math.round(totA2/totE2*1000)/10:0;
-    document.getElementById('t1cnt').textContent='Total: '+rows.length+' tiendas | '+pm.periodo;
+    var totOpp=rows.reduce(function(a,r){return a+r.opp;},0);
+    document.getElementById('t1cnt').textContent='Total: '+rows.length+' tiendas | '+(pm.periodo||'')+' | promedio '+n(avg2,1)+'%';
     document.getElementById('th1').innerHTML=
-      th('t1','region','Región')+th('t1','clave','Clave')+th('t1','tienda','Tienda')+
-      th('t1','alphacomm','Alphacomm',true)+th('t1','total_acc','Total Acc',true)+
-      th('t1','pct_alpha','% Alpha',true)+th('t1','equipo','Equipo',true)+th('t1','ar_ratio','Alpha/Eq',true);
-    var pctCls2=totPct>=90?'var(--green)':totPct>=80?'var(--yellow)':'var(--red)';
-    var totRow1='<tr class="total-row"><td colspan="3"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
-      '<td class="right blue">'+n(totA2)+'</td>'+
-      '<td class="right">'+n(totAcc2)+'</td>'+
-      '<td class="right" style="color:'+pctCls2+';font-weight:700">'+n(totPct,1)+'%</td>'+
-      '<td class="right">'+n(totE2)+'</td>'+
-      '<td class="right" style="color:var(--acc2)">'+n(totAR,2)+'</td></tr>';
+      th('t1','region','Región')+th('t1','clave','Clave')+th('t1','tienda','Tienda')+th('t1','gerente','Gerente')+
+      th('t1','alphacomm','Alphacomm',true)+th('t1','equipo','Equipos',true)+
+      th('t1','attach','Attach %',true)+th('t1','dif','vs prom. (pp)',true)+th('t1','opp','Oportunidad',true);
+    var totRow1='<tr class="total-row"><td colspan="4"><strong>TOTAL ('+rows.length+' tiendas)</strong></td>'+
+      '<td class="right blue">'+n(totA2)+'</td><td class="right">'+n(totE2)+'</td>'+
+      '<td class="right" style="font-weight:700;color:var(--acc2)">'+n(totAR,1)+'%</td><td class="right">—</td>'+
+      '<td class="right" style="color:var(--yellow);font-weight:700">+'+n(totOpp)+'</td></tr>';
     document.getElementById('tb1').innerHTML=totRow1+sortRows(rows,'t1').map(function(r){
-      var pC=r.pct_alpha>=90?'var(--green)':r.pct_alpha>=80?'var(--yellow)':'var(--red)';
-      return '<tr>'+
-        '<td>'+r.region+'</td><td>'+r.clave+'</td><td>'+r.tienda+'</td>'+
+      var c=r.dif>=0?'var(--green)':r.attach>=avg2*0.9?'var(--yellow)':'var(--red)';
+      return '<tr><td>'+r.region+'</td><td>'+r.clave+'</td><td>'+r.tienda+'</td><td style="color:var(--tx2);font-size:11px">'+(r.gerente||'')+'</td>'+
         '<td class="right" style="color:var(--blue);font-weight:600">'+n(r.alphacomm)+'</td>'+
-        '<td class="right">'+n(r.total_acc)+'</td>'+
-        '<td class="right" style="color:'+pC+';font-weight:600">'+n(r.pct_alpha,1)+'%</td>'+
         '<td class="right">'+n(r.equipo)+'</td>'+
-        '<td class="right" style="color:var(--acc2)">'+n(r.ar_ratio,2)+'</td></tr>';
-    }).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
+        '<td class="right" style="color:'+c+';font-weight:700">'+n(r.attach,1)+'%</td>'+
+        '<td class="right" style="color:'+c+'">'+(r.dif>=0?'+':'')+n(r.dif,1)+'</td>'+
+        '<td class="right" style="color:var(--yellow)">'+(r.opp?'+'+n(r.opp):'—')+'</td></tr>';
+    }).join('')||'<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
   }
 }
 
-/* ═══ TAB 3: CUOTA CASES & LIQUID GLASS ═══ */
-function rT2(){
-  var reg=getChip('f2reg');
-  var rows=D.lg_tienda.filter(function(r){return !reg||r.region===reg;});
-  var lgV,lgC,csV,csC;
-  if(!reg&&D.lg_totals){lgV=D.lg_totals.lg_v;lgC=D.lg_totals.lg_cuota;csV=D.lg_totals.cases_v;csC=D.lg_totals.cases_cuota;}
-  else{lgV=rows.reduce(function(a,r){return a+r.lg_v;},0);lgC=rows.reduce(function(a,r){return a+r.lg_cuota;},0);csV=rows.reduce(function(a,r){return a+r.cases_v;},0);csC=rows.reduce(function(a,r){return a+r.cases_cuota;},0);}
-  var lgA=lgC?Math.round(lgV/lgC*1000)/10:0;var csA=csC?Math.round(csV/csC*1000)/10:0;
-  var lgOH=rows.reduce(function(a,r){return a+r.oh_lg;},0);var csOH=rows.reduce(function(a,r){return a+r.oh_cases;},0);
-  var lac=lgA>=100?'green':lgA>=70?'yellow':'red';var cac=csA>=100?'green':csA>=70?'yellow':'red';
-  document.getElementById('k2').innerHTML=
-    kpi('LG Ventas','blue',n(lgV))+kpi('LG Cuota','',n(lgC))+kpi('LG Alcance',lac,lgA+'%')+kpi('LG OH','',n(lgOH))+
-    kpi('Cases Ventas','blue',n(csV))+kpi('Cases Cuota','',n(csC))+kpi('Cases Alcance',cac,csA+'%')+kpi('Cases OH','',n(csOH));
-  var regData=reg?[{region:reg,lg_v:lgV,cases_v:csV}]:D.lg_region.slice();
-  var rLbls=regData.map(function(r){return r.region;});
-  var lgVals=regData.map(function(r){return r.lg_v;});
-  var csVals=regData.map(function(r){return r.cases_v;});
-  var totLg=lgVals.reduce(function(a,v){return a+v;},0);
-  var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
-  mkChart('cLgPie','doughnut',rLbls.map(function(l,i){return l+' '+(totLg?Math.round(lgVals[i]/totLg*1000)/10:0)+'%';}),
-    [{data:lgVals,backgroundColor:PAL,borderColor:'#1a1d2e',borderWidth:2}],
-    {plugins:{legend:{position:'right',labels:{color:'#a0a0b8',font:{size:10}}},tooltip:{callbacks:{label:function(ctx){return ' '+n(ctx.raw)+' pzs';}}}}});
-  mkChart('cLgBar','bar',rLbls,[
-    {label:'Liquid Glass',data:lgVals,backgroundColor:'#6c63ff',borderRadius:3},
-    {label:'Cases',data:csVals,backgroundColor:'#38bdf8',borderRadius:3}
-  ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
-  var lgTotV=rows.reduce(function(a,r){return a+r.lg_v;},0);
-  var lgTotC=rows.reduce(function(a,r){return a+r.lg_cuota;},0);
-  var lgTotOH=rows.reduce(function(a,r){return a+r.oh_lg;},0);
-  var lgTotA=lgTotC?Math.round(lgTotV/lgTotC*1000)/10:0;
-  var csTotV=rows.reduce(function(a,r){return a+r.cases_v;},0);
-  var csTotC=rows.reduce(function(a,r){return a+r.cases_cuota;},0);
-  var csTotOH=rows.reduce(function(a,r){return a+r.oh_cases;},0);
-  var csTotA=csTotC?Math.round(csTotV/csTotC*1000)/10:0;
-  document.getElementById('thLg').innerHTML=th('t2lg','tienda','Tienda')+th('t2lg','lg_v','Ventas',true)+th('t2lg','lg_cuota','Cuota',true)+'<th>Alcance</th>'+th('t2lg','oh_lg','OH',true);
-  var lgTR='<tr class="total-row"><td><strong>TOTAL ('+rows.length+')</strong></td><td class="right blue">'+n(lgTotV)+'</td><td class="right">'+n(lgTotC)+'</td><td>'+pb(lgTotA)+'</td><td class="right">'+n(lgTotOH)+'</td></tr>';
-  document.getElementById('tbLg').innerHTML=lgTR+sortRows(rows,'t2lg').map(function(r){
-    var a=r.lg_cuota?Math.round(r.lg_v/r.lg_cuota*1000)/10:0;
-    return '<tr><td>'+r.tienda+'</td><td class="right">'+n(r.lg_v)+'</td><td class="right" style="color:var(--tx2)">'+n(r.lg_cuota)+'</td><td>'+pb(a)+'</td><td class="right">'+n(r.oh_lg)+'</td></tr>';
-  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--tx2)">Sin datos</td></tr>';
-  document.getElementById('thCs').innerHTML=th('t2cs','tienda','Tienda')+th('t2cs','cases_v','Ventas',true)+th('t2cs','cases_cuota','Cuota',true)+'<th>Alcance</th>'+th('t2cs','oh_cases','OH',true);
-  var csTR='<tr class="total-row"><td><strong>TOTAL ('+rows.length+')</strong></td><td class="right blue">'+n(csTotV)+'</td><td class="right">'+n(csTotC)+'</td><td>'+pb(csTotA)+'</td><td class="right">'+n(csTotOH)+'</td></tr>';
-  document.getElementById('tbCs').innerHTML=csTR+sortRows(rows,'t2cs').map(function(r){
-    var a=r.cases_cuota?Math.round(r.cases_v/r.cases_cuota*1000)/10:0;
-    return '<tr><td>'+r.tienda+'</td><td class="right">'+n(r.cases_v)+'</td><td class="right" style="color:var(--tx2)">'+n(r.cases_cuota)+'</td><td>'+pb(a)+'</td><td class="right">'+n(r.oh_cases)+'</td></tr>';
-  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--tx2)">Sin datos</td></tr>';
-}
-
-/* ═══ TAB 4: INVENTARIO (PrimeMX) ═══ */
+/* ═══ TAB 3: INVENTARIO (PrimeMX) ═══ */
 function wosColor(wos){return wos===null?'var(--tx2)':wos<4?'#ef4444':wos<6?'#f59e0b':wos<8?'#fb923c':'#10b981';}
 function rT3(){
   var inv=D.inventario;
@@ -1236,8 +1183,7 @@ function switchTab(idx){
   if(idx===0)setTimeout(function(){rT4();},60);
   if(idx===1)setTimeout(function(){rT0();},60);
   if(idx===2)setTimeout(function(){rT1();},60);
-  if(idx===3)setTimeout(function(){rT2();},60);
-  if(idx===4)setTimeout(function(){rT3();renderMatrix();},60);
+  if(idx===3)setTimeout(function(){rT3();renderMatrix();},60);
 }
 
 /* ═══ EXPORT IMAGEN ═══ */
@@ -1276,13 +1222,9 @@ function exportXLSX(){
     var data=D.cuota_jul.map(function(r){return[r.region,r.sub_region,r.clave,r.tienda,r.cuota,r.ventas,r.proy,r.alcance,r.oh_total,r.oh_cases,r.oh_cables,r.oh_chargers,r.oh_liquid,r.oh_micas,r.resurtido,r.faltante,r.riesgo];});
     ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cuota_Mes.xlsx';
   }else if(activeTab===2){
-    var hd=['Región','Gerente','Clave','Tienda','Alphacomm','Equipo','Proy Cierre'];
-    var data=D.ar_clean.map(function(r){return[r.region,r.gerente,r.clave,r.tienda,r.alphacomm,r.equipo,r.proy];});
+    var hd=['Región','Gerente','Clave','Tienda','Alphacomm','Equipo','Attach %'];
+    var data=D.ar_clean.map(function(r){return[r.region,r.gerente,r.clave,r.tienda,r.alphacomm,r.equipo,r.equipo?Math.round(r.alphacomm/r.equipo*1000)/10:0];});
     ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='AR_Proteccion.xlsx';
-  }else if(activeTab===3){
-    var hd=['Región','Clave','Tienda','LG Ventas','LG Cuota','LG Alc%','Cases Ventas','Cases Cuota','Cases Alc%','OH LG','OH Cases'];
-    var data=D.lg_tienda.map(function(r){return[r.region,r.clave,r.tienda,r.lg_v,r.lg_cuota,r.lg_alc,r.cases_v,r.cases_cuota,r.cases_alc,r.oh_lg,r.oh_cases];});
-    ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Cuota_Cases_LG.xlsx';
   }else{
     var hd=['Categoría','Sub-Categoría','Clase','Producto','Cantidad'];
     var data=D.oh_productos.map(function(p){return[p.categoria,p.sub_categoria,p.clase,p.producto,p.cantidad];});

@@ -25,6 +25,15 @@ proy = round(tot/avt)
 co.update(fecha_corte=cut.strftime('%Y-%m-%d'), avance_tiempo=avt, total_ventas=tot, proyeccion=proy,
           alcance=round(tot/c100, 3), alc_proy=round(proy/c100, 3), faltante=max(c100-tot, 0),
           diario=dict(sorted(dia.items())))
+# base_data (histórico) del mes en curso
+bm = d['base_data']['byMonth'].get('Oct|2026')
+if bm is not None:
+    HM = {'BAJIO':'BAJIO-NORTE 2','NORTE 2':'BAJIO-NORTE 2'}
+    br = collections.Counter(); bc = collections.Counter(); brc = collections.Counter()
+    for r in rows:
+        q = r[10] or 0; rg = HM.get(r[12], r[12]); ds = (r[1] or r[0]).strip()
+        br[rg] += q; bc[ds] += q; brc[rg+'|'+ds] += q
+    bm.update(total=tot, by_region=dict(br), by_cat=dict(bc), by_rc=dict(brc))
 # AR
 pdv = [r for r in list(wb['Equipos por PDV'].iter_rows(values_only=True))[4:] if r[2]]
 oar = {x['clave']: x for x in d['ar_clean']}; seen = set()
