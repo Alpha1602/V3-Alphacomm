@@ -386,7 +386,8 @@ function showError(m){var e=document.getElementById('errBanner');e.textContent='
 /* ═══ AUTO LOAD (JSON) ═══ */
 function autoLoad(){
   document.getElementById('loadMsg').textContent='Cargando datos…';
-  fetch('./data.json?v='+Date.now())
+  var _wk=new Date();var _cv=_wk.getFullYear()+'W'+Math.ceil((_wk-new Date(_wk.getFullYear(),0,1))/(7*864e5));
+  fetch('./data.json?v='+_cv)
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(data){
       D.cuota_jul=data.cuota_jul; D.ar_clean=data.ar_clean;
@@ -410,8 +411,9 @@ function autoLoad(){
       initHistorico();
       initCuotaFilter();
       initARFilter();
-      rT4(); rT0(); rT1(); rT2(); rT3(); renderMatrix();
+      /* Renderizar solo el tab activo al cargar */
       initVentasChips();
+      rT4();
       hideLoading();
     })
     .catch(function(e){hideLoading();showError('No se pudo cargar los datos: '+e.message);});
