@@ -1,0 +1,445 @@
+{
+  "week": "S42",
+  "fecha_corte": "2026-10-22",
+  "total_venta": 20201,
+  "attach_global": {
+    "tel": 43641,
+    "acc": 20201,
+    "ar": 0.463
+  },
+  "segs": [
+    {
+      "seg": "CABLE",
+      "venta": 11929
+    },
+    {
+      "seg": "CARGADOR",
+      "venta": 6486
+    },
+    {
+      "seg": "CRISTAL LIQUIDO",
+      "venta": 1030
+    },
+    {
+      "seg": "CASE 17 PROMAX",
+      "venta": 314
+    },
+    {
+      "seg": "CASE 17 PRO",
+      "venta": 177
+    },
+    {
+      "seg": "CARGADOR CARRO",
+      "venta": 75
+    },
+    {
+      "seg": "CASE 18 PRO",
+      "venta": 60
+    },
+    {
+      "seg": "CASE IPH 16",
+      "venta": 54
+    },
+    {
+      "seg": "CASE 18 PROMAX",
+      "venta": 54
+    },
+    {
+      "seg": "WALLET",
+      "venta": 10
+    },
+    {
+      "seg": "CASE IPH 15",
+      "venta": 5
+    },
+    {
+      "seg": "MICA IPH 15",
+      "venta": 5
+    },
+    {
+      "seg": "CASE 17",
+      "venta": 2
+    },
+    {
+      "seg": "MICA IPH 16",
+      "venta": 0
+    }
+  ],
+  "regiones": [
+    {
+      "region": "NORTE 1",
+      "venta_alpha": 2822,
+      "acc_canal": 2304,
+      "tel_canal": 4431,
+      "attach_rate": 0.52
+    },
+    {
+      "region": "PACIFICO",
+      "venta_alpha": 3292,
+      "acc_canal": 3292,
+      "tel_canal": 6482,
+      "attach_rate": 0.508
+    },
+    {
+      "region": "CENTRO",
+      "venta_alpha": 4017,
+      "acc_canal": 4017,
+      "tel_canal": 8587,
+      "attach_rate": 0.468
+    },
+    {
+      "region": "BAJIO-NORTE 2",
+      "venta_alpha": 5198,
+      "acc_canal": 5198,
+      "tel_canal": 11447,
+      "attach_rate": 0.454
+    },
+    {
+      "region": "SUR PENINSULA",
+      "venta_alpha": 2304,
+      "acc_canal": 2822,
+      "tel_canal": 6420,
+      "attach_rate": 0.44
+    },
+    {
+      "region": "NOROESTE",
+      "venta_alpha": 2568,
+      "acc_canal": 2568,
+      "tel_canal": 6105,
+      "attach_rate": 0.421
+    }
+  ],
+  "top15": [
+    {
+      "modelo": "CABLE QKCELL 1M",
+      "seg": "CABLE",
+      "venta": 7040
+    },
+    {
+      "modelo": "QUIKCELL CARGADOR 25W BCO",
+      "seg": "CARGADOR",
+      "venta": 2963
+    },
+    {
+      "modelo": "QUIKCELL CARGADOR PD35W USBC BCO",
+      "seg": "CARGADOR",
+      "venta": 2675
+    },
+    {
+      "modelo": "CABLE QKCELL CHARGE Y SYNC 1.8M",
+      "seg": "CABLE",
+      "venta": 2457
+    },
+    {
+      "modelo": "CABLE QKCELL 1M BLANCO",
+      "seg": "CABLE",
+      "venta": 1615
+    },
+    {
+      "modelo": "MICA QKCELL ULTRA LIQUID",
+      "seg": "CRISTAL LIQUIDO",
+      "venta": 1030
+    },
+    {
+      "modelo": "CARGADOR 25W PORT QKCELL",
+      "seg": "CARGADOR",
+      "venta": 776
+    },
+    {
+      "modelo": "CABLE QKCELL CHARGE Y SYNC 1.8M BLANCO",
+      "seg": "CABLE",
+      "venta": 750
+    },
+    {
+      "modelo": "SPECK FUNDA IPHONE 17 PROMAX",
+      "seg": "CASE 17 PROMAX",
+      "venta": 314
+    },
+    {
+      "modelo": "SPECK FUNDA IPHONE 17 PRO",
+      "seg": "CASE 17 PRO",
+      "venta": 177
+    },
+    {
+      "modelo": "CARGADOR CARRO 37W QKCELL",
+      "seg": "CARGADOR CARRO",
+      "venta": 75
+    },
+    {
+      "modelo": "CARGADOR 35W DUAL QUIKC",
+      "seg": "CARGADOR",
+      "venta": 70
+    },
+    {
+      "modelo": "CABLE QKCELL CHARGE LIGHTNING 1.8M",
+      "seg": "CABLE",
+      "venta": 67
+    },
+    {
+      "modelo": "FUNDA SPK IPH18PRMX MS GLITTER",
+      "seg": "CASE 18 PROMAX",
+      "venta": 54
+    },
+    {
+      "modelo": "FUNDA T21 IPH18PRO EVOCRYSTALT",
+      "seg": "CASE 18 PRO",
+      "venta": 35
+    }
+  ],
+  "top30": [
+    {
+      "tienda": "PRM TDA JUAREZ PLAZA GRAN PATIO ZARAGOZA",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "NORTE 2",
+      "venta": 242
+    },
+    {
+      "tienda": "PRM TDA MONTERREY SUN MALL VIP",
+      "region": "NORTE 1",
+      "subregion": "NORTE 1",
+      "venta": 163
+    },
+    {
+      "tienda": "PRM TDA ZACATECAS PLAZA PORTAL FRESNIL",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "BAJIO",
+      "venta": 151
+    },
+    {
+      "tienda": "PRM TDA MONTERREY PASEO LA FE",
+      "region": "NORTE 1",
+      "subregion": "NORTE 1",
+      "venta": 146
+    },
+    {
+      "tienda": "PRM TDA JUAREZ PLAZA SENDERO",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "NORTE 2",
+      "venta": 130
+    },
+    {
+      "tienda": "PRM TDA CDMX FUENTE DE CIBELES ROMA",
+      "region": "CENTRO",
+      "subregion": "CENTRO 1",
+      "venta": 127
+    },
+    {
+      "tienda": "PRM TDA PATIO QUERETARO I",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "BAJIO",
+      "venta": 126
+    },
+    {
+      "tienda": "PRM TDA CDMX AMERICAS ECATEPEC",
+      "region": "CENTRO",
+      "subregion": "CENTRO 1",
+      "venta": 107
+    },
+    {
+      "tienda": "PRM TDA CDMX CENTRO",
+      "region": "CENTRO",
+      "subregion": "CENTRO 1",
+      "venta": 107
+    },
+    {
+      "tienda": "PRM TDA SENDERO VILLAHERMOSA",
+      "region": "SUR PENINSULA",
+      "subregion": "SUR PENINSULA",
+      "venta": 107
+    },
+    {
+      "tienda": "PRM TDA ZACATECAS",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "BAJIO",
+      "venta": 107
+    },
+    {
+      "tienda": "PRM TDA CDMX CUAJIMALPA",
+      "region": "CENTRO",
+      "subregion": "CENTRO 1",
+      "venta": 105
+    },
+    {
+      "tienda": "PRM TDA LEON ALTACIA",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "BAJIO",
+      "venta": 105
+    },
+    {
+      "tienda": "PRM TDA TALAMAS CD JUAREZ",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "NORTE 2",
+      "venta": 103
+    },
+    {
+      "tienda": "PRM TDA SAN JUAN DEL RIO II",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "BAJIO",
+      "venta": 102
+    },
+    {
+      "tienda": "PRM TDA TIJUANA PLAZA CUAH",
+      "region": "NOROESTE",
+      "subregion": "NOROESTE 1",
+      "venta": 102
+    },
+    {
+      "tienda": "PRM TDA CULIACAN",
+      "region": "PACIFICO",
+      "subregion": "PACIFICO",
+      "venta": 100
+    },
+    {
+      "tienda": "PRM TDA LA VICTORIA QRO",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "BAJIO",
+      "venta": 100
+    },
+    {
+      "tienda": "PRM TDA PLAZA LAS AMERICAS XALAPA",
+      "region": "SUR PENINSULA",
+      "subregion": "SUR PENINSULA",
+      "venta": 98
+    },
+    {
+      "tienda": "PRM TDA JUAREZ SENDERO LAS TORRES",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "NORTE 2",
+      "venta": 95
+    },
+    {
+      "tienda": "PRM TDA SALTILLO PLAZA PATIO",
+      "region": "NORTE 1",
+      "subregion": "NORTE 1",
+      "venta": 95
+    },
+    {
+      "tienda": "PRM TDA OUTLET LERMA",
+      "region": "CENTRO",
+      "subregion": "CENTRO 1",
+      "venta": 93
+    },
+    {
+      "tienda": "PRM TDA LAS AMERICAS MORELIA",
+      "region": "PACIFICO",
+      "subregion": "PACIFICO",
+      "venta": 92
+    },
+    {
+      "tienda": "PRM SAN ESTEBAN",
+      "region": "CENTRO",
+      "subregion": "CENTRO 1",
+      "venta": 91
+    },
+    {
+      "tienda": "PRM TDA ORIZABA PLAZA VALLE ORIZABA",
+      "region": "SUR PENINSULA",
+      "subregion": "SUR PENINSULA",
+      "venta": 85
+    },
+    {
+      "tienda": "PRM TDA XALAPA LAS ANIMAS",
+      "region": "SUR PENINSULA",
+      "subregion": "SUR PENINSULA",
+      "venta": 85
+    },
+    {
+      "tienda": "PRM TDA SUN MALL MTY",
+      "region": "NORTE 1",
+      "subregion": "NORTE 1",
+      "venta": 82
+    },
+    {
+      "tienda": "PRM TDA PLAZA 2000 TIJ",
+      "region": "NOROESTE",
+      "subregion": "NOROESTE 1",
+      "venta": 80
+    },
+    {
+      "tienda": "PRM TDA BENITO JUAREZ",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "BAJIO",
+      "venta": 79
+    },
+    {
+      "tienda": "PRM TDA AGUASCALIENTES ALTARIA",
+      "region": "BAJIO-NORTE 2",
+      "subregion": "BAJIO",
+      "venta": 78
+    }
+  ],
+  "serie12": [
+    {
+      "sem": "S31",
+      "acc": 5050,
+      "tel": 11393,
+      "ar": 0.443
+    },
+    {
+      "sem": "S32",
+      "acc": 4063,
+      "tel": 10592,
+      "ar": 0.384
+    },
+    {
+      "sem": "S33",
+      "acc": 3972,
+      "tel": 10729,
+      "ar": 0.37
+    },
+    {
+      "sem": "S34",
+      "acc": 4134,
+      "tel": 10683,
+      "ar": 0.387
+    },
+    {
+      "sem": "S35",
+      "acc": 4193,
+      "tel": 10704,
+      "ar": 0.392
+    },
+    {
+      "sem": "S36",
+      "acc": 4313,
+      "tel": 10269,
+      "ar": 0.42
+    },
+    {
+      "sem": "S37",
+      "acc": 3685,
+      "tel": 9917,
+      "ar": 0.372
+    },
+    {
+      "sem": "S38",
+      "acc": 6748,
+      "tel": 12657,
+      "ar": 0.533
+    },
+    {
+      "sem": "S39",
+      "acc": 5635,
+      "tel": 11346,
+      "ar": 0.497
+    },
+    {
+      "sem": "S40",
+      "acc": 5053,
+      "tel": 11352,
+      "ar": 0.445
+    },
+    {
+      "sem": "S41",
+      "acc": 3896,
+      "tel": 9405,
+      "ar": 0.414
+    },
+    {
+      "sem": "S42",
+      "acc": 5617,
+      "tel": 11538,
+      "ar": 0.487
+    }
+  ]
+}
