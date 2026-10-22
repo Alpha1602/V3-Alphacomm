@@ -4,9 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sales Dashboard – Alphacomm</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" defer></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0f1117;--bg2:#1a1d2e;--bg3:#252840;--acc:#6c63ff;--acc2:#a78bfa;--tx:#e8e8f0;--tx2:#a0a0b8;--bd:#2e3150;--green:#22c55e;--red:#ef4444;--yellow:#eab308;--blue:#3b82f6;}
@@ -1322,17 +1320,22 @@ function exportImg(){
   var pane=document.querySelector('.pane.active');
   var btn=document.querySelector('.hdr-btns');
   if(btn)btn.style.display='none';
-  html2canvas(pane,{backgroundColor:'#0f1117',scale:2,useCORS:true,logging:false}).then(function(canvas){
-    if(btn)btn.style.display='flex';
-    var a=document.createElement('a');
-    a.href=canvas.toDataURL('image/png');
-    a.download='dashboard_pestaña'+(activeTab+1)+'_'+new Date().toLocaleDateString('es-MX').replace(/\//g,'-')+'.png';
-    a.click();
-  }).catch(function(){if(btn)btn.style.display='flex';});
+  function doCapture(){
+    html2canvas(pane,{backgroundColor:'#0f1117',scale:2,useCORS:true,logging:false}).then(function(canvas){
+      if(btn)btn.style.display='flex';
+      var a=document.createElement('a');
+      a.href=canvas.toDataURL('image/png');
+      a.download='dashboard_pestaña'+(activeTab+1)+'_'+new Date().toLocaleDateString('es-MX').replace(/\//g,'-')+'.png';
+      a.click();
+    }).catch(function(){if(btn)btn.style.display='flex';});
+  }
+  if(window.html2canvas){doCapture();}
+  else{var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';s.onload=doCapture;document.head.appendChild(s);}
 }
 
-/* ═══ EXPORT EXCEL (SheetJS) ═══ */
+/* ═══ EXPORT EXCEL (SheetJS — lazy) ═══ */
 function exportXLSX(){
+  if(!window.XLSX){var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=function(){exportXLSX();};document.head.appendChild(s);return;}
   var ws,wb2,name;
   if(activeTab===0){
     /* Vista General → histórico */
