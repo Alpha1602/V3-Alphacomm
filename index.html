@@ -205,7 +205,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   <!-- Charts row -->
   <div class="charts-row">
     <div class="chart-card"><h3 id="c0regTitle">Ventas vs Cuota por Región</h3><canvas id="c0reg"></canvas></div>
-    <div class="chart-card"><h3 id="c0ohTitle">Inventario OH por Región</h3><canvas id="c0oh"></canvas></div>
+    <div class="chart-card" id="c0ohCard"><h3 id="c0ohTitle">Inventario OH por Región</h3><canvas id="c0oh"></canvas><div id="c0ohTable" style="display:none;overflow-x:auto"></div></div>
   </div>
   <!-- Progress bars -->
   <div class="reg-bars" id="regBarsWrap"><h3 id="regBarsTitle">Alcance por Región</h3><div id="regBarsBody"></div></div>
@@ -539,6 +539,10 @@ function rT0(){
   if(qInp)qInp.style.display=isCuotaMes?'':'none';
   if(regBarsWrap)regBarsWrap.style.display=isCuotaMes?'':'none';
   var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display=isCuotaMes?'':'none';
+  /* Restaurar canvas c0oh si cambiamos de modo */
+  var _c0cv=document.getElementById('c0oh');var _c0tb=document.getElementById('c0ohTable');
+  if(_c0cv)_c0cv.style.display=(!isCuotaMes||!D.cuota_oct)?'':'none';
+  if(_c0tb)_c0tb.style.display='none';
   if(isCuotaMes){rT0_CuotaMes();}else{rT0_Month(fYr,fMo);}
 }
 
@@ -622,21 +626,63 @@ function rT0_CuotaOct(){
     {label:'Cuota 100k',data:src.map(function(x){return x.cuota_100k;}),backgroundColor:'rgba(160,160,184,.15)',borderRadius:3,borderColor:'#a0a0b8',borderWidth:1},
     {label:'Proyección',data:src.map(function(x){return Math.round(x.ventas/avt);}),backgroundColor:'rgba(234,179,8,.3)',borderRadius:3,borderColor:'#eab308',borderWidth:1}
   ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
-  /* Gráfica tendencia diaria */
-  var cot=document.getElementById('c0ohTitle');if(cot)cot.textContent='Tendencia Diaria — Ventas Accesorios Oct 2026';
-  var dias=Object.keys(co.diario||{}).sort();
-  var vDia=dias.map(function(d){return co.diario[d];});
-  /* Acumulado */
-  var acum=0;var vAcum=vDia.map(function(v){acum+=v;return acum;});
-  var dLbls=dias.map(function(d){return d.slice(8);}); /* solo el día */
-  mkChart('c0oh','line',dLbls,[
-    {label:'Diario',data:vDia,borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,.15)',fill:true,tension:.3,pointRadius:3,yAxisID:'y'},
-    {label:'Acumulado',data:vAcum,borderColor:'#22c55e',backgroundColor:'transparent',tension:.3,pointRadius:0,yAxisID:'y1'}
-  ],{scales:{
-    x:axO,
-    y:{...axO,position:'left',title:{display:true,text:'Diario',color:'#a0a0b8'}},
-    y1:{...axO,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Acumulado',color:'#22c55e'}}
-  },plugins:{legend:{labels:{color:'#a0a0b8'}}}});
+  /* Tabla regional de avance */
+  var cot=document.getElementById('c0ohTitle');if(cot)cot.textContent='Avance vs Cuota por Región — '+mesNm;
+  var c0ohCanvas=document.getElementById('c0oh');if(c0ohCanvas)c0ohCanvas.style.display='none';
+  if(charts['c0oh']){charts['c0oh'].destroy();delete charts['c0oh'];}
+  var c0ohTbl=document.getElementById('c0ohTable');
+  if(c0ohTbl){
+    c0ohTbl.style.display='';
+    var tblSrc=fuente.slice().sort(function(a,b){return a.region.localeCompare(b.region);});
+    var totC100t=tblSrc.reduce(function(a,r){return a+r.cuota_100k;},0);
+    var totVt=tblSrc.reduce(function(a,r){return a+r.ventas;},0);
+    var totFt=tblSrc.reduce(function(a,r){return a+r.faltante;},0);
+    var totPt=avt?Math.round(totVt/avt):0;
+    var totAlct=totC100t?Math.round(totVt/totC100t*1000)/10:0;
+    var totAlcPt=totC100t?Math.round(totPt/totC100t*1000)/10:0;
+    function alcBg(a){return a>=100?'rgba(34,197,94,.18)':a>=80?'rgba(234,179,8,.15)':'rgba(239,68,68,.18)';}
+    function alcColor(a){return a>=100?'var(--green)':a>=80?'var(--yellow)':'var(--red)';}
+    var tStyle='width:100%;border-collapse:collapse;font-size:12px;';
+    var thStyle='background:#1e2240;padding:8px 12px;text-align:right;color:#a0a0b8;font-weight:600;border-bottom:2px solid var(--bd);white-space:nowrap;';
+    var thLStyle='background:#1e2240;padding:8px 12px;text-align:left;color:#a0a0b8;font-weight:600;border-bottom:2px solid var(--bd);';
+    var tdS='padding:7px 12px;border-bottom:1px solid var(--bd);text-align:right;';
+    var tdLS='padding:7px 12px;border-bottom:1px solid var(--bd);text-align:left;';
+    var html='<table style="'+tStyle+'"><thead><tr>'+
+      '<th style="'+thLStyle+'">Región</th>'+
+      '<th style="'+thStyle+'">Cuota Oct (100k)</th>'+
+      '<th style="'+thStyle+'">Venta al '+corteLabel+'</th>'+
+      '<th style="'+thStyle+'">Alcance % 100k</th>'+
+      '<th style="'+thStyle+'">Uds. Faltantes</th>'+
+      '<th style="'+thStyle+'">Proyección cierre</th>'+
+      '<th style="'+thStyle+'">Alc. Proyectado</th>'+
+      '</tr></thead><tbody>';
+    tblSrc.forEach(function(r){
+      var a=r.cuota_100k?Math.round(r.ventas/r.cuota_100k*1000)/10:0;
+      var ap=r.cuota_100k&&avt?Math.round((r.ventas/avt)/r.cuota_100k*1000)/10:0;
+      var pr=avt?Math.round(r.ventas/avt):0;
+      html+='<tr>'+
+        '<td style="'+tdLS+';font-weight:600">'+r.region+'</td>'+
+        '<td style="'+tdS+';color:var(--green)">'+n(r.cuota_100k)+'</td>'+
+        '<td style="'+tdS+'">'+n(r.ventas)+'</td>'+
+        '<td style="'+tdS+';background:'+alcBg(a)+';color:'+alcColor(a)+';font-weight:700">'+a+'%</td>'+
+        '<td style="'+tdS+'">'+n(r.faltante)+'</td>'+
+        '<td style="'+tdS+'">'+n(pr)+'</td>'+
+        '<td style="'+tdS+';color:'+alcColor(ap)+';font-weight:700">'+ap+'%</td>'+
+        '</tr>';
+    });
+    /* Total row */
+    html+='<tr style="background:rgba(108,99,255,.1);font-weight:700">'+
+      '<td style="'+tdLS+'">TOTAL</td>'+
+      '<td style="'+tdS+';color:var(--green)">'+n(totC100t)+'</td>'+
+      '<td style="'+tdS+';color:var(--blue)">'+n(totVt)+'</td>'+
+      '<td style="'+tdS+';background:'+alcBg(totAlct)+';color:'+alcColor(totAlct)+';font-weight:700">'+totAlct+'%</td>'+
+      '<td style="'+tdS+'">'+n(totFt)+'</td>'+
+      '<td style="'+tdS+'">'+n(totPt)+'</td>'+
+      '<td style="'+tdS+';color:'+alcColor(totAlcPt)+';font-weight:700">'+totAlcPt+'%</td>'+
+      '</tr>';
+    html+='</tbody></table>';
+    c0ohTbl.innerHTML=html;
+  }
   /* Barras de avance por región */
   var rt=document.getElementById('regBarsTitle');if(rt)rt.textContent='Alcance vs Cuota 100k por Región';
   var barsHTML='';
