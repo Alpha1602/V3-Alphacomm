@@ -163,6 +163,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   <div class="tab" onclick="switchTab(2)"><span class="tab-ico">📈</span> Attach Rate y Protección</div>
   <div class="tab" onclick="switchTab(3)"><span class="tab-ico">💧</span> Cuota Cases &amp; Liquid Glass</div>
   <div class="tab" onclick="switchTab(4)"><span class="tab-ico">📦</span> Inventario</div>
+  <div class="tab" onclick="switchTab(5)"><span class="tab-ico">📈</span> Ventas PrimeMX</div>
 </div>
 
 <!-- TAB 0: VISTA GENERAL (Histórico YoY) -->
@@ -326,13 +327,38 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   <div id="pivot" style="margin-top:8px"></div>
 </div>
 
+<!-- TAB 5: VENTAS (fuente: Dashboard PrimeMX) -->
+<div class="pane" id="pane5">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+    <div class="filters">
+      <label>Región</label>
+      <div class="chip-group" id="f5reg"></div>
+    </div>
+    <div id="vtaMeta" style="font-size:11px;color:var(--tx2);font-style:italic"></div>
+  </div>
+  <div class="kpi-grid" id="k5"></div>
+  <div class="charts-row" style="margin-top:12px">
+    <div class="chart-card" style="flex:1.2"><h3>Ventas por Segmento</h3><canvas id="c5a"></canvas></div>
+    <div class="chart-card" style="flex:1.6"><h3>Attach Rate — Últimas 12 Semanas</h3><canvas id="c5b"></canvas></div>
+  </div>
+  <div class="charts-row" style="margin-top:12px">
+    <div class="chart-card" style="flex:2"><h3>Por Región</h3><div id="vtaRegTable" style="overflow-x:auto;margin-top:4px"></div></div>
+    <div class="chart-card" style="flex:1.5"><h3>Top Modelos</h3><div id="vtaModTable" style="overflow-x:auto;margin-top:4px"></div></div>
+  </div>
+  <div class="sec-hdr" style="margin-top:12px">
+    <h2>Top Tiendas por Venta</h2>
+    <input id="f5q" oninput="rT5()" placeholder="🔍 Tienda…" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;outline:none;min-width:160px">
+  </div>
+  <div id="vtaTiendas" style="margin-top:8px"></div>
+</div>
+
 <script>
 /* ═══ CONSTANTS ═══ */
 var MES_ES={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul',Aug:'Ago',Sep:'Sep',Oct:'Oct',Nov:'Nov',Dec:'Dic'};
 var MONTHS12=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 /* ═══ STORE ═══ */
-var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[],inventario:null};
+var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[],inventario:null,ventas:null};
 var charts={};
 var activeTab=0;
 var srt={t0:{col:null,dir:-1},t1:{col:null,dir:-1},t2lg:{col:null,dir:-1},t2cs:{col:null,dir:-1}};
@@ -372,6 +398,7 @@ function autoLoad(){
       D.oh_tienda=data.oh_tienda; D.oh_productos=data.oh_productos;
       D.oh_regiones=data.oh_regiones; D._rMap=data.rMap;
       D.inventario=data.inventario||null;
+      D.ventas=data.ventas||null;
       D.base_data=data.base_data; D.base_regiones=data.base_regiones;
       D.cuota_mes=data.cuota_mes||'Aug'; D.cuota_año=data.cuota_año||2026;
       /* Título dinámico */
@@ -384,6 +411,7 @@ function autoLoad(){
       initCuotaFilter();
       initARFilter();
       rT4(); rT0(); rT1(); rT2(); rT3(); renderMatrix();
+      initVentasChips();
       hideLoading();
     })
     .catch(function(e){hideLoading();showError('No se pudo cargar los datos: '+e.message);});
@@ -498,6 +526,7 @@ function setChip(id,val,el){
   else if(id==='f3reg'){rT3();renderMatrix();}
   else if(id==='f3cat')renderMatrix();
   else if(id==='f4cat'||id==='f4reg')rT4();
+  else if(id==='f5reg')rT5();
 }
 
 /* ═══ INIT FILTERS (region chips for tabs) ═══ */
@@ -1224,6 +1253,55 @@ function rT4(){
   document.getElementById('h4tbl').innerHTML=tbl;
 }
 
+/* ═══ TAB 5: VENTAS (PrimeMX) ═══ */
+function initVentasChips(){
+  var vta=D.ventas,grp=document.getElementById('f5reg');
+  if(!grp||!vta)return;
+  var regs=vta.regiones.map(function(r){return r.region;});
+  grp.setAttribute('data-val','');
+  grp.innerHTML='<div class="chip active" onclick="setChip('f5reg','',this)">Todas</div>'+
+    regs.map(function(r){return '<div class="chip" onclick="setChip('f5reg',''+r.replace(/'/g,"\'")+'\',this)">'+r+'</div>';}).join('');
+}
+function rT5(){
+  var vta=D.ventas,k5=document.getElementById('k5');
+  if(!vta){if(k5)k5.innerHTML='<div style="grid-column:1/-1;color:var(--tx2);padding:20px;text-align:center">📈 Sin datos de ventas.</div>';return;}
+  var reg=getChip('f5reg'),q=document.getElementById('f5q')?document.getElementById('f5q').value.toLowerCase():'';
+  var totalV=vta.total_venta,ar=vta.attach_global.ar,acc=vta.attach_global.acc,tel=vta.attach_global.tel;
+  if(reg){var rd=vta.regiones.find(function(r){return r.region===reg;});if(rd){totalV=rd.venta_alpha;ar=rd.attach_rate;acc=rd.acc_canal;tel=rd.tel_canal;}}
+  k5.innerHTML=kpi('Ventas Alpha','blue',n(totalV),'Sem '+vta.week)+kpi('Attach Rate','green',(ar*100).toFixed(1)+'%','Alphacomm / canal')+kpi('Accs Canal','purple',n(acc),'Total canal '+vta.week)+kpi('Teléfonos','orange',n(tel),'Equipos vendidos sem');
+  var meta=document.getElementById('vtaMeta');if(meta)meta.innerHTML='Fuente: PrimeMX · Sem <strong>'+vta.week+'</strong> · Corte: <strong>'+vta.fecha_corte+'</strong>';
+  var segColors=['#6366f1','#22d3ee','#f59e0b','#10b981','#ef4444','#a78bfa','#fb923c','#34d399','#60a5fa','#f472b6','#a3e635','#facc15'];
+  var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
+  mkChart('c5a','bar',vta.segs.map(function(s){return s.seg;}),
+    [{data:vta.segs.map(function(s){return s.venta;}),backgroundColor:segColors,borderRadius:3}],
+    {indexAxis:'y',plugins:{legend:{display:false}},scales:{x:axO,y:axO}});
+  var s12=vta.serie12;
+  mkChart('c5b','line',s12.map(function(s){return s.sem;}),
+    [{label:'Accs Alpha',data:s12.map(function(s){return s.acc;}),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.15)',tension:.3,pointRadius:3,yAxisID:'y'},
+     {label:'AR %',data:s12.map(function(s){return Math.round(s.ar*1000)/10;}),borderColor:'#22d3ee',borderDash:[4,3],tension:.3,pointRadius:3,yAxisID:'y2'}],
+    {plugins:{legend:{labels:{color:'#a0a0b8',font:{size:10}}}},scales:{y:{...axO,title:{display:true,text:'Unidades',color:'#a0a0b8',font:{size:9}}},y2:{...axO,position:'right',title:{display:true,text:'AR %',color:'#a0a0b8',font:{size:9}},grid:{drawOnChartArea:false}}}});
+  var regsF=reg?vta.regiones.filter(function(r){return r.region===reg;}):vta.regiones;
+  var tbl='<table><thead><tr><th>Región</th><th class="right">Vta Alpha</th><th class="right">Accs Canal</th><th class="right">% Alpha</th><th class="right">Attach Rate</th><th class="right">Tel</th></tr></thead><tbody>';
+  var tv=0,ta=0,tt=0;
+  regsF.forEach(function(r){
+    var pct=r.acc_canal>0?Math.round(r.venta_alpha/r.acc_canal*1000)/10:0;
+    var arc=(r.attach_rate*100).toFixed(1),arC=r.attach_rate>=0.5?'#10b981':r.attach_rate>=0.45?'#f59e0b':'#ef4444';
+    tbl+='<tr><td style="font-weight:600">'+r.region+'</td><td class="right" style="color:var(--acc2);font-weight:700">'+n(r.venta_alpha)+'</td><td class="right">'+n(r.acc_canal)+'</td><td class="right">'+pct+'%</td><td class="right" style="color:'+arC+';font-weight:700">'+arc+'%</td><td class="right" style="color:var(--tx2)">'+n(r.tel_canal)+'</td></tr>';
+    tv+=r.venta_alpha;ta+=r.acc_canal;tt+=r.tel_canal;
+  });
+  tbl+='<tr class="total-row"><td><strong>TOTAL</strong></td><td class="right"><strong>'+n(tv)+'</strong></td><td class="right"><strong>'+n(ta)+'</strong></td><td class="right"><strong>'+(ta>0?Math.round(tv/ta*1000)/10:0)+'%</strong></td><td class="right"><strong>'+(tt>0?(ta/tt*100).toFixed(1):0)+'%</strong></td><td class="right"><strong>'+n(tt)+'</strong></td></tr></tbody></table>';
+  document.getElementById('vtaRegTable').innerHTML=tbl;
+  var mTbl='<table><thead><tr><th>Modelo</th><th>Seg</th><th class="right">Venta</th></tr></thead><tbody>';
+  vta.top15.forEach(function(m){mTbl+='<tr><td style="font-size:11px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+m.modelo+'">'+m.modelo+'</td><td style="font-size:10px;color:var(--tx2)">'+m.seg+'</td><td class="right" style="font-weight:700;color:var(--acc2)">'+n(m.venta)+'</td></tr>';});
+  mTbl+='</tbody></table>';document.getElementById('vtaModTable').innerHTML=mTbl;
+  var tiendas=vta.top30.filter(function(t){if(reg&&t.region!==reg)return false;if(q&&!t.tienda.toLowerCase().includes(q))return false;return true;});
+  var div=document.getElementById('vtaTiendas');
+  if(!tiendas.length){div.innerHTML='<p style="color:var(--tx2);padding:12px">Sin tiendas.</p>';return;}
+  var html='<div class="tbl-wrap" style="max-height:320px;overflow-y:auto"><table><thead><tr><th>Tienda</th><th>Subregión</th><th class="right">Ventas</th></tr></thead><tbody>';
+  tiendas.forEach(function(t){html+='<tr><td style="font-size:11px;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+t.tienda+'">'+t.tienda+'</td><td style="font-size:11px;color:var(--tx2)">'+t.subregion+'</td><td class="right" style="font-weight:700;color:var(--acc2)">'+n(t.venta)+'</td></tr>';});
+  html+='</tbody></table></div>';div.innerHTML=html;
+}
+
 /* ═══ TAB SWITCH ═══ */
 function switchTab(idx){
   activeTab=idx;
@@ -1234,6 +1312,7 @@ function switchTab(idx){
   if(idx===2)setTimeout(function(){rT1();},60);
   if(idx===3)setTimeout(function(){rT2();},60);
   if(idx===4)setTimeout(function(){rT3();renderMatrix();},60);
+  if(idx===5)setTimeout(function(){rT5();},60);
 }
 
 /* ═══ EXPORT IMAGEN ═══ */
