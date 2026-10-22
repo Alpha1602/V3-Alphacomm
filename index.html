@@ -159,7 +159,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   <div class="tab active" onclick="switchTab(0)"><span class="tab-ico">📊</span> 2025 vs 2026</div>
   <div class="tab" onclick="switchTab(1)"><span class="tab-ico">📋</span> Cuota del Mes</div>
   <div class="tab" onclick="switchTab(2)"><span class="tab-ico">📈</span> Attach Rate y Protección</div>
-  <div class="tab" onclick="switchTab(3)"><span class="tab-ico">🧩</span> Share por Categoría</div>
+  <div class="tab" onclick="switchTab(3)"><span class="tab-ico">🥧</span> Share por Categoría</div>
   <div class="tab" onclick="switchTab(4)"><span class="tab-ico">📦</span> Inventario</div>
 </div>
 
@@ -294,7 +294,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   <div class="chart-card" style="margin-top:12px"><h3 id="c5title">Mix de categorías por región</h3><canvas id="c5"></canvas></div>
   <div class="sec-hdr" style="margin-top:14px"><h2>Share por categoría — 7 regiones</h2></div>
   <div class="tbl-wrap" id="shTbl"></div>
-  <div style="color:var(--tx2);font-size:11px;margin-top:6px">Color: verde = share arriba del nacional, rojo = abajo (diferencia en puntos porcentuales). Fuente: reporte Ventas Alphacomm (Reales + Cantados).</div>
+  <div style="color:var(--tx2);font-size:11px;margin-top:6px">Color: verde = share arriba del nacional, rojo = abajo (más intenso = mayor diferencia). Fuente: reporte Ventas Alphacomm (Reales + Cantados).</div>
 </div>
 
 <!-- TAB 4: INVENTARIO (fuente: Dashboard PrimeMX) -->
@@ -1017,7 +1017,7 @@ function rT5(){
       var bg=df>=0?'rgba(34,197,94,'+a+')':'rgba(239,68,68,'+a+')';
       var main=mode==='pct'?n(pc,1)+'%':n(u);
       var sub=mode==='pct'?n(u)+' uds':n(pc,1)+'%';
-      h+='<td class="right" style="background:'+bg+'"><div style="font-weight:700">'+main+'</div><div style="font-size:10px;color:var(--tx2)">'+sub+' · <span style="color:'+(df>=0?'var(--green)':'var(--red)')+'">'+(df>=0?'+':'')+n(df,1)+' pp</span></div></td>';
+      h+='<td class="right" style="background:'+bg+'"><div style="font-weight:700">'+main+'</div><div style="font-size:10px;color:var(--tx2)">'+sub+'</div></td>';
     });
     h+='</tr>';
   });
