@@ -1003,7 +1003,7 @@ function rT5(){
   var mx=Math.max.apply(null,sorted.map(function(c){return sc.total[c];}))||1;
   document.getElementById('shBars').innerHTML=sorted.map(function(c){
     var u=sc.total[c],pc=tot?u/tot*100:0,w=Math.max(u/mx*100,0.4);
-    return '<div style="display:flex;align-items:center;gap:12px;margin:10px 0"><div style="width:130px;text-align:right;color:var(--tx2);font-size:13px">'+c+'</div><div style="flex:1;display:flex;align-items:center;gap:10px"><div style="height:28px;width:'+w*0.8+'%;min-width:2px;background:'+(CAT_CLR[c]||'#7ba4e8')+';border-radius:6px"></div><div style="font-size:14px;white-space:nowrap">'+n(u)+' · '+n(pc,0)+'%</div></div></div>';
+    return '<div style="display:flex;align-items:center;gap:12px;margin:10px 0"><div style="width:130px;text-align:right;color:var(--tx2);font-size:13px">'+c+'</div><div style="flex:1;display:flex;align-items:center;gap:10px"><div style="height:28px;width:'+w*0.8+'%;min-width:2px;background:'+(CAT_CLR[c]||'#7ba4e8')+';border-radius:6px"></div><div style="font-size:14px;white-space:nowrap">'+n(u)+' · '+n(pc,1)+'%</div></div></div>';
   }).join('');
   /* Gráfica 100% apilada */
   var labels=regs.map(function(r){return r.region;}).concat(['NACIONAL']);
