@@ -291,6 +291,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
     <div id="shMeta" style="font-size:11px;color:var(--tx2);font-style:italic"></div>
   </div>
   <div class="kpi-grid" id="k5"></div>
+  <div class="chart-card" style="margin-top:12px"><h3>Share general por categoría</h3><div id="shBars" style="padding:6px 4px"></div></div>
   <div class="chart-card" style="margin-top:12px"><h3 id="c5title">Mix de categorías por región</h3><canvas id="c5"></canvas></div>
   <div class="sec-hdr" style="margin-top:14px"><h2>Share por categoría — 7 regiones</h2></div>
   <div class="tbl-wrap" id="shTbl"></div>
@@ -997,6 +998,13 @@ function rT5(){
   document.getElementById('k5').innerHTML=kp;
   var regs=sc.regiones.slice().sort(function(a,b){return a.region.localeCompare(b.region);});
   var natPct={};cats.forEach(function(c){natPct[c]=tot?sc.total[c]/tot*100:0;});
+  /* Barras share general */
+  var sorted=cats.slice().sort(function(a,b){return sc.total[b]-sc.total[a];});
+  var mx=Math.max.apply(null,sorted.map(function(c){return sc.total[c];}))||1;
+  document.getElementById('shBars').innerHTML=sorted.map(function(c){
+    var u=sc.total[c],pc=tot?u/tot*100:0,w=Math.max(u/mx*100,0.4);
+    return '<div style="display:flex;align-items:center;gap:12px;margin:10px 0"><div style="width:130px;text-align:right;color:var(--tx2);font-size:13px">'+c+'</div><div style="flex:1;display:flex;align-items:center;gap:10px"><div style="height:28px;width:'+w*0.8+'%;min-width:2px;background:'+(CAT_CLR[c]||'#7ba4e8')+';border-radius:6px"></div><div style="font-size:14px;white-space:nowrap">'+n(u)+' · '+n(pc,0)+'%</div></div></div>';
+  }).join('');
   /* Gráfica 100% apilada */
   var labels=regs.map(function(r){return r.region;}).concat(['NACIONAL']);
   var rowsAll=regs.map(function(r){return {t:cats.reduce(function(a,c){return a+(r.cats[c]||0);},0),v:r.cats};}).concat([{t:tot,v:sc.total}]);
