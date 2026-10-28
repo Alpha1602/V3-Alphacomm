@@ -651,7 +651,9 @@ function rT0_CuotaQ4(){
       '<th style="'+thS+';background:#163016;color:#22c55e" colspan="2">Meta 100k</th>'+
       '<th style="'+thS+';background:#1c1700;color:#eab308" colspan="2">Meta 90k</th>'+
       '<th style="'+thS+'" colspan="2">Ventas Oct</th>'+
-      '<th style="'+thS+'" rowspan="2">Proyección<br>cierre</th></tr>'+
+      '<th style="'+thS+'" rowspan="2">Proy.<br>cierre</th>'+
+      '<th style="'+thS+'" rowspan="2">Alc. Proy.<br>vs 100k</th>'+
+      '<th style="'+thS+';color:var(--red)" rowspan="2">Faltante<br>vs 100k</th></tr>'+
       '<tr>'+
       '<th style="'+thS+';background:#163016;color:#22c55e">Oct</th>'+
       '<th style="'+thS+';background:#163016;color:#22c55e">Q4 Total</th>'+
@@ -663,6 +665,8 @@ function rT0_CuotaQ4(){
     dispSrc.forEach(function(r){
       var a=r.meta_100k_oct?Math.round(r.ventas/r.meta_100k_oct*1000)/10:0;
       var pr=avt?Math.round(r.ventas/avt):0;
+      var aproy=r.meta_100k_oct?Math.round(pr/r.meta_100k_oct*1000)/10:0;
+      var falt=Math.max(0,r.meta_100k_oct-r.ventas);
       html+='<tr>'+
         '<td style="'+tdLS+';font-weight:600">'+r.region+'</td>'+
         '<td style="'+tdS+';color:#22c55e">'+n(r.meta_100k_oct)+'</td>'+
@@ -672,10 +676,14 @@ function rT0_CuotaQ4(){
         '<td style="'+tdS+'">'+n(r.ventas)+'</td>'+
         '<td style="'+tdS+';background:'+abg(a)+';color:'+acl(a)+';font-weight:700">'+a+'%</td>'+
         '<td style="'+tdS+'">'+n(pr)+'</td>'+
+        '<td style="'+tdS+';color:'+acl(aproy)+';font-weight:700">'+aproy+'%</td>'+
+        '<td style="'+tdS+';color:var(--red)">'+n(falt)+'</td>'+
         '</tr>';
     });
     var tA=tot100kOct?Math.round(totV/tot100kOct*1000)/10:0;
     var tPr=avt?Math.round(totV/avt):0;
+    var tAProy=tot100kOct?Math.round(tPr/tot100kOct*1000)/10:0;
+    var tFalt=Math.max(0,tot100kOct-totV);
     html+='<tr style="background:rgba(108,99,255,.1);font-weight:700">'+
       '<td style="'+tdLS+'">TOTAL</td>'+
       '<td style="'+tdS+';color:#22c55e">'+n(tot100kOct)+'</td>'+
@@ -685,11 +693,16 @@ function rT0_CuotaQ4(){
       '<td style="'+tdS+';color:var(--blue)">'+n(totV)+'</td>'+
       '<td style="'+tdS+';background:'+abg(tA)+';color:'+acl(tA)+';font-weight:700">'+tA+'%</td>'+
       '<td style="'+tdS+'">'+n(tPr)+'</td>'+
+      '<td style="'+tdS+';color:'+acl(tAProy)+';font-weight:700">'+tAProy+'%</td>'+
+      '<td style="'+tdS+';color:var(--red)">'+n(tFalt)+'</td>'+
       '</tr>';
     /* Categorías Q4 */
-    html+='<tr><td colspan="8" style="padding:12px 10px 4px;color:var(--tx2);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Desglose por Categoría — Octubre</td></tr>';
+    html+='<tr><td colspan="10" style="padding:12px 10px 4px;color:var(--tx2);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Desglose por Categoría — Octubre</td></tr>';
     (q4.por_categoria||[]).forEach(function(c){
       var ac=c.meta_100k_oct?Math.round(c.ventas/c.meta_100k_oct*1000)/10:0;
+      var cPr=avt?Math.round(c.ventas/avt):0;
+      var cAProy=c.meta_100k_oct?Math.round(cPr/c.meta_100k_oct*1000)/10:0;
+      var cFalt=Math.max(0,c.meta_100k_oct-c.ventas);
       html+='<tr style="font-size:11px">'+
         '<td style="'+tdLS+';color:var(--tx2)">'+c.categoria+'</td>'+
         '<td style="'+tdS+';color:#22c55e">'+n(c.meta_100k_oct)+'</td>'+
@@ -698,7 +711,9 @@ function rT0_CuotaQ4(){
         '<td style="'+tdS+';color:#eab308;font-size:10px">'+n(c.meta_90k_total)+'</td>'+
         '<td style="'+tdS+'">'+n(c.ventas)+'</td>'+
         '<td style="'+tdS+(c.meta_100k_oct?';background:'+abg(ac)+';color:'+acl(ac)+';font-weight:600':'')+'">'+(c.meta_100k_oct?ac+'%':'—')+'</td>'+
-        '<td style="'+tdS+'">—</td>'+
+        '<td style="'+tdS+'">'+n(cPr)+'</td>'+
+        '<td style="'+tdS+(c.meta_100k_oct?';color:'+acl(cAProy)+';font-weight:600':'')+'">'+(c.meta_100k_oct?cAProy+'%':'—')+'</td>'+
+        '<td style="'+tdS+';color:var(--red)">'+(c.meta_100k_oct?n(cFalt):'—')+'</td>'+
         '</tr>';
     });
     html+='</tbody></table>';
