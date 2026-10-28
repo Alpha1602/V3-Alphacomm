@@ -157,7 +157,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab(0)"><span class="tab-ico">📊</span> 2025 vs 2026</div>
-  <div class="tab" onclick="switchTab(1)"><span class="tab-ico">📋</span> Cuota del Mes</div>
+  <div class="tab" onclick="switchTab(1)"><span class="tab-ico">🎯</span> Cuota Q4</div>
   <div class="tab" onclick="switchTab(2)"><span class="tab-ico">📈</span> Attach Rate y Protección</div>
   <div class="tab" onclick="switchTab(3)"><span class="tab-ico">🥧</span> Share por Categoría</div>
   <div class="tab" onclick="switchTab(4)"><span class="tab-ico">📦</span> Inventario</div>
@@ -326,7 +326,7 @@ var MES_ES={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul
 var MONTHS12=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 /* ═══ STORE ═══ */
-var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[],inventario:null};
+var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[],inventario:null,cuota_q4:null};
 var charts={};
 var activeTab=0;
 var srt={t0:{col:null,dir:-1},t1:{col:null,dir:-1}};
@@ -359,7 +359,7 @@ function autoLoad(){
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(data){
       D.cuota_jul=data.cuota_jul; D.ar_clean=data.ar_clean;
-      D.cuota_oct=data.cuota_oct||null; D.share_cat=data.share_cat||null;
+      D.cuota_oct=data.cuota_oct||null; D.cuota_q4=data.cuota_q4||null; D.share_cat=data.share_cat||null;
       D.primemx_summary=data.primemx_summary||{}; D.ar_region=data.ar_region||[];
       D.lg_region=data.lg_region; D.lg_tienda=data.lg_tienda;
       D.lg_totals=data.lg_totals; D.cat_totals=data.cat_totals;
@@ -529,22 +529,26 @@ function rT0(){
   var qSep=document.getElementById('f0qSep');
   var qInp=document.getElementById('f0q');
   var regBarsWrap=document.getElementById('regBarsWrap');
-  /* En modo cuota_oct, ocultar filtros de riesgo (no aplican) */
+  /* En modo cuota_q4/cuota_oct, ocultar filtros de riesgo */
+  var hasQ4=isCuotaMes&&D.cuota_q4;
   var hasOct=isCuotaMes&&D.cuota_oct;
-  [riesSep,riesLbl,riesGrp].forEach(function(el){if(el)el.style.display=(isCuotaMes&&!hasOct)?'':'none';});
+  var hideRisk=hasQ4||hasOct;
+  [riesSep,riesLbl,riesGrp].forEach(function(el){if(el)el.style.display=(isCuotaMes&&!hideRisk)?'':'none';});
   if(qSep)qSep.style.display=isCuotaMes?'':'none';
   if(qInp)qInp.style.display=isCuotaMes?'':'none';
   if(regBarsWrap)regBarsWrap.style.display=isCuotaMes?'':'none';
   var c0ohWrap=document.getElementById('c0oh');if(c0ohWrap)c0ohWrap.closest('.chart-card').style.display=isCuotaMes?'':'none';
   /* Restaurar canvas c0oh si cambiamos de modo */
   var _c0cv=document.getElementById('c0oh');var _c0tb=document.getElementById('c0ohTable');
-  if(_c0cv)_c0cv.style.display=(!isCuotaMes||!D.cuota_oct)?'':'none';
+  if(_c0cv)_c0cv.style.display=(!isCuotaMes||!(hasQ4||hasOct))?'':'none';
   if(_c0tb)_c0tb.style.display='none';
   if(isCuotaMes){rT0_CuotaMes();}else{rT0_Month(fYr,fMo);}
 }
 
 function rT0_CuotaMes(){
-  /* ── Si hay cuota_oct, usar nuevo formato ─────────────────────────────── */
+  /* ── Si hay cuota_q4, usar vista Q4 ──────────────────────────────────── */
+  if(D.cuota_q4){rT0_CuotaQ4();return;}
+  /* ── Si hay cuota_oct, usar formato intermedio ───────────────────────── */
   if(D.cuota_oct){rT0_CuotaOct();return;}
   /* ── Fallback: formato antiguo (cuota_jul) ────────────────────────────── */
   var cMo=D.cuota_mes||'Aug'; var cYr=String(D.cuota_año||2026);
@@ -581,6 +585,179 @@ function rT0_CuotaMes(){
   document.getElementById('t0cnt').textContent='Total: '+rows.length+' tiendas';
   document.getElementById('th0').innerHTML=th('t0','region','Región')+th('t0','tienda','Tienda')+th('t0','cuota','Cuota',true)+th('t0','ventas','Ventas',true)+th('t0','proy','Proy.',true)+'<th>Alcance</th>'+th('t0','faltante','Faltante',true);
   document.getElementById('tb0').innerHTML=sortRows(rows,'t0').map(function(r){var a=r.cuota?Math.round(r.ventas/r.cuota*1000)/10:0;return '<tr><td>'+r.region+'</td><td>'+r.tienda+'</td><td class="right">'+n(r.cuota)+'</td><td class="right">'+n(r.ventas)+'</td><td class="right yellow">'+n(r.proy)+'</td><td>'+pb(a)+'</td><td class="right red">'+n(r.faltante)+'</td></tr>';}).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
+}
+
+function rT0_CuotaQ4(){
+  var q4=D.cuota_q4;
+  var reg=getChip('f0reg');
+  var corte='27-Oct-2026';
+  var avt=q4.avance_tiempo||0;
+  /* Datos por región — filtrar si aplica */
+  var src=q4.por_region.slice();
+  if(reg){
+    /* Consolidar BAJIO+NORTE 2 → BAJIO-NORTE 2 si se filtra por región mapeada */
+    var RMAP={'BAJIO':'BAJIO-NORTE 2','NORTE 2':'BAJIO-NORTE 2'};
+    src=src.filter(function(r){return (RMAP[r.region]||r.region)===reg;});
+  }
+  var totV=src.reduce(function(a,r){return a+r.ventas;},0);
+  var tot100kOct=src.reduce(function(a,r){return a+r.meta_100k_oct;},0);
+  var tot90kOct=src.reduce(function(a,r){return a+r.meta_90k_oct;},0);
+  var tot100kQ4=src.reduce(function(a,r){return a+r.meta_100k_total;},0);
+  var tot90kQ4=src.reduce(function(a,r){return a+r.meta_90k_total;},0);
+  var proy=avt?Math.round(totV/avt):0;
+  var alc100=tot100kOct?Math.round(totV/tot100kOct*1000)/10:0;
+  var alc90=tot90kOct?Math.round(totV/tot90kOct*1000)/10:0;
+  var alcP100=tot100kOct?Math.round(proy/tot100kOct*1000)/10:0;
+  var alc100Q4=tot100kQ4?Math.round(totV/tot100kQ4*1000)/10:0;
+  var alc90Q4=tot90kQ4?Math.round(totV/tot90kQ4*1000)/10:0;
+  function cls(v,t1,t2){return v>=t1?'green':v>=t2?'yellow':'red';}
+  /* KPIs */
+  document.getElementById('k0').innerHTML=
+    kpi('Acumulado al '+corte,'blue',n(totV),'uds vendidas Oct')+
+    kpi('Alcance vs 100k',cls(alc100,100,70),alc100+'%','meta oct '+n(tot100kOct)+' uds')+
+    kpi('Alcance vs 90k',cls(alc90,100,80),alc90+'%','meta oct '+n(tot90kOct)+' uds')+
+    kpi('Proy. cierre Oct',cls(alcP100,100,80),n(proy),'uds proyectadas')+
+    kpi('Q4 100k','',n(tot100kQ4),'meta total oct–dic')+
+    kpi('Q4 90k','',n(tot90kQ4),'meta total oct–dic')+
+    kpi('% Q4 100k (oct)',cls(alc100Q4,30,20),alc100Q4+'%','del total Q4 cumplido')+
+    kpi('% Q4 90k (oct)',cls(alc90Q4,30,20),alc90Q4+'%','del total Q4 cumplido');
+  /* Chart ventas vs cuota 100k y 90k por región */
+  var ct=document.getElementById('c0regTitle');
+  if(ct)ct.textContent='Ventas Oct vs Cuotas Q4 por Región — al '+corte;
+  var dispSrc=src.slice().sort(function(a,b){return a.region.localeCompare(b.region);});
+  var rK=dispSrc.map(function(x){return x.region;});
+  var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
+  mkChart('c0reg','bar',rK,[
+    {label:'Ventas al '+corte,data:dispSrc.map(function(x){return x.ventas;}),backgroundColor:'#6c63ff',borderRadius:3},
+    {label:'Meta Oct (100k)',data:dispSrc.map(function(x){return x.meta_100k_oct;}),backgroundColor:'rgba(34,197,94,.2)',borderRadius:3,borderColor:'#22c55e',borderWidth:1},
+    {label:'Meta Oct (90k)',data:dispSrc.map(function(x){return x.meta_90k_oct;}),backgroundColor:'rgba(234,179,8,.15)',borderRadius:3,borderColor:'#eab308',borderWidth:1}
+  ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
+  /* Tabla regional Q4 */
+  var cot=document.getElementById('c0ohTitle');if(cot)cot.textContent='Detalle Q4 por Región — escenarios 100k vs 90k';
+  var c0ohCanvas=document.getElementById('c0oh');if(c0ohCanvas)c0ohCanvas.style.display='none';
+  if(charts['c0oh']){charts['c0oh'].destroy();delete charts['c0oh'];}
+  var c0ohTbl=document.getElementById('c0ohTable');
+  if(c0ohTbl){
+    c0ohTbl.style.display='';
+    var tStyle='width:100%;border-collapse:collapse;font-size:12px;';
+    var thS='background:#1e2240;padding:7px 10px;text-align:right;color:#a0a0b8;font-weight:600;border-bottom:2px solid var(--bd);white-space:nowrap;';
+    var thLS='background:#1e2240;padding:7px 10px;text-align:left;color:#a0a0b8;font-weight:600;border-bottom:2px solid var(--bd);';
+    var tdS='padding:6px 10px;border-bottom:1px solid var(--bd);text-align:right;';
+    var tdLS='padding:6px 10px;border-bottom:1px solid var(--bd);text-align:left;';
+    function abg(v){return v>=100?'rgba(34,197,94,.18)':v>=80?'rgba(234,179,8,.15)':'rgba(239,68,68,.18)';}
+    function acl(v){return v>=100?'var(--green)':v>=80?'var(--yellow)':'var(--red)';}
+    var html='<table style="'+tStyle+'"><thead>'+
+      '<tr><th style="'+thLS+'" rowspan="2">Región</th>'+
+      '<th style="'+thS+';background:#163016;color:#22c55e" colspan="2">Meta 100k</th>'+
+      '<th style="'+thS+';background:#1c1700;color:#eab308" colspan="2">Meta 90k</th>'+
+      '<th style="'+thS+'" colspan="2">Ventas Oct</th>'+
+      '<th style="'+thS+'" rowspan="2">Proyección<br>cierre</th></tr>'+
+      '<tr>'+
+      '<th style="'+thS+';background:#163016;color:#22c55e">Oct</th>'+
+      '<th style="'+thS+';background:#163016;color:#22c55e">Q4 Total</th>'+
+      '<th style="'+thS+';background:#1c1700;color:#eab308">Oct</th>'+
+      '<th style="'+thS+';background:#1c1700;color:#eab308">Q4 Total</th>'+
+      '<th style="'+thS+'">Uds.</th>'+
+      '<th style="'+thS+'">% 100k</th>'+
+      '</tr></thead><tbody>';
+    dispSrc.forEach(function(r){
+      var a=r.meta_100k_oct?Math.round(r.ventas/r.meta_100k_oct*1000)/10:0;
+      var pr=avt?Math.round(r.ventas/avt):0;
+      html+='<tr>'+
+        '<td style="'+tdLS+';font-weight:600">'+r.region+'</td>'+
+        '<td style="'+tdS+';color:#22c55e">'+n(r.meta_100k_oct)+'</td>'+
+        '<td style="'+tdS+';color:#22c55e;font-size:11px">'+n(r.meta_100k_total)+'</td>'+
+        '<td style="'+tdS+';color:#eab308">'+n(r.meta_90k_oct)+'</td>'+
+        '<td style="'+tdS+';color:#eab308;font-size:11px">'+n(r.meta_90k_total)+'</td>'+
+        '<td style="'+tdS+'">'+n(r.ventas)+'</td>'+
+        '<td style="'+tdS+';background:'+abg(a)+';color:'+acl(a)+';font-weight:700">'+a+'%</td>'+
+        '<td style="'+tdS+'">'+n(pr)+'</td>'+
+        '</tr>';
+    });
+    var tA=tot100kOct?Math.round(totV/tot100kOct*1000)/10:0;
+    var tPr=avt?Math.round(totV/avt):0;
+    html+='<tr style="background:rgba(108,99,255,.1);font-weight:700">'+
+      '<td style="'+tdLS+'">TOTAL</td>'+
+      '<td style="'+tdS+';color:#22c55e">'+n(tot100kOct)+'</td>'+
+      '<td style="'+tdS+';color:#22c55e;font-size:11px">'+n(tot100kQ4)+'</td>'+
+      '<td style="'+tdS+';color:#eab308">'+n(tot90kOct)+'</td>'+
+      '<td style="'+tdS+';color:#eab308;font-size:11px">'+n(tot90kQ4)+'</td>'+
+      '<td style="'+tdS+';color:var(--blue)">'+n(totV)+'</td>'+
+      '<td style="'+tdS+';background:'+abg(tA)+';color:'+acl(tA)+';font-weight:700">'+tA+'%</td>'+
+      '<td style="'+tdS+'">'+n(tPr)+'</td>'+
+      '</tr>';
+    /* Categorías Q4 */
+    html+='<tr><td colspan="8" style="padding:12px 10px 4px;color:var(--tx2);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Desglose por Categoría — Octubre</td></tr>';
+    (q4.por_categoria||[]).forEach(function(c){
+      var ac=c.meta_100k_oct?Math.round(c.ventas/c.meta_100k_oct*1000)/10:0;
+      html+='<tr style="font-size:11px">'+
+        '<td style="'+tdLS+';color:var(--tx2)">'+c.categoria+'</td>'+
+        '<td style="'+tdS+';color:#22c55e">'+n(c.meta_100k_oct)+'</td>'+
+        '<td style="'+tdS+';color:#22c55e;font-size:10px">'+n(c.meta_100k_total)+'</td>'+
+        '<td style="'+tdS+';color:#eab308">'+n(c.meta_90k_oct)+'</td>'+
+        '<td style="'+tdS+';color:#eab308;font-size:10px">'+n(c.meta_90k_total)+'</td>'+
+        '<td style="'+tdS+'">'+n(c.ventas)+'</td>'+
+        '<td style="'+tdS+(c.meta_100k_oct?';background:'+abg(ac)+';color:'+acl(ac)+';font-weight:600':'')+'">'+(c.meta_100k_oct?ac+'%':'—')+'</td>'+
+        '<td style="'+tdS+'">—</td>'+
+        '</tr>';
+    });
+    html+='</tbody></table>';
+    c0ohTbl.innerHTML=html;
+  }
+  /* Progress bars por región */
+  var rt=document.getElementById('regBarsTitle');if(rt)rt.textContent='Alcance Oct vs Meta 100k por Región';
+  var barsHTML='';
+  dispSrc.forEach(function(r){
+    var a=r.meta_100k_oct?Math.round(r.ventas/r.meta_100k_oct*1000)/10:0;
+    var a90=r.meta_90k_oct?Math.round(r.ventas/r.meta_90k_oct*1000)/10:0;
+    var bColor=a>=100?'var(--green)':a>=70?'var(--yellow)':'var(--red)';
+    barsHTML+='<div class="reg-row"><div class="reg-name">'+r.region+'</div>'+
+      '<div class="reg-bar-wrap"><div class="reg-bar-fill" style="width:'+Math.min(a,100)+'%;background:'+bColor+'"></div></div>'+
+      '<div class="reg-meta">'+n(r.ventas)+' / '+n(r.meta_100k_oct)+
+      ' = <strong style="color:'+bColor+'">'+a+'%</strong> (100k)'+
+      ' &nbsp;·&nbsp; <span style="color:#eab308">'+a90+'%</span> (90k)'+
+      '</div></div>';
+  });
+  document.getElementById('regBarsBody').innerHTML=barsHTML;
+  /* Tabla detalle tiendas (cuota_jul) */
+  var q=(document.getElementById('f0q')||{}).value||'';q=q.toLowerCase();
+  var tRows=(D.cuota_jul||[]).filter(function(r){
+    if(reg&&r.region!==reg&&(r.region)!==reg)return false;
+    if(q&&!r.tienda.toLowerCase().includes(q)&&!r.clave.toLowerCase().includes(q))return false;
+    return true;
+  });
+  var sh=document.getElementById('t0secHdr');if(sh)sh.textContent='Detalle por Tienda — Octubre · al '+corte;
+  document.getElementById('t0cnt').textContent='Total: '+tRows.length+' tiendas';
+  document.getElementById('th0').innerHTML=
+    th('t0','region','Región')+
+    th('t0','tienda','Tienda')+
+    th('t0','cuota','Cuota Oct',true)+
+    th('t0','ventas','Ventas Oct',true)+
+    '<th>Alcance</th>'+
+    th('t0','alcance','% Alc.',true)+
+    th('t0','proy','Proyección',true)+
+    th('t0','faltante','Faltante',true);
+  var tRowTotC=tRows.reduce(function(a,r){return a+r.cuota;},0);
+  var tRowTotV=tRows.reduce(function(a,r){return a+r.ventas;},0);
+  var tRowAlc=tRowTotC?Math.round(tRowTotV/tRowTotC*1000)/10:0;
+  var totRow='<tr class="total-row"><td colspan="2"><strong>TOTAL ('+tRows.length+' tiendas)</strong></td>'+
+    '<td class="right">'+n(tRowTotC)+'</td>'+
+    '<td class="right blue">'+n(tRowTotV)+'</td>'+
+    '<td>'+pb(tRowAlc)+'</td>'+
+    '<td class="right"><strong>'+tRowAlc+'%</strong></td>'+
+    '<td class="right yellow">'+n(avt?Math.round(tRowTotV/avt):0)+'</td>'+
+    '<td class="right red">'+n(Math.max(0,tRowTotC-tRowTotV))+'</td></tr>';
+  document.getElementById('tb0').innerHTML=totRow+sortRows(tRows,'t0').map(function(r){
+    var a=r.cuota?Math.round(r.ventas/r.cuota*1000)/10:0;
+    var aC=a>=100?'var(--green)':a>=70?'var(--yellow)':'var(--red)';
+    return '<tr><td>'+r.region+'</td><td>'+r.tienda+'</td>'+
+      '<td class="right">'+n(r.cuota)+'</td>'+
+      '<td class="right blue">'+n(r.ventas)+'</td>'+
+      '<td>'+pb(a)+'</td>'+
+      '<td class="right" style="color:'+aC+';font-weight:600">'+a+'%</td>'+
+      '<td class="right yellow">'+n(r.proy)+'</td>'+
+      '<td class="right red">'+n(r.faltante)+'</td></tr>';
+  }).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
 }
 
 function rT0_CuotaOct(){
