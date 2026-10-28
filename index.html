@@ -340,10 +340,12 @@ function rClr(v){var r=s(v).toLowerCase();if(r.includes('alto'))return 'r-alto';
 function pb(pct){var c=pct>=100?'g':pct>=70?'y':'r';return '<div class="pb"><div class="pb-bar"><div class="pb-fill '+c+'" style="width:'+Math.min(pct,100)+'%"></div></div><span class="pb-pct">'+n(pct,1)+'%</span></div>';}
 function kpi(label,cls,val,sub){return '<div class="kpi'+(cls?' '+cls:'')+'" ><label>'+label+'</label><div class="val">'+val+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';}
 var PAL=['#6c63ff','#38bdf8','#22c55e','#f97316','#ec4899','#eab308','#14b8a6','#a78bfa','#fb7185','#84cc16'];
-function mkChart(id,type,labels,datasets,opts){
+function mkChart(id,type,labels,datasets,opts,cfgPlugins){
   if(charts[id])charts[id].destroy();
   var ctx=document.getElementById(id);if(!ctx)return;
-  charts[id]=new Chart(ctx.getContext('2d'),{type:type,data:{labels:labels,datasets:datasets},options:Object.assign({responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#a0a0b8',font:{size:10}}}}},opts||{})});
+  var cfg={type:type,data:{labels:labels,datasets:datasets},options:Object.assign({responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#a0a0b8',font:{size:10}}}}},opts||{})};
+  if(cfgPlugins)cfg.plugins=cfgPlugins;
+  charts[id]=new Chart(ctx.getContext('2d'),cfg);
 }
 
 /* ═══ LOADING ═══ */
@@ -627,11 +629,31 @@ function rT0_CuotaQ4(){
   var dispSrc=src.slice().sort(function(a,b){return a.region.localeCompare(b.region);});
   var rK=dispSrc.map(function(x){return x.region;});
   var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
+  var pctVentas=dispSrc.map(function(x){return x.meta_100k_oct?Math.round(x.ventas/x.meta_100k_oct*1000)/10:0;});
+  var pct90k=dispSrc.map(function(x){return x.meta_90k_oct?Math.round(x.ventas/x.meta_90k_oct*1000)/10:0;});
+  var q4BarLabelPlugin={id:'q4BarLabels',afterDatasetsDraw:function(chart){
+    var ctx2=chart.ctx;
+    /* Etiquetas sobre barras de Ventas (dataset 0): % vs 100k */
+    var m0=chart.getDatasetMeta(0);
+    m0.data.forEach(function(bar,i){
+      var pct=pctVentas[i];
+      if(pct==null)return;
+      var clr=pct>=100?'#22c55e':pct>=80?'#eab308':'#f87171';
+      ctx2.save();
+      ctx2.font='bold 11px sans-serif';
+      ctx2.fillStyle=clr;
+      ctx2.textAlign='center';
+      ctx2.textBaseline='bottom';
+      ctx2.fillText(n(pct,1)+'%',bar.x,bar.y-3);
+      ctx2.restore();
+    });
+  }};
   mkChart('c0reg','bar',rK,[
     {label:'Ventas al '+corte,data:dispSrc.map(function(x){return x.ventas;}),backgroundColor:'#6c63ff',borderRadius:3},
     {label:'Meta Oct (100k)',data:dispSrc.map(function(x){return x.meta_100k_oct;}),backgroundColor:'rgba(34,197,94,.2)',borderRadius:3,borderColor:'#22c55e',borderWidth:1},
     {label:'Meta Oct (90k)',data:dispSrc.map(function(x){return x.meta_90k_oct;}),backgroundColor:'rgba(234,179,8,.15)',borderRadius:3,borderColor:'#eab308',borderWidth:1}
-  ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}});
+  ],{scales:{x:axO,y:axO},plugins:{legend:{labels:{color:'#a0a0b8'}}}},
+  [q4BarLabelPlugin]);
   /* Tabla regional Q4 */
   var cot=document.getElementById('c0ohTitle');if(cot)cot.textContent='Detalle Q4 por Región — escenarios 100k vs 90k';
   var c0ohCanvas=document.getElementById('c0oh');if(c0ohCanvas)c0ohCanvas.style.display='none';
