@@ -1161,7 +1161,7 @@ function rT1(){
   if(isCurrentMonth){
     var base=D.ar_clean.filter(arMatch);
     var gR={};base.forEach(function(r){var g=gR[r.region]||(gR[r.region]={a:0,e:0});g.a+=r.alphacomm;g.e+=r.equipo;});
-    var rK=Object.keys(gR).sort();
+    var rK=Object.keys(gR).filter(function(k){return k!=='SIN ASIGNAR';}).sort();
     var arV=rK.map(function(k){return gR[k].e?Math.round(gR[k].a/gR[k].e*1000)/10:0;});
     var totA=base.reduce(function(x,r){return x+r.alphacomm;},0),totE=base.reduce(function(x,r){return x+r.equipo;},0);
     var avgAR=totE?Math.round(totA/totE*1000)/10:0;
@@ -1265,8 +1265,8 @@ function rT5(){
   var el=document.getElementById('shTbl');
   if(!sc){el.innerHTML='<div style="padding:20px;color:var(--tx2)">Sin datos de share por categoría</div>';return;}
   var mode=getChip('f5mode')||'pct';
-  var cats=sc.categorias.filter(function(c){return (sc.total[c]||0)>0;});
-  var tot=cats.reduce(function(a,c){return a+sc.total[c];},0);
+  var cats=sc.categorias.filter(function(c){return (sc.total[c]||0)>0 && c!=='Accesorios';});
+  var tot=sc.total['Accesorios']||cats.reduce(function(a,c){return a+sc.total[c];},0);
   document.getElementById('shMeta').textContent=sc.periodo;
   var kp='';
   kp+=kpi('Total Alphacomm','blue',n(tot),'uds · '+sc.periodo);
