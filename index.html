@@ -259,6 +259,8 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
     <h3 style="color:#f59e0b">🎯 Mayor oportunidad <span style="font-weight:400;color:var(--tx2);font-size:11px" id="arOppSub"></span></h3>
     <div id="arOpp" style="overflow-x:auto"></div>
   </div>
+  <!-- Comparativo AR mensual -->
+  <div id="arHistWrap" style="display:none;margin-bottom:16px"></div>
   <!-- Tabla de crecimiento mensual -->
   <div class="sec-hdr" style="margin-top:14px">
     <h2 id="arTrendHdr">Tendencia Mensual — Crecimiento MoM y YoY</h2>
@@ -371,6 +373,7 @@ function autoLoad(){
       D.oh_tienda=data.oh_tienda; D.oh_productos=data.oh_productos;
       D.oh_regiones=data.oh_regiones; D._rMap=data.rMap;
       D.inventario=data.inventario||null;
+      D.ar_region_history=data.ar_region_history||{};
       D.base_data=data.base_data; D.base_regiones=data.base_regiones;
       D.cuota_mes=data.cuota_mes||'Aug'; D.cuota_año=data.cuota_año||2026;
       /* Título dinámico */
@@ -1256,6 +1259,62 @@ function rT1(){
         '<td class="right" style="color:var(--yellow)">'+(r.opp?'+'+n(r.opp):'—')+'</td></tr>';
     }).join('')||'<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--tx2)">Sin datos</td></tr>';
   }
+  /* ── Comparativo AR Mensual (historial) ─────────────────────────── */
+  var arH=D.ar_region_history||{};
+  var hKeys=Object.keys(arH).sort(function(a,b){
+    var ap=a.split('|'),bp=b.split('|');
+    var ay=parseInt(ap[1]||0),by=parseInt(bp[1]||0);
+    if(ay!==by)return ay-by;
+    return MONTHS12.indexOf(ap[0])-MONTHS12.indexOf(bp[0]);
+  });
+  var arHistWrap=document.getElementById('arHistWrap');
+  if(arHistWrap&&hKeys.length>1){
+    arHistWrap.style.display='';
+    var axO2={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
+    var allRegs=[];
+    hKeys.forEach(function(k){(arH[k].por_region||[]).forEach(function(r){if(allRegs.indexOf(r.region)<0)allRegs.push(r.region);});});
+    allRegs.sort();
+    if(!reg)allRegs=allRegs.filter(function(r){return r!=='SIN ASIGNAR';});
+    var HIST_CLR=['#6c63ff','#22c55e','#f97316','#38bdf8','#eab308'];
+    var hDs=hKeys.map(function(k,i){
+      var mo=k.split('|')[0];
+      return {
+        label:(MES_ES[mo]||mo)+' '+(k.split('|')[1]||''),
+        data:allRegs.map(function(r){
+          var rd=(arH[k].por_region||[]).find(function(x){return x.region===r;});
+          return rd?Math.round(rd.ar_ratio*1000)/10:0;
+        }),
+        backgroundColor:HIST_CLR[i%HIST_CLR.length]+'cc',
+        borderRadius:3
+      };
+    });
+    // Tabla resumen totales
+    var hTbl='<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:12px"><thead><tr>'+
+      '<th style="text-align:left;padding:7px 10px;background:#1e2240;color:#a0a0b8;border-bottom:2px solid var(--bd)">Mes</th>'+
+      '<th style="text-align:right;padding:7px 10px;background:#1e2240;color:#a0a0b8;border-bottom:2px solid var(--bd)">Alpha</th>'+
+      '<th style="text-align:right;padding:7px 10px;background:#1e2240;color:#a0a0b8;border-bottom:2px solid var(--bd)">Equipo</th>'+
+      '<th style="text-align:right;padding:7px 10px;background:#1e2240;color:#a0a0b8;border-bottom:2px solid var(--bd)">AR %</th>'+
+      '<th style="text-align:right;padding:7px 10px;background:#1e2240;color:#a0a0b8;border-bottom:2px solid var(--bd)">Fecha corte</th>'+
+      '</tr></thead><tbody>';
+    hKeys.forEach(function(k){
+      var t=arH[k].totals||{};
+      var ar=t.ar_ratio?Math.round(t.ar_ratio*1000)/10:0;
+      var aC=ar>=44?'var(--green)':ar>=35?'var(--yellow)':'var(--red)';
+      hTbl+='<tr><td style="padding:6px 10px;border-bottom:1px solid var(--bd);font-weight:600">'+(MES_ES[k.split('|')[0]]||k.split('|')[0])+' '+k.split('|')[1]+'</td>'+
+        '<td style="padding:6px 10px;border-bottom:1px solid var(--bd);text-align:right;color:var(--blue)">'+n(t.alphacomm||0)+'</td>'+
+        '<td style="padding:6px 10px;border-bottom:1px solid var(--bd);text-align:right">'+n(t.equipo||0)+'</td>'+
+        '<td style="padding:6px 10px;border-bottom:1px solid var(--bd);text-align:right;font-weight:700;color:'+aC+'">'+ar+'%</td>'+
+        '<td style="padding:6px 10px;border-bottom:1px solid var(--bd);text-align:right;color:var(--tx2);font-size:11px">'+(arH[k].fecha_corte||'')+'</td>'+
+        '</tr>';
+    });
+    hTbl+='</tbody></table>';
+    arHistWrap.innerHTML='<div class="sec-hdr"><h2>Comparativo AR Mensual</h2></div>'+
+      '<canvas id="cArHist" style="max-height:220px;margin-bottom:12px"></canvas>'+hTbl;
+    mkChart('cArHist','bar',allRegs,hDs,{scales:{x:axO2,y:{...axO2,beginAtZero:true,ticks:{...axO2.ticks,callback:function(v){return v+'%';}}}},
+      plugins:{legend:{labels:{color:'#a0a0b8'}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y+'%';}}}}});
+  } else if(arHistWrap){
+    arHistWrap.style.display='none';
+  }
 }
 
 /* ═══ TAB 3: SHARE POR CATEGORÍA ═══ */
@@ -1333,10 +1392,16 @@ function rT3(){
     kpi('Stock OH','blue',n(stockTotal),'Semana '+inv.stockweek)+
     kpi('WoS Global','green',n(wosG,1)+' sem','Semanas de inventario')+
     kpi('Tiendas Activas','purple',n(nAct),'con inventario')+
-    kpi('Semana Stock','orange',inv.stockweek,'Corte: '+inv.fecha_corte);
-  // Meta
+    kpi('Semana Stock','orange',inv.stockweek,(inv.fecha_extraccion?'Extraído: '+inv.fecha_extraccion:'Corte: '+inv.fecha_corte));
+  // Meta con fecha y hora de extracción
   var meta=document.getElementById('invMeta');
-  if(meta)meta.innerHTML='Fuente: PrimeMX &nbsp;·&nbsp; Sem '+inv.stockweek+' &nbsp;·&nbsp; Corte: <strong>'+inv.fecha_corte+'</strong>';
+  var extStr='';
+  if(inv.fecha_extraccion){
+    extStr=' &nbsp;·&nbsp; ⏱ Extraído: <strong style="color:var(--yellow)">'+inv.fecha_extraccion+'</strong>';
+  } else if(inv.fecha_corte){
+    extStr=' &nbsp;·&nbsp; ⏱ Corte datos: <strong>'+inv.fecha_corte+'</strong>';
+  }
+  if(meta)meta.innerHTML='Fuente: PrimeMX &nbsp;·&nbsp; Sem '+inv.stockweek+extStr;
   // Chart: Stock por Segmento (horizontal bar)
   var segs=inv.segs||[];
   var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
