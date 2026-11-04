@@ -1555,10 +1555,11 @@ function renderSegDetail(segName, color){
   html+='<th class="right">Precio</th>';
   html+='</tr></thead><tbody>';
   var sorted=segModels.slice().sort(function(a,b){return b.stock-a.stock;});
-  sorted.forEach(function(m){
+  window._segModelNames=sorted.map(function(m){return m.modelo;});
+  sorted.forEach(function(m,mi){
     var wos=m.wos;
     var wc=wos===null?'var(--tx2)':wos<=4?'#ef4444':wos<=8?'#f59e0b':'#10b981';
-    html+='<tr>';
+    html+='<tr onclick="renderTiendaDetail(window._segModelNames['+mi+'])" style="cursor:pointer" title="Ver por tienda">';
     html+='<td style="font-size:12px;min-width:200px">'+m.modelo+'</td>';
     html+='<td class="right" style="font-weight:700;color:var(--acc2)">'+n(m.stock)+'</td>';
     html+='<td class="right">'+n(m.lastw)+'</td>';
@@ -1580,6 +1581,51 @@ function renderSegDetail(segName, color){
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+
+function loadStoreModel(cb){
+  if(window._storeModelData){cb(window._storeModelData);return;}
+  fetch('./store_model.json')
+    .then(function(r){return r.json();})
+    .then(function(d){window._storeModelData=d;cb(d);})
+    .catch(function(e){console.error('store_model error',e);cb(null);});
+}
+function renderTiendaDetail(modelo){
+  loadStoreModel(function(data){
+    if(!data)return;
+    var info=data[modelo];
+    if(!info)return;
+    var panel=document.getElementById('tiendaDetail');
+    if(!panel){
+      panel=document.createElement('div');
+      panel.id='tiendaDetail';
+      panel.style.cssText='margin-top:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px';
+      var sp=document.getElementById('segDetail');
+      if(sp)sp.after(panel);
+    }
+    var tiendas=info.tiendas||[];
+    var html2='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    html2+='<h3 style="margin:0;font-size:14px">🏪 '+modelo+' <span style="color:var(--tx2);font-weight:400">('+info.total_tiendas+' tiendas)</span></h3>';
+    html2+='<button onclick="document.getElementById(\'tiendaDetail\').style.display=\'none\'" style="background:transparent;border:1px solid var(--bd);color:var(--tx2);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px">✕</button>';
+    html2+='</div><div style="overflow-x:auto">';
+    html2+='<table><thead><tr><th>Tienda</th><th>Org</th><th>Región</th><th class="right">Stock OH</th><th class="right">Vta Sem</th></tr></thead><tbody>';
+    tiendas.forEach(function(t){
+      var stk=t[3],vta=t[4];
+      var stCol=stk===0?'color:#ef4444':stk<=2?'color:#f59e0b':'color:var(--acc2)';
+      html2+='<tr>';
+      html2+='<td style="font-size:11px;min-width:220px">'+t[0]+'</td>';
+      html2+='<td style="font-size:11px">'+t[1]+'</td>';
+      html2+='<td style="font-size:11px">'+t[2]+'</td>';
+      html2+='<td class="right" style="font-weight:700;'+stCol+'">'+n(stk)+'</td>';
+      html2+='<td class="right">'+n(vta)+'</td>';
+      html2+='</tr>';
+    });
+    html2+='</tbody></table></div>';
+    if(tiendas.length<info.total_tiendas)html2+='<p style="color:var(--tx2);font-size:11px;margin:6px 0 0">Top '+tiendas.length+' de '+info.total_tiendas+' tiendas con stock</p>';
+    panel.innerHTML=html2;
+    panel.style.display='block';
+    panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+}
 /* ═══ TAB 0: VISTA GENERAL (YoY) ═══ */
 function rT4(){
   if(!D.base_data)return;
