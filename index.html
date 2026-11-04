@@ -313,9 +313,10 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
   </div>
   <div class="kpi-grid" id="k3"></div>
   <div class="charts-row" style="margin-top:12px">
-    <div class="chart-card" style="flex:1.2"><h3>Stock por Segmento</h3><canvas id="c4a"></canvas></div>
+    <div class="chart-card" style="flex:1.2"><h3>Stock por Segmento <span style="font-size:10px;color:var(--tx2);font-weight:400">· clic para ver modelos</span></h3><canvas id="c4a"></canvas></div>
     <div class="chart-card" style="flex:1.4"><h3>Semanas de Stock por Región</h3><div id="invRegTable" style="overflow-x:auto;margin-top:4px"></div></div>
   </div>
+  <div id="segDetail" style="display:none;margin-top:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px"></div>
   <div class="sec-hdr" style="margin-top:12px">
     <h2>Top Tiendas por Stock</h2>
     <input id="f3q" oninput="renderMatrix()" placeholder="🔍 Tienda…" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;outline:none;min-width:160px">
@@ -1406,11 +1407,34 @@ function rT3(){
   var segs=inv.segs||[];
   var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
   var segColors=['#6366f1','#22d3ee','#f59e0b','#10b981','#ef4444','#a78bfa','#fb923c','#34d399','#60a5fa','#f472b6','#a3e635','#facc15'];
-  mkChart('c4a','bar',segs.map(function(s){return s.seg;}),
-    [{data:segs.map(function(s){return s.stock;}),backgroundColor:segColors,borderRadius:3}],
-    {indexAxis:'y',plugins:{legend:{display:false},
-      tooltip:{callbacks:{label:function(ctx){var wos=segs[ctx.dataIndex].wos;return ' '+n(ctx.raw)+' uds'+(wos?' · WoS: '+n(wos,1)+' sem':'');}}}}
-    ,scales:{x:axO,y:axO}});
+  if(charts['c4a'])charts['c4a'].destroy();
+  var c4aCtx=document.getElementById('c4a');
+  if(c4aCtx){
+    charts['c4a']=new Chart(c4aCtx.getContext('2d'),{
+      type:'bar',
+      data:{
+        labels:segs.map(function(s){return s.seg;}),
+        datasets:[{data:segs.map(function(s){return s.stock;}),backgroundColor:segColors,borderRadius:3}]
+      },
+      options:{
+        indexAxis:'y',
+        responsive:true,maintainAspectRatio:true,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:function(ctx){var wos=segs[ctx.dataIndex].wos;return ' '+n(ctx.raw)+' uds'+(wos?' · WoS: '+n(wos,1)+' sem':'');}}}
+        },
+        scales:{x:axO,y:axO},
+        onClick:function(evt,els){
+          if(!els||!els.length)return;
+          var idx=els[0].index;
+          var segName=segs[idx].seg;
+          renderSegDetail(segName,segColors[idx%segColors.length]);
+        }
+      }
+    });
+    c4aCtx.style.cursor='pointer';
+    c4aCtx.title='Haz clic en un segmento para ver el detalle de modelos';
+  }
   // Regional WoS table
   var regsF=reg?(inv.regiones||[]).filter(function(r){return r.region===reg;}):(inv.regiones||[]);
   var tbl='<table><thead><tr><th>Región</th><th class="right">Stock</th><th class="right">Vta Sem</th><th class="right">WoS</th><th class="right">Tiendas</th><th class="right">Sin Stock</th></tr></thead><tbody>';
@@ -1464,6 +1488,60 @@ function renderMatrix(){
   html+='<td></td></tr>';
   html+='</tbody></table></div>';
   piv.innerHTML=html;
+}
+
+/* ═══ DETALLE SEGMENTO (Inventario) ═══ */
+function renderSegDetail(segName, color){
+  var inv=D.inventario;
+  var panel=document.getElementById('segDetail');
+  if(!panel)return;
+  var segModels=(inv.seg_models||{})[segName]||[];
+  if(!segModels.length){panel.style.display='none';return;}
+  // Si ya está mostrando este seg, toggle off
+  if(panel.dataset.seg===segName&&panel.style.display!=='none'){
+    panel.style.display='none';panel.dataset.seg='';return;
+  }
+  panel.dataset.seg=segName;
+  var totStock=segModels.reduce(function(a,m){return a+m.stock;},0);
+  var totPvs=segModels.reduce(function(a,m){return a+m.pvs;},0);
+  var totLastw=segModels.reduce(function(a,m){return a+m.lastw;},0);
+  var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html+='<h3 style="margin:0;color:'+color+'">📦 '+segName+'</h3>';
+  html+='<button onclick="document.getElementById('segDetail').style.display='none'" style="background:transparent;border:1px solid var(--bd);color:var(--tx2);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px">✕ Cerrar</button>';
+  html+='</div>';
+  html+='<div style="overflow-x:auto">';
+  html+='<table><thead><tr>';
+  html+='<th>Modelo</th>';
+  html+='<th class="right">Stock OH</th>';
+  html+='<th class="right">Vta Sem</th>';
+  html+='<th class="right">Vta $ Sem</th>';
+  html+='<th class="right">WoS</th>';
+  html+='<th class="right">Precio</th>';
+  html+='</tr></thead><tbody>';
+  var sorted=segModels.slice().sort(function(a,b){return b.stock-a.stock;});
+  sorted.forEach(function(m){
+    var wos=m.wos;
+    var wc=wos===null?'var(--tx2)':wos<=4?'#ef4444':wos<=8?'#f59e0b':'#10b981';
+    html+='<tr>';
+    html+='<td style="font-size:12px;min-width:200px">'+m.modelo+'</td>';
+    html+='<td class="right" style="font-weight:700;color:var(--acc2)">'+n(m.stock)+'</td>';
+    html+='<td class="right">'+n(m.lastw)+'</td>';
+    html+='<td class="right">$'+n(Math.round(m.pvs))+'</td>';
+    html+='<td class="right" style="color:'+wc+';font-weight:700">'+(wos!==null?n(wos,1)+' sem':'—')+'</td>';
+    html+='<td class="right" style="color:var(--tx2)">$'+n(m.ticket)+'</td>';
+    html+='</tr>';
+  });
+  html+='<tr class="total-row">';
+  html+='<td><strong>'+sorted.length+' modelos</strong></td>';
+  html+='<td class="right"><strong>'+n(totStock)+'</strong></td>';
+  html+='<td class="right"><strong>'+n(Math.round(totLastw))+'</strong></td>';
+  html+='<td class="right"><strong>$'+n(Math.round(totPvs))+'</strong></td>';
+  html+='<td></td><td></td>';
+  html+='</tr>';
+  html+='</tbody></table></div>';
+  panel.innerHTML=html;
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 /* ═══ TAB 0: VISTA GENERAL (YoY) ═══ */
