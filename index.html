@@ -1491,6 +1491,7 @@ function renderMatrix(){
 }
 
 /* ═══ DETALLE SEGMENTO (Inventario) ═══ */
+function closeSegDetail(){var p=document.getElementById('segDetail');if(p)p.style.display='none';}
 function renderSegDetail(segName, color){
   var inv=D.inventario;
   var panel=document.getElementById('segDetail');
@@ -1507,7 +1508,7 @@ function renderSegDetail(segName, color){
   var totLastw=segModels.reduce(function(a,m){return a+m.lastw;},0);
   var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
   html+='<h3 style="margin:0;color:'+color+'">📦 '+segName+'</h3>';
-  html+='<button onclick="document.getElementById('segDetail').style.display='none'" style="background:transparent;border:1px solid var(--bd);color:var(--tx2);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px">✕ Cerrar</button>';
+  html+='<button onclick="closeSegDetail()" style="background:transparent;border:1px solid var(--bd);color:var(--tx2);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px">✕ Cerrar</button>';
   html+='</div>';
   html+='<div style="overflow-x:auto">';
   html+='<table><thead><tr>';
