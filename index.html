@@ -317,7 +317,11 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
     <div class="chart-card" style="flex:1.4"><h3>Semanas de Stock por Región</h3><div id="invRegTable" style="overflow-x:auto;margin-top:4px"></div></div>
   </div>
   <div id="segDetail" style="display:none;margin-top:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px"></div>
-  <div class="sec-hdr" style="margin-top:12px">
+  <div class="sec-hdr" style="margin-top:14px">
+    <h2>Por Categoría</h2>
+  </div>
+  <div id="segSummary"></div>
+  <div class="sec-hdr" style="margin-top:14px">
     <h2>Top Tiendas por Stock</h2>
     <input id="f3q" oninput="renderMatrix()" placeholder="🔍 Tienda…" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;outline:none;min-width:160px">
   </div>
@@ -329,6 +333,7 @@ tbody td{padding:7px 10px;vertical-align:middle;white-space:nowrap}
 /* ═══ CONSTANTS ═══ */
 var MES_ES={Jan:'Ene',Feb:'Feb',Mar:'Mar',Apr:'Abr',May:'May',Jun:'Jun',Jul:'Jul',Aug:'Ago',Sep:'Sep',Oct:'Oct',Nov:'Nov',Dec:'Dic'};
 var MONTHS12=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var SEG_COLORS=['#6366f1','#22d3ee','#f59e0b','#10b981','#ef4444','#a78bfa','#fb923c','#34d399','#60a5fa','#f472b6','#a3e635','#facc15','#38bdf8','#c084fc','#fda4af'];
 
 /* ═══ STORE ═══ */
 var D={cuota_jul:[],ar_clean:[],lg_region:[],lg_tienda:[],oh_tienda:[],oh_productos:[],cat_totals:{},regiones:[],lg_totals:null,proy_total:0,proy_tienda:{},base_data:null,base_regiones:[],inventario:null,cuota_q4:null};
@@ -1406,7 +1411,7 @@ function rT3(){
   // Chart: Stock por Segmento (horizontal bar)
   var segs=inv.segs||[];
   var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
-  var segColors=['#6366f1','#22d3ee','#f59e0b','#10b981','#ef4444','#a78bfa','#fb923c','#34d399','#60a5fa','#f472b6','#a3e635','#facc15'];
+  var segColors=SEG_COLORS;
   if(charts['c4a'])charts['c4a'].destroy();
   var c4aCtx=document.getElementById('c4a');
   if(c4aCtx){
@@ -1453,6 +1458,7 @@ function rT3(){
   tbl+='<td class="right"><strong>'+n(tt)+'</strong></td><td class="right"><strong>'+n(tsin)+'</strong></td></tr></tbody></table>';
   document.getElementById('invRegTable').innerHTML=tbl;
   // Tiendas
+  renderSegSummary();
   renderMatrix();
 }
 
@@ -1490,8 +1496,37 @@ function renderMatrix(){
   piv.innerHTML=html;
 }
 
+/* ═══ CHIPS CATEGORÍA (Inventario) ═══ */
+function renderSegSummary(){
+  var inv=D.inventario;
+  var panel=document.getElementById('segSummary');
+  if(!panel||!inv)return;
+  var segs=(inv.segs||[]).slice().sort(function(a,b){return b.stock-a.stock;});
+  if(!segs.length){panel.innerHTML='';return;}
+  var activeSeg=document.getElementById('segDetail')&&document.getElementById('segDetail').style.display!=='none'?
+    (document.getElementById('segDetail').dataset.seg||''):'';
+  var html='<div class="seg-chips-grid">';
+  segs.forEach(function(s,i){
+    var clr=SEG_COLORS[i%SEG_COLORS.length];
+    var wc=s.wos===null?'var(--tx2)':s.wos<=4?'#ef4444':s.wos<=8?'#f59e0b':'#10b981';
+    var isActive=(s.seg===activeSeg)?'active':'';
+    // escape single quotes in seg name for onclick
+    var segEsc=s.seg.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    var clrEsc=clr.replace(/'/g,"\\'");
+    html+='<div class="seg-chip-card '+isActive+'" style="--chip-color:'+clr+'" onclick="renderSegDetail(\''+segEsc+'\',\''+clrEsc+'\');renderSegSummary();">';
+    html+='<div class="seg-chip-name">'+s.seg+'</div>';
+    html+='<div class="seg-chip-stat"><span>Stock OH</span><span class="val">'+n(s.stock)+'</span></div>';
+    html+='<div class="seg-chip-stat"><span>Vta Sem</span><span class="val">'+n(s.lastw)+' uds</span></div>';
+    html+='<div class="seg-chip-stat"><span>WoS</span><span class="wos-val" style="color:'+wc+'">'+(s.wos!==null?n(s.wos,1)+' sem':'—')+'</span></div>';
+    if(s.pvs){html+='<div class="seg-chip-stat"><span>$ Sem</span><span style="font-size:10px;color:var(--tx2)">$'+n(Math.round(s.pvs))+'</span></div>';}
+    html+='</div>';
+  });
+  html+='</div>';
+  panel.innerHTML=html;
+}
+
 /* ═══ DETALLE SEGMENTO (Inventario) ═══ */
-function closeSegDetail(){var p=document.getElementById('segDetail');if(p)p.style.display='none';}
+function closeSegDetail(){var p=document.getElementById('segDetail');if(p)p.style.display='none';renderSegSummary();}
 function renderSegDetail(segName, color){
   var inv=D.inventario;
   var panel=document.getElementById('segDetail');
