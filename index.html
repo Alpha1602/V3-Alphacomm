@@ -1419,37 +1419,40 @@ function rT3(){
     extStr=' &nbsp;·&nbsp; ⏱ Corte datos: <strong>'+inv.fecha_corte+'</strong>';
   }
   if(meta)meta.innerHTML='Fuente: PrimeMX &nbsp;·&nbsp; Sem '+inv.stockweek+extStr;
-  // Chart: Stock por Segmento (horizontal bar)
-  var segs=inv.segs||[];
+  // Chart: Stock por Segmento (horizontal bar) — region-aware
   var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
   var segColors=SEG_COLORS;
   if(charts['c4a'])charts['c4a'].destroy();
   var c4aCtx=document.getElementById('c4a');
   if(c4aCtx){
-    charts['c4a']=new Chart(c4aCtx.getContext('2d'),{
-      type:'bar',
-      data:{
-        labels:segs.map(function(s){return s.seg;}),
-        datasets:[{data:segs.map(function(s){return s.stock;}),backgroundColor:segColors,borderRadius:3}]
-      },
-      options:{
-        indexAxis:'y',
-        responsive:true,maintainAspectRatio:true,
-        plugins:{
-          legend:{display:false},
-          tooltip:{callbacks:{label:function(ctx){var wos=segs[ctx.dataIndex].wos;return ' '+n(ctx.raw)+' uds'+(wos?' · WoS: '+n(wos,1)+' sem':'');}}}
+    getSegsFiltered(reg,function(segs){
+      segs=segs.slice().sort(function(a,b){return b.stock-a.stock;});
+      if(charts['c4a'])charts['c4a'].destroy();
+      charts['c4a']=new Chart(c4aCtx.getContext('2d'),{
+        type:'bar',
+        data:{
+          labels:segs.map(function(s){return s.seg;}),
+          datasets:[{data:segs.map(function(s){return s.stock;}),backgroundColor:segColors,borderRadius:3}]
         },
-        scales:{x:axO,y:axO},
-        onClick:function(evt,els){
-          if(!els||!els.length)return;
-          var idx=els[0].index;
-          var segName=segs[idx].seg;
-          renderSegDetail(segName,segColors[idx%segColors.length]);
+        options:{
+          indexAxis:'y',
+          responsive:true,maintainAspectRatio:true,
+          plugins:{
+            legend:{display:false},
+            tooltip:{callbacks:{label:function(ctx){var wos=segs[ctx.dataIndex].wos;return ' '+n(ctx.raw)+' uds'+(wos?' · WoS: '+n(wos,1)+' sem':'');}}}
+          },
+          scales:{x:axO,y:axO},
+          onClick:function(evt,els){
+            if(!els||!els.length)return;
+            var idx=els[0].index;
+            var segName=segs[idx].seg;
+            renderSegDetail(segName,segColors[idx%segColors.length]);
+          }
         }
-      }
+      });
+      c4aCtx.style.cursor='pointer';
+      c4aCtx.title='Haz clic en un segmento para ver el detalle de modelos';
     });
-    c4aCtx.style.cursor='pointer';
-    c4aCtx.title='Haz clic en un segmento para ver el detalle de modelos';
   }
   // Regional WoS table
   var regsF=reg?(inv.regiones||[]).filter(function(r){return r.region===reg;}):(inv.regiones||[]);
@@ -1507,33 +1510,57 @@ function renderMatrix(){
   piv.innerHTML=html;
 }
 
+
+/* ── Helper: segment totals filtered by region (uses store_model.json) ── */
+function getSegsFiltered(reg, cb){
+  if(!reg){cb(D.inventario.segs||[]);return;}
+  loadStoreModel(function(data){
+    if(!data){cb(D.inventario.segs||[]);return;}
+    var totals={};
+    for(var modelo in data){
+      var info=data[modelo];
+      var seg=info.seg;
+      if(!totals[seg])totals[seg]={seg:seg,stock:0,lastw:0,pvs:0,wos:null};
+      (info.tiendas||[]).forEach(function(t){
+        if(t[2]===reg){totals[seg].stock+=t[3];totals[seg].lastw+=t[4];}
+      });
+    }
+    var result=Object.values(totals)
+      .filter(function(s){return s.stock>0||s.lastw>0;})
+      .map(function(s){s.wos=s.lastw>0?Math.round(s.stock/s.lastw*10)/10:null;return s;})
+      .sort(function(a,b){return b.stock-a.stock;});
+    cb(result);
+  });
+}
 /* ═══ CHIPS CATEGORÍA (Inventario) ═══ */
 function renderSegSummary(){
   var inv=D.inventario;
   var panel=document.getElementById('segSummary');
   if(!panel||!inv)return;
-  var segs=(inv.segs||[]).slice().sort(function(a,b){return b.stock-a.stock;});
-  if(!segs.length){panel.innerHTML='';return;}
-  var activeSeg=document.getElementById('segDetail')&&document.getElementById('segDetail').style.display!=='none'?
-    (document.getElementById('segDetail').dataset.seg||''):'';
-  var html='<div class="seg-chips-grid">';
-  segs.forEach(function(s,i){
-    var clr=SEG_COLORS[i%SEG_COLORS.length];
-    var wc=s.wos===null?'var(--tx2)':s.wos<=4?'#ef4444':s.wos<=8?'#f59e0b':'#10b981';
-    var isActive=(s.seg===activeSeg)?'active':'';
-    // escape single quotes in seg name for onclick
-    var segEsc=s.seg.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    var clrEsc=clr.replace(/'/g,"\\'");
-    html+='<div class="seg-chip-card '+isActive+'" style="--chip-color:'+clr+'" onclick="renderSegDetail(\''+segEsc+'\',\''+clrEsc+'\');renderSegSummary();">';
-    html+='<div class="seg-chip-name">'+s.seg+'</div>';
-    html+='<div class="seg-chip-stat"><span>Stock OH</span><span class="val">'+n(s.stock)+'</span></div>';
-    html+='<div class="seg-chip-stat"><span>Vta Sem</span><span class="val">'+n(s.lastw)+' uds</span></div>';
-    html+='<div class="seg-chip-stat"><span>WoS</span><span class="wos-val" style="color:'+wc+'">'+(s.wos!==null?n(s.wos,1)+' sem':'—')+'</span></div>';
-    if(s.pvs){html+='<div class="seg-chip-stat"><span>$ Sem</span><span style="font-size:10px;color:var(--tx2)">$'+n(Math.round(s.pvs))+'</span></div>';}
-    html+='</div>';
+  var reg=getChip('f3reg');
+  getSegsFiltered(reg,function(segs){
+    segs=segs.slice().sort(function(a,b){return b.stock-a.stock;});
+    if(!segs.length){panel.innerHTML='';return;}
+    var activeSeg=document.getElementById('segDetail')&&document.getElementById('segDetail').style.display!=='none'?
+      (document.getElementById('segDetail').dataset.seg||''):'';
+    var h='<div class="seg-chips-grid">';
+    segs.forEach(function(s,i){
+      var clr=SEG_COLORS[i%SEG_COLORS.length];
+      var wc=s.wos===null?'var(--tx2)':s.wos<=4?'#ef4444':s.wos<=8?'#f59e0b':'#10b981';
+      var isActive=(s.seg===activeSeg)?'active':'';
+      var segEsc=s.seg.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      var clrEsc=clr.replace(/'/g,"\\'");
+      h+='<div class="seg-chip-card '+isActive+'" style="--chip-color:'+clr+'" onclick="renderSegDetail(''+segEsc+'',''+clrEsc+'');renderSegSummary();">';
+      h+='<div class="seg-chip-name">'+s.seg+'</div>';
+      h+='<div class="seg-chip-stat"><span>Stock OH</span><span class="val">'+n(s.stock)+'</span></div>';
+      h+='<div class="seg-chip-stat"><span>Vta Sem</span><span class="val">'+n(s.lastw)+' uds</span></div>';
+      h+='<div class="seg-chip-stat"><span>WoS</span><span class="wos-val" style="color:'+wc+'">'+(s.wos!==null?n(s.wos,1)+' sem':'—')+'</span></div>';
+      if(s.pvs){h+='<div class="seg-chip-stat"><span>$ Sem</span><span style="font-size:10px;color:var(--tx2)">$'+n(Math.round(s.pvs))+'</span></div>';}
+      h+='</div>';
+    });
+    h+='</div>';
+    panel.innerHTML=h;
   });
-  html+='</div>';
-  panel.innerHTML=html;
 }
 
 /* ═══ DETALLE SEGMENTO (Inventario) ═══ */
