@@ -381,14 +381,12 @@ function autoLoad(){
   fetch('./data.json?v='+_cv)
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(data){
-      D.cuota_jul=data.cuota_jul; D.ar_clean=data.ar_clean;
-      D.cuota_oct=data.cuota_oct||null; D.cuota_q4=data.cuota_q4||null; D.share_cat=data.share_cat||null;
+      /* slim keys — cargan al instante */
+      D.cuota_q4=data.cuota_q4||null; D.share_cat=data.share_cat||null;
       D.primemx_summary=data.primemx_summary||{}; D.ar_region=data.ar_region||[];
-      D.lg_region=data.lg_region; D.lg_tienda=data.lg_tienda;
-      D.lg_totals=data.lg_totals; D.cat_totals=data.cat_totals;
-      D.regiones=data.regiones; D.proy_total=data.proy_total;
-      D.oh_tienda=data.oh_tienda; D.oh_productos=data.oh_productos;
-      D.oh_regiones=data.oh_regiones; D._rMap=data.rMap;
+      D.lg_region=data.lg_region; D.lg_totals=data.lg_totals;
+      D.cat_totals=data.cat_totals; D.regiones=data.regiones;
+      D.proy_total=data.proy_total; D.oh_regiones=data.oh_regiones;
       D.inventario=data.inventario||null;
       D.ar_region_history=data.ar_region_history||{};
       D.base_data=data.base_data; D.base_regiones=data.base_regiones;
@@ -1777,13 +1775,32 @@ function rT4(){
 
 
 /* ═══ TAB SWITCH ═══ */
+
+/* ══ Lazy-load data_detail.json (Cuota, Attach Rate, Excel export) ══ */
+var _detailPromise=null;
+function loadDetail(cb){
+  if(D._detailLoaded){cb();return;}
+  if(!_detailPromise){
+    var _wk=new Date();
+    var _cv=_wk.getFullYear()+'W'+Math.ceil((_wk-new Date(_wk.getFullYear(),0,1))/(7*864e5));
+    _detailPromise=fetch('./data_detail.json?v='+_cv)
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(function(dd){
+        D.cuota_jul=dd.cuota_jul; D.ar_clean=dd.ar_clean;
+        D.oh_productos=dd.oh_productos; D.lg_tienda=dd.lg_tienda;
+        D.oh_tienda=dd.oh_tienda; D._rMap=dd.rMap;
+        D._detailLoaded=true;
+      });
+  }
+  _detailPromise.then(cb).catch(function(e){console.error('loadDetail error',e);cb();});
+}
 function switchTab(idx){
   activeTab=idx;
   document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',i===idx);});
   document.querySelectorAll('.pane').forEach(function(p,i){p.classList.toggle('active',i===idx);});
   if(idx===0)setTimeout(function(){rT4();},60);
-  if(idx===1)setTimeout(function(){rT0();},60);
-  if(idx===2)setTimeout(function(){rT1();},60);
+  if(idx===1)setTimeout(function(){loadDetail(function(){rT0();});},60);
+  if(idx===2)setTimeout(function(){loadDetail(function(){rT1();});},60);
   if(idx===3)setTimeout(function(){rT5();},60);
   if(idx===4)setTimeout(function(){rT3();renderMatrix();},60);
 }
@@ -1835,7 +1852,7 @@ function exportXLSX(){
     ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Share_Categoria.xlsx';
   }else{
     var hd=['Categoría','Sub-Categoría','Clase','Producto','Cantidad'];
-    var data=D.oh_productos.map(function(p){return[p.categoria,p.sub_categoria,p.clase,p.producto,p.cantidad];});
+    var data=(D.oh_productos||[]).map(function(p){return[p.categoria,p.sub_categoria,p.clase,p.producto,p.cantidad];});
     ws=XLSX.utils.aoa_to_sheet([hd].concat(data));name='Inventario.xlsx';
   }
   wb2=XLSX.utils.book_new();
