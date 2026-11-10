@@ -1201,7 +1201,9 @@ function rT1(){
     var avgAR=totE?Math.round(totA/totE*1000)/10:0;
     var axO={ticks:{color:'#a0a0b8',font:{size:10}},grid:{color:'#2e3150'}};
     if(!window._arLblReg){window._arLblReg=1;Chart.register({id:'arLbl',afterDatasetsDraw:function(ch){if(ch.canvas.id!=='c1equipo')return;var c=ch.ctx,m=ch.getDatasetMeta(0);c.save();c.fillStyle='#fff';c.font='700 13px sans-serif';c.textAlign='center';m.data.forEach(function(b,i){c.fillText(ch.data.datasets[0].data[i]+'%',b.x,b.y-6);});c.restore();}});}
-    mkChart('c1equipo','bar',rK,[
+    var DIRS_AR={'BAJIO-NORTE 2':'P. Márquez · E. Galindo','CENTRO':'A. Rivas Ángeles','NOROESTE':'K. Ramírez S.','NORTE 1':'J.I. Narváez M.','PACIFICO':'V. Fregoso N.','SUR PENINSULA':'C. Barrera M.'};
+    var rKLabels=rK.map(function(k){return [k,DIRS_AR[k]||''];});
+    mkChart('c1equipo','bar',rKLabels,[
       {label:'Attach Rate %',data:arV,backgroundColor:arV.map(function(v){return v>=avgAR?'#22c55e':v>=avgAR*0.9?'#eab308':'#ef4444';}),borderRadius:4,order:2},
       {type:'line',label:'Promedio '+avgAR+'%',data:rK.map(function(){return avgAR;}),borderColor:'#a78bfa',borderDash:[6,4],borderWidth:2,pointRadius:0,order:1}
     ],{layout:{padding:{top:20}},scales:{x:axO,y:{...axO,beginAtZero:true,ticks:{...axO.ticks,callback:function(v){return v+'%';}}}},
