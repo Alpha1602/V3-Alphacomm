@@ -1548,7 +1548,7 @@ function renderSegSummary(){
       var isActive=(s.seg===activeSeg)?'active':'';
       var segEsc=s.seg.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       var clrEsc=clr.replace(/'/g,"\\'");
-      h+='<div class="seg-chip-card '+isActive+'" style="--chip-color:'+clr+'" onclick="renderSegDetail(''+segEsc+'',''+clrEsc+'');renderSegSummary();">';
+      h+='<div class="seg-chip-card '+isActive+'" style="--chip-color:'+clr+'" onclick="renderSegDetail(\''+segEsc+'\',\''+clrEsc+'\');renderSegSummary();">';
       h+='<div class="seg-chip-name">'+s.seg+'</div>';
       h+='<div class="seg-chip-stat"><span>Stock OH</span><span class="val">'+n(s.stock)+'</span></div>';
       h+='<div class="seg-chip-stat"><span>Vta Sem</span><span class="val">'+n(s.lastw)+' uds</span></div>';
