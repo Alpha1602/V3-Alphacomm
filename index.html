@@ -839,6 +839,7 @@ function rT0_CuotaQ4(){
   }
 
   /* ── Progress bars (Oct vs Nov target 100k) ────────────────────────────── */
+  var DIRECTORES={'BAJIO':'Pedro Jonathan Márquez López','CENTRO':'Arnold Dusty Rivas Ángeles','NOROESTE':'Karla Misschel Ramírez Sánchez','NOROESTE 1':'Karla Misschel Ramírez Sánchez','NORTE 1':'José Ignacio Narváez Morales','NORTE 2':'Esteban Ezequiel Galindo Talamantes','PACIFICO':'Víctor Fregoso Núñez','SUR PENINSULA':'Carlos Eduardo Barrera De Marcos'};
   var rt=document.getElementById('regBarsTitle');if(rt)rt.textContent='Oct cerrado · faltante Nov para 100k';
   var barsHTML='';
   dispSrc.forEach(function(r){
@@ -850,7 +851,8 @@ function rT0_CuotaQ4(){
     var rProy=(diasTrans>0&&(r.ventas_nov||0)>0)?Math.round((r.ventas_nov||0)/diasTrans*diasMes):0;
     var rPrAlc=r.meta_100k_nov&&rProy?Math.round(rProy/r.meta_100k_nov*1000)/10:0;
     var rPrColor=rPrAlc>=100?'var(--green)':rPrAlc>=80?'var(--yellow)':'var(--red)';
-    barsHTML+='<div class="reg-row"><div class="reg-name">'+r.region+'</div>'+
+    var dirNombre=DIRECTORES[r.region]||'';
+    barsHTML+='<div class="reg-row"><div class="reg-name">'+r.region+(dirNombre?'<span style="display:block;font-size:10px;font-weight:400;color:var(--tx2);margin-top:1px">'+dirNombre+'</span>':'')+'</div>'+
       '<div class="reg-bar-wrap"><div class="reg-bar-fill" style="width:'+Math.min(aOct,100)+'%;background:'+bColor+'"></div></div>'+
       '<div class="reg-meta">Oct: <strong style="color:'+bColor+'">'+aOct+'%</strong> (100k) · '+aOct90+'% (90k)'+
       ' &nbsp;·&nbsp; Meta Nov 100k: <span style="color:#22c55e">'+n(r.meta_100k_nov)+'</span>'+
