@@ -651,12 +651,19 @@ function rT0_CuotaQ4(){
   var faltQ4_90=Math.max(0,m90Q4-vAcum);
   var mesActual=q4.mes_actual||'Nov';
   var avt=q4.avance_tiempo||0;  /* avance tiempo del mes en curso */
+  /* ── Proyección cierre del mes en curso ─────────────────────────────── */
+  var diasTrans=q4.dias_transcurridos||0;
+  var diasMes=q4.dias_mes||30;
+  var proyNov=(mesActual==='Nov'&&diasTrans>0&&vNov>0)?Math.round(vNov/diasTrans*diasMes):0;
+  var alcProyNov100=m100Nov&&proyNov?Math.round(proyNov/m100Nov*1000)/10:0;
+  var alcProyNov90=m90Nov&&proyNov?Math.round(proyNov/m90Nov*1000)/10:0;
 
   /* ── KPIs ──────────────────────────────────────────────────────────────── */
   document.getElementById('k0').innerHTML=
     kpi('Acum. Q4 (Oct–Nov–Dic)','blue',n(vAcum),'uds vendidas')+
     kpi('Oct cerrado',cls(alcOct100,100,90),n(vOct),'alc. 100k: '+alcOct100+'% · 90k: '+alcOct90+'%')+
     kpi('Nov en curso','blue',n(vNov)||'—','meta 100k: '+n(m100Nov)+' · 90k: '+n(m90Nov))+
+    (proyNov?kpi('Proy. cierre Nov',cls(alcProyNov100,100,80),n(proyNov),'vs 100k: '+alcProyNov100+'% · vs 90k: '+alcProyNov90+'%  ('+diasTrans+'/'+diasMes+' días)'):'   ')+
     kpi('Alcance Q4 vs 100k',cls(alcQ4_100,80,50),alcQ4_100+'%','acum '+n(vAcum)+' de '+n(m100Q4))+
     kpi('Alcance Q4 vs 90k',cls(alcQ4_90,80,50),alcQ4_90+'%','acum '+n(vAcum)+' de '+n(m90Q4))+
     kpi('Faltante Q4 100k','red',n(faltQ4_100),'uds restantes en Nov+Dic')+
@@ -676,6 +683,7 @@ function rT0_CuotaQ4(){
       '<th style="'+thS+';background:#163016;color:#22c55e">Meta 100k</th>'+
       '<th style="'+thS+';background:#1c1700;color:#eab308">Meta 90k</th>'+
       '<th style="'+thS+'">Ventas<br>Reales</th>'+
+      (proyNov?'<th style="'+thS+';color:#38bdf8">Proy.<br>Cierre</th>':'')+
       '<th style="'+thS+'">% vs 100k</th>'+
       '<th style="'+thS+'">% vs 90k</th>'+
       '<th style="'+thS+';color:var(--red)">Faltante<br>100k</th>'+
@@ -695,6 +703,7 @@ function rT0_CuotaQ4(){
         '<td style="'+tdS+';color:#22c55e">'+n(m.m100)+'</td>'+
         '<td style="'+tdS+';color:#eab308">'+n(m.m90)+'</td>'+
         '<td style="'+tdS+'">'+(isOpen?n(m.vtas):'—')+'</td>'+
+        (proyNov?(function(){var mp=(m.label==='Noviembre'&&proyNov>0)?proyNov:0;var mpC=cls(mp?Math.round(mp/m.m100*100):0,100,80);return '<td style="'+tdS+(mp?';color:#38bdf8;font-weight:700':';color:var(--tx2)')+'">'+(mp?'<span title="Proyección al '+diasMes+' de Nov">📈 '+n(mp)+'</span>':'—')+'</td>';}()):'   ')+
         '<td style="'+tdS+(isOpen?';background:'+abg(a100)+';color:'+acl(a100)+';font-weight:700':'')+'">'+
           (isOpen?a100+'%':'—')+'</td>'+
         '<td style="'+tdS+(isOpen?';background:'+abg(a90)+';color:'+acl(a90)+';font-weight:700':'')+'">'+
@@ -838,10 +847,15 @@ function rT0_CuotaQ4(){
     var aOct90=r.meta_90k_oct?Math.round(rVOct/r.meta_90k_oct*1000)/10:0;
     var bColor=aOct>=100?'var(--green)':aOct>=80?'var(--yellow)':'var(--red)';
     var fNov=Math.max(0,r.meta_100k_nov-(r.ventas_nov||0));
+    var rProy=(diasTrans>0&&(r.ventas_nov||0)>0)?Math.round((r.ventas_nov||0)/diasTrans*diasMes):0;
+    var rPrAlc=r.meta_100k_nov&&rProy?Math.round(rProy/r.meta_100k_nov*1000)/10:0;
+    var rPrColor=rPrAlc>=100?'var(--green)':rPrAlc>=80?'var(--yellow)':'var(--red)';
     barsHTML+='<div class="reg-row"><div class="reg-name">'+r.region+'</div>'+
       '<div class="reg-bar-wrap"><div class="reg-bar-fill" style="width:'+Math.min(aOct,100)+'%;background:'+bColor+'"></div></div>'+
       '<div class="reg-meta">Oct: <strong style="color:'+bColor+'">'+aOct+'%</strong> (100k) · '+aOct90+'% (90k)'+
       ' &nbsp;·&nbsp; Meta Nov 100k: <span style="color:#22c55e">'+n(r.meta_100k_nov)+'</span>'+
+      ' &nbsp;·&nbsp; Nov real: <span style="color:#38bdf8">'+n(r.ventas_nov||0)+'</span>'+
+      (rProy?' &nbsp;·&nbsp; Proy. cierre: <span style="color:'+rPrColor+';font-weight:700">'+n(rProy)+' ('+rPrAlc+'%)</span>':'')+
       ' &nbsp;·&nbsp; Falt: <span style="color:var(--red)">'+n(fNov)+'</span>'+
       '</div></div>';
   });
